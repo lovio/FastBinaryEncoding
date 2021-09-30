@@ -7564,6 +7564,10 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         {
             if (field->ptr)
             {
+                has_unique_ptr_member = true;
+                if (IsKnownType(*field->type)) {
+                    continue;
+                }
                 if (unique_type_set.find(*field->type) != unique_type_set.end()) {
                     continue;
                 } else {
@@ -7571,7 +7575,6 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
                     WriteLineIndent("struct " + *field->type + ";");
                     unique_type_set.insert(*field->type);
                 }
-                has_unique_ptr_member = true;
             }
         }
     }
