@@ -7660,7 +7660,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
     WriteLineIndent(*s->name + "(" + *s->name + "&& other) = default;");
     WriteLineIndent("~" + *s->name + "() = default;");
     WriteLine();
-    WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = default;");
+    if (!has_unique_ptr_member) {
+        WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = default;");
+    } else {
+        WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = delete;");
+    }
     WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other) = default;");
 
     // Generate struct compare operators
