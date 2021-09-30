@@ -7674,11 +7674,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct string convert
     WriteLine();
-    WriteLineIndent("std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }");
+    WriteLineIndent("std::wstring string() const { std::wstringstream ss; ss << *this; return ss.str(); }");
 
     // Generate struct output stream operator
     WriteLine();
-    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
+    WriteLineIndent("friend std::wostream& operator<<(std::wostream& stream, const " + *s->name + "& value);");
 
     // Generate struct output stream operator
     if (Logging())
@@ -7898,7 +7898,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
 {
     // Generate struct output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value)");
+    WriteLineIndent("std::wostream& operator<<(std::wostream& stream, const " + *s->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
