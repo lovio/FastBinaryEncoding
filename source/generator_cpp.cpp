@@ -8647,7 +8647,22 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
                 WriteLine();
                 WriteLineIndent("if ((fbe_current_size + " + *field->name + ".fbe_size()) <= fbe_struct_size)");
                 Indent(1);
-                WriteLineIndent(*field->name + ".get(fbe_value." + *field->name + (field->value ? (", " + ConvertConstant(*field->type, *field->value, field->optional)) : "") +");");
+                if (!field->ptr) {
+                    WriteLineIndent("{");
+                    Indent(1);
+                    WriteLineIndent(*field->name + ".get(fbe_value." + *field->name + (field->value ? (", " + ConvertConstant(*field->type, *field->value, field->optional)) : "") +");");
+                    Indent(-1);
+                    WriteLineIndent("}");
+                } else {
+                    WriteLineIndent("{");
+                    Indent(1);
+                    WriteLineIndent("fbe_value." + *field->name + ".reset(new " + ConvertTypeName(*p->name, *field->type, field->optional) + ");");
+                    WriteLineIndent(*field->name + ".get(*fbe_value." + *field->name +  ".get());");
+                    Indent(-1);
+                    WriteLineIndent("}");
+
+
+                }
                 Indent(-1);
                 WriteLineIndent("else");
                 Indent(1);
@@ -8731,7 +8746,13 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
             WriteLineIndent("parent.set_fields(fbe_value);");
         if (s->body)
             for (const auto& field : s->body->fields)
-                WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
+            {
+                if (!field->ptr) {
+                    WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
+                } else {
+                    WriteLineIndent(*field->name + ".set(*fbe_value." + *field->name + ");");
+                }
+            }
     }
     Indent(-1);
     WriteLineIndent("}");
@@ -10649,6 +10670,8 @@ std::string GeneratorCpp::ConvertDefault(const std::string& package, const std::
 
 std::string GeneratorCpp::ConvertDefault(const std::string& package, const StructField& field)
 {
+    if (field.ptr)
+        return "nullptr";
     if (field.value)
         return ConvertConstant(*field.type, *field.value, field.optional);
 
