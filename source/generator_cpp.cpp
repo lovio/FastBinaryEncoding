@@ -7727,7 +7727,8 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     {
         for (const auto& field : s->body->fields)
         {
-            WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
+            WriteLineIndent(std::string(first ? ": " : ", ") + 
+                *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
             first = false;
         }
     }
@@ -7918,11 +7919,11 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
             std::string deref = "";
             std::string ref = ".";
             if (field->ptr) {
-                deref = "*";
+                deref = "(*";
                 ref = "->";
             }
             if (field->attributes && field->attributes->hidden)
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + deref + *field->name + "=***\";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + deref + *field->name + ")=***\";");
             else if (field->array)
             {
                 WriteLineIndent("{");
@@ -7932,7 +7933,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("for (size_t i = 0; i < " + std::to_string(field->N) + "; ++i)");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "value." + *field->name + ref + "operator[](i)", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type,  *field->name, field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7946,10 +7947,10 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 Indent(1);
                 WriteLineIndent("bool first = true;");
                 WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ref + "size()" + " << \"][\"" + ";");
-                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + ")");
+                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + "))");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7963,10 +7964,10 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 Indent(1);
                 WriteLineIndent("bool first = true;");
                 WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ref + "size()" + "<< \"]<\"" + ";");
-                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + ")");
+                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + "))");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7980,10 +7981,10 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 Indent(1);
                 WriteLineIndent("bool first = true;");
                 WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ref + "size()" + "<< \"]{\"" + ";");
-                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + ")");
+                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + "))");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7997,12 +7998,12 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 Indent(1);
                 WriteLineIndent("bool first = true;");
                 WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ref + "size()" + "<< \"]<{\"" + ";");
-                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + ")");
+                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + "))");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", field->ptr, false, true));
                 WriteLineIndent("stream << \"->\";");
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->optional, false));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->ptr, field->optional, false));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -8016,12 +8017,12 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 Indent(1);
                 WriteLineIndent("bool first = true;");
                 WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ref + "size()" + "<< \"][{\"" + ";");
-                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + ")");
+                WriteLineIndent("for (const auto& it : " + deref + "value." + *field->name + "))");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", field->ptr, false, true));
                 WriteLineIndent("stream << \"->\";");
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->optional, false));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->ptr, field->optional, false));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -8030,7 +8031,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("}");
             }
             else
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=\"; " + ConvertOutputStreamValue(*field->type, deref + "value." + *field->name, field->optional, false));
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=\"; " + ConvertOutputStreamValue(*field->type, "value." + *field->name, field->ptr, field->optional, false));
             first = false;
         }
     }
@@ -10647,7 +10648,7 @@ std::string GeneratorCpp::ConvertDefault(const std::string& package, const Struc
     if (field.value)
         return ConvertConstant(*field.type, *field.value, field.optional);
 
-    if (field.array || field.vector || field.list || field.set || field.map || field.hash)
+    if (field.array || field.vector || field.list || field.set || field.map || field.hash || field.ptr)
         return "";
     else if (field.optional)
         return "std::nullopt";
@@ -10655,30 +10656,33 @@ std::string GeneratorCpp::ConvertDefault(const std::string& package, const Struc
     return ConvertDefault(package, *field.type);
 }
 
-std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const std::string& name, bool optional)
+std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const std::string& name, bool ptr, bool optional)
 {
+    std::string wrapped_name = name;
+    if (ptr) {
+        wrapped_name = "(*" + wrapped_name +")";
+    }
     if (type == "bool")
-        return "(" + std::string(optional ? "*" : "") + name + " ? \"true\" : \"false\"" + ")";
+        return "(" + std::string(optional ? "*" : "") + wrapped_name + " ? \"true\" : \"false\"" + ")";
     else if ((type == "byte") || (type == "int8") || (type == "uint8"))
-        return "(int)" + std::string(optional ? "*" : "") + name;
+        return "(int)" + std::string(optional ? "*" : "") + wrapped_name;
     else if (type == "bytes")
-        return "\"bytes[\" << " + name + std::string(optional ? "->" : ".") + "size() << \"]\"";
+        return "\"bytes[\" << " + wrapped_name + std::string(optional ? "->" : ".") + "size() << \"]\"";
     else if ((type == "char") || (type == "wchar"))
-        return "\"'\" << " + std::string(optional ? "*" : "") + name + " << \"'\"";
+        return "\"'\" << " + std::string(optional ? "*" : "") + wrapped_name + " << \"'\"";
     else if ((type == "string") || (type == "uuid"))
-        return "\"\\\"\" << " + std::string(optional ? "*" : "") + name + " << \"\\\"\"";
-    else
-        return std::string(optional ? "*" : "") + name;
+        return "\"\\\"\" << std::wstring(" + wrapped_name + std::string(optional ? "->begin(), " : ".begin(), ") +  wrapped_name + std::string(optional ? "->end())": ".end())") + " << \"\\\"\"";
+    return std::string(optional ? "*" : "") + wrapped_name;
 }
 
-std::string GeneratorCpp::ConvertOutputStreamValue(const std::string& type, const std::string& name, bool optional, bool separate)
+std::string GeneratorCpp::ConvertOutputStreamValue(const std::string& type, const std::string& name, bool ptr, bool optional, bool separate)
 {
     std::string comma = separate ? "<< std::string(first ? \"\" : \",\") " : "";
 
     if (optional)
-        return "if (" + name + ") stream " + comma + "<< " + ConvertOutputStreamType(type, name, true) + "; else stream " + comma + "<< \"null\";";
+        return "if (" + name + ") stream " + comma + "<< " + ConvertOutputStreamType(type, name, ptr, true) + "; else stream " + comma + "<< \"null\";";
     else
-        return "stream " + comma + "<< " + ConvertOutputStreamType(type, name, false) + ";";
+        return "stream " + comma + "<< " + ConvertOutputStreamType(type, name, ptr, false) + ";";
 }
 
 std::string GeneratorCpp::ConvertLoggingStreamType(const std::string& type, const std::string& name, bool optional)

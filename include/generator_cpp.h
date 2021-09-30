@@ -178,8 +178,8 @@ private:
     std::string ConvertDefault(const std::string& package, const std::string& type);
     std::string ConvertDefault(const std::string& package, const StructField& field);
 
-    std::string ConvertOutputStreamType(const std::string& type, const std::string& name, bool optional);
-    std::string ConvertOutputStreamValue(const std::string& type, const std::string& name, bool optional, bool separate);
+    std::string ConvertOutputStreamType(const std::string& type, const std::string& name, bool ptr, bool optional);
+    std::string ConvertOutputStreamValue(const std::string& type, const std::string& name, bool ptr, bool optional, bool separate);
 
     std::string ConvertLoggingStreamType(const std::string& type, const std::string& name, bool optional);
     std::string ConvertLoggingStreamValue(const std::string& type, const std::string& name, bool optional, bool separate);
