@@ -300,7 +300,7 @@ struct_field_base
     ;
 
 struct_field_base_ptr                                                                       
-    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->typeptr = true ;}
+    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->ptr = true ;}
     ;
 
 struct_field_optional
