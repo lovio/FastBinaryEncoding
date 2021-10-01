@@ -7807,7 +7807,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
             for (const auto& field : s->body->fields)
             {
                 if (field->ptr) {
-                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(new " + ConvertTypeNameIgnorePtr(*p->name, *field, field->optional) + "(*other." + *field->name + "))");
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(new " + ConvertTypeNameWithContainer(*p->name, *field, field->optional) + "(*other." + *field->name + "))");
                 } else {
                     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(other." + *field->name + ")");
                 }
@@ -10467,7 +10467,7 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     return (pkg ? ("::" + package) : "") + "::" + result;
 }
 
-std::string GeneratorCpp::ConvertTypeNameIgnorePtr(const std::string& package, const StructField& field, bool optional)
+std::string GeneratorCpp::ConvertTypeNameWithContainer(const std::string& package, const StructField& field, bool optional)
 {
     if (field.array)
         return "std::array<" + ConvertTypeName(package, *field.type, optional) + ", " + std::to_string(field.N) + ">";
@@ -10487,27 +10487,19 @@ std::string GeneratorCpp::ConvertTypeNameIgnorePtr(const std::string& package, c
 
 std::string GeneratorCpp::ConvertTypeName(const std::string& package, const StructField& field)
 {
-    std::string ret;
-    if (field.ptr) {
-        ret += "std::unique_ptr<" ;
-    }
-    ret += ConvertTypeNameIgnorePtr(package, field, field.optional);
-    if (field.ptr) {
-      ret += ">";
-    }
-    return ret;
+    return ConvertTypeNameWithContainer(package, field, field.optional);
 }
 
 std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, const StructField& field)
 {
     if (field.optional || field.array || field.vector || field.list ||
         field.set || field.map || field.hash)
-        return "const " + ConvertTypeNameIgnorePtr(package, field, false) + "&";
+        return "const " + ConvertTypeNameWithContainer(package, field, false) + "&";
 
     if (IsPrimitiveType(*field.type, false))
-        return ConvertTypeNameIgnorePtr(package, field, false);
+        return ConvertTypeNameWithContainer(package, field, false);
 
-    return "const " + ConvertTypeNameIgnorePtr(package, field, false) + "&";
+    return "const " + ConvertTypeNameWithContainer(package, field, false) + "&";
 }
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
@@ -10693,7 +10685,8 @@ std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const
         if (IsKnownType(type)) {
             wrapped_name = "(*" + wrapped_name +")";
         } else {
-            return "\" ptr of other struct\"";
+            //return "\" ptr of other struct\" << " + "static_cast<uint64_t>(" + wrapped_name + ");";
+            return "\" ptr of other struct\" << " + name + " == nullptr ? \"true\" : \"false\"" + ")";
         }
     }
     if (type == "bool")
