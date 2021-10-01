@@ -76,6 +76,7 @@ int yyerror(const std::string& msg);
 %type <struct_field> struct_field
 %type <struct_field> struct_field_type
 %type <struct_field> struct_field_base
+%type <struct_field> struct_field_base_ptr
 %type <struct_field> struct_field_optional
 %type <struct_field> struct_field_reseter
 %type <struct_field> struct_field_array
@@ -298,6 +299,10 @@ struct_field_base
     | type_name                                                                             { $$ = new FBE::StructField(); $$->type.reset($1); }
     ;
 
+struct_field_base_ptr                                                                       
+    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->typeptr = true ;}
+    ;
+
 struct_field_optional
     : struct_field_base '?'                                                                 { $$ = $1; $$->optional = true; }
     ;
@@ -309,16 +314,19 @@ struct_field_reseter
 struct_field_array
     : struct_field_base '[' CONST_INT ']'                                                   { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
     | struct_field_optional '[' CONST_INT ']'                                               { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
+    | struct_field_base_ptr '[' CONST_INT ']'                                               { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
     ;
 
 struct_field_vector
     : struct_field_base '[' ']'                                                             { $$ = $1; $$->vector = true; }
     | struct_field_optional '[' ']'                                                         { $$ = $1; $$->vector = true; }
+    | struct_field_base_ptr '[' ']'                                                         { $$ = $1; $$->vector = true; }
     ;
 
 struct_field_list
     : struct_field_base '(' ')'                                                             { $$ = $1; $$->list = true; }
     | struct_field_optional '(' ')'                                                         { $$ = $1; $$->list = true; }
+    | struct_field_base_ptr '(' ')'                                                         { $$ = $1; $$->list = true; }
     ;
 
 struct_field_set
@@ -328,23 +336,17 @@ struct_field_set
 struct_field_map
     : struct_field_base '<' struct_field_base '>'                                           { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
     | struct_field_optional '<' struct_field_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    | struct_field_base_ptr '<' struct_field_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
     ;
 
 struct_field_hash
     : struct_field_base '{' struct_field_base '}'                                           { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
     | struct_field_optional '{' struct_field_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    | struct_field_base_ptr '{' struct_field_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
     ;
 
 struct_field_ptr
-    : struct_field_base '*'                                                                 { $$ = $1; $$->ptr = true; }
-    | struct_field_optional '*'                                                             { $$ = $1; $$->ptr = true; }
-    | struct_field_reseter '*'                                                              { $$ = $1; $$->ptr = true; }
-    | struct_field_array '*'                                                                { $$ = $1; $$->ptr = true; }
-    | struct_field_vector '*'                                                               { $$ = $1; $$->ptr = true; }
-    | struct_field_list '*'                                                                 { $$ = $1; $$->ptr = true; }
-    | struct_field_set '*'                                                                  { $$ = $1; $$->ptr = true; }
-    | struct_field_map '*'                                                                  { $$ = $1; $$->ptr = true; }
-    | struct_field_hash '*'                                                                 { $$ = $1; $$->ptr = true; }
+    : struct_field_base_ptr                                                                 { $$ = $1; $$->ptr = true; }
     ;
 
 struct_field_value

@@ -114,6 +114,7 @@ struct StructField
     bool map{false};
     bool hash{false};
     bool ptr{false};
+    bool typeptr{false};
     int N{0};
 
     void SetArraySize(int size);
