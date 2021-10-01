@@ -7681,11 +7681,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct string convert
     WriteLine();
-    WriteLineIndent("std::wstring string() const { std::wstringstream ss; ss << *this; return ss.str(); }");
+    WriteLineIndent("std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }");
 
     // Generate struct output stream operator
     WriteLine();
-    WriteLineIndent("friend std::wostream& operator<<(std::wostream& stream, const " + *s->name + "& value);");
+    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
 
     // Generate struct output stream operator
     if (Logging())
@@ -7906,7 +7906,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
 {
     // Generate struct output stream operator begin
     WriteLine();
-    WriteLineIndent("std::wostream& operator<<(std::wostream& stream, const " + *s->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -10690,7 +10690,11 @@ std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const
 {
     std::string wrapped_name = name;
     if (ptr) {
-        wrapped_name = "(*" + wrapped_name +")";
+        if (IsKnownType(type)) {
+            wrapped_name = "(*" + wrapped_name +")";
+        } else {
+            return "\" ptr of other struct\"";
+        }
     }
     if (type == "bool")
         return "(" + std::string(optional ? "*" : "") + wrapped_name + " ? \"true\" : \"false\"" + ")";
@@ -10698,10 +10702,12 @@ std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const
         return "(int)" + std::string(optional ? "*" : "") + wrapped_name;
     else if (type == "bytes")
         return "\"bytes[\" << " + wrapped_name + std::string(optional ? "->" : ".") + "size() << \"]\"";
-    else if ((type == "char") || (type == "wchar"))
+    else if (type == "char")
         return "\"'\" << " + std::string(optional ? "*" : "") + wrapped_name + " << \"'\"";
+    else if (type == "wchar")
+        return "\"'\" << static_cast<uint32_t>(" + std::string(optional ? "*" : "") + wrapped_name + ") << \"'\"";
     else if ((type == "string") || (type == "uuid"))
-        return "\"\\\"\" << std::wstring(" + wrapped_name + std::string(optional ? "->begin(), " : ".begin(), ") +  wrapped_name + std::string(optional ? "->end())": ".end())") + " << \"\\\"\"";
+        return "\"\\\"\" << " + std::string(optional ? "*" : "") + wrapped_name + " << \"\\\"\"";
     return std::string(optional ? "*" : "") + wrapped_name;
 }
 
