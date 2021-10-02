@@ -7,6 +7,7 @@
 */
 
 #include "generator_cpp.h"
+#include "fbe.h"
 
 namespace FBE {
 
@@ -7643,12 +7644,10 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         {
             for (const auto& field : s->body->fields)
             {
-                if (field->ptr) {
-                    Write(std::string(first ? "" : ", ") + ConvertTypeName(*p->name, *field) + " arg_" + *field->name);
-                } else {
-                    Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
-                }
-                first = false;
+              Write(std::string(first ? "" : ", ") +
+                   ConvertTypeNameAsArgument(*p->name, *field) + " arg_" +
+                    *field->name);
+              first = false;
             }
         }
         WriteLine(");");
@@ -7758,12 +7757,10 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         {
             for (const auto& field : s->body->fields)
             {
-                if (field->ptr) {
-                    has_unique_ptr_member = true;
-                    Write(std::string(first ? "" : ", ") + ConvertTypeName(*p->name, *field) + " arg_" + *field->name);
-                } else {
-                    Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
-                }
+                if (field->ptr) has_unique_ptr_member = true;
+                Write(std::string(first ? "" : ", ") +
+                      ConvertTypeNameAsArgument(*p->name, *field) + " arg_" +
+                      *field->name);
                 first = false;
             }
         }
@@ -7804,16 +7801,52 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         // generate the field copy
         if (s->body)
         {
+            std::vector<std::shared_ptr<StructField>> collection_of_ptrs;
             for (const auto& field : s->body->fields)
             {
                 if (field->ptr) {
-                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(new " + ConvertTypeNameWithContainer(*p->name, *field, field->optional, true) + "(*other." + *field->name + "))");
+                    if (!field->optional && !field->array && !field->vector && !field->list && !field->set && !field->map && !field->hash) {
+                      WriteLineIndent(
+                          std::string(first ? ": " : ", ") + *field->name +
+                          "(new " +
+                          ConvertTypeName(*p->name, *field->type, false, false) +
+                          "(*other." + *field->name + "))");
+                    }
+                    else {
+                        WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "()");
+                        collection_of_ptrs.push_back(field);
+                    }
                 } else {
                     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(other." + *field->name + ")");
                 }
                 first = false;
             }
-            WriteLineIndent("{}");
+            if (collection_of_ptrs.empty()) {
+                WriteLineIndent("{}");
+            } else {
+                WriteLineIndent("{");
+                Indent(1);
+                for (const auto& field : collection_of_ptrs) {
+                  if (field->map || field->hash) {
+                    WriteLineIndent("for (auto& [key, val]: other." + *field->name + ")");
+                    Indent(1);
+                    WriteLineIndent(*field->name + ".emplace(key, *val);");
+                    Indent(-1);
+                  } else if (field->vector || field->list) {
+                    WriteLineIndent("for (auto& it : other." + *field->name + ")");
+                    Indent(1);
+                    WriteLineIndent(*field->name + ".emplace_back(*it);");
+                    Indent(-1);
+                  } else if (field->array) {
+                    WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
+                    Indent(1);
+                    WriteLineIndent(*field->name + "[i].reset(new " + ConvertTypeName(*p->name, *field->type, false, false)+ "(*other."+ *field->name + "[i]" +"));");
+                    Indent(-1);
+                  }
+                }
+                Indent(-1);
+                WriteLineIndent("}");
+            }
         }
     }
 
@@ -10494,6 +10527,8 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const Stru
 
 std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, const StructField& field)
 {
+    if (field.ptr)
+        return ConvertTypeNameWithContainer(package, field, false, field.ptr);
     if (field.optional || field.array || field.vector || field.list ||
         field.set || field.map || field.hash)
         return "const " + ConvertTypeNameWithContainer(package, field, false, field.ptr) + "&";
@@ -10501,7 +10536,8 @@ std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, 
     if (IsPrimitiveType(*field.type, false))
         return ConvertTypeNameWithContainer(package, field, false, false);
 
-    return "const " + ConvertTypeNameWithContainer(package, field, false, field.ptr) + "&";
+    return "const " +
+           ConvertTypeNameWithContainer(package, field, false, field.ptr) + "&";
 }
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
