@@ -2311,7 +2311,7 @@ public:
     void set_end(size_t fbe_begin);
 
     // Set the optional value
-    void set(const std::optional<T>& opt);
+    void set(const std::unique_ptr<T>& opt);
 
 private:
     FBEBuffer& _buffer;
