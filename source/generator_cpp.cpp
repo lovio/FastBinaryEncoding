@@ -2329,6 +2329,143 @@ public:
     Write(code);
 }
 
+    void GeneratorCpp::GenerateFBEFieldModelPtr_Inline()
+    {
+        std::string code = R"CODE(
+template <typename T>
+inline size_t FieldModel<std::unique_ptr<T>>::fbe_extra() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_ptr_offset);
+    size_t fbe_result = value.fbe_size() + value.fbe_extra();
+    _buffer.unshift(fbe_ptr_offset);
+    return fbe_result;
+}
+
+template <typename T>
+inline bool FieldModel<std::unique_ptr<T>>::has_value() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return false;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    return (fbe_has_value != 0);
+}
+
+template <typename T>
+inline bool FieldModel<std::unique_ptr<T>>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if (fbe_has_value == 0)
+        return true;
+
+    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if (fbe_ptr_offset == 0)
+        return false;
+
+    _buffer.shift(fbe_ptr_offset);
+    bool fbe_result = value.verify();
+    _buffer.unshift(fbe_ptr_offset);
+    return fbe_result;
+}
+
+template <typename T>
+inline size_t FieldModel<std::unique_ptr<T>>::get_begin() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    assert((fbe_ptr_offset > 0) && "Model is broken!");
+    if (fbe_ptr_offset == 0)
+        return 0;
+
+    _buffer.shift(fbe_ptr_offset);
+    return fbe_ptr_offset;
+}
+
+template <typename T>
+inline void FieldModel<std::unique_ptr<T>>::get_end(size_t fbe_begin) const noexcept
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T>
+inline void FieldModel<std::unique_ptr<T>>::get(std::unique_ptr<T>& ptr, const std::unique_ptr<T>& defaults) const noexcept
+{
+    ptr.reset(defaults.release());
+
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    T* temp = new T;
+    value.get(*temp);
+    ptr.reset(temp);
+
+    get_end(fbe_begin);
+}
+
+template <typename T>
+inline size_t FieldModel<std::unique_ptr<T>>::set_begin(bool has_value)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint8_t fbe_has_value = has_value ? 1 : 0;
+    *((uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
+    if (fbe_has_value == 0)
+        return 0;
+
+    uint32_t fbe_ptr_size = (uint32_t)value.fbe_size();
+    uint32_t fbe_ptr_offset = (uint32_t)(_buffer.allocate(fbe_ptr_size) - _buffer.offset());
+    assert(((fbe_ptr_offset > 0) && ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) > _buffer.size()))
+        return 0;
+
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;
+
+    _buffer.shift(fbe_ptr_offset);
+    return fbe_ptr_offset;
+}
+
+template <typename T>
+inline void FieldModel<std::unique_ptr<T>>::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T>
+inline void FieldModel<std::unique_ptr<T>>::set(const std::unique_ptr<T>& ptr)
+{
+    size_t fbe_begin = set_begin(ptr.has_value());
+    if (fbe_begin == 0)
+        return;
+
+    if (ptr)
+        value.set(*ptr);
+
+    set_end(fbe_begin);
+}
+)CODE";
+
+        // Prepare code template
+        code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+        Write(code);
+    }
+
+
 void GeneratorCpp::GenerateFBEFieldModelOptional_Inline()
 {
     std::string code = R"CODE(
@@ -7733,7 +7870,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     {
         for (const auto& field : s->body->fields)
         {
-            WriteLineIndent(std::string(first ? ": " : ", ") + 
+            WriteLineIndent(std::string(first ? ": " : ", ") +
                 *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
             first = false;
         }
@@ -7789,7 +7926,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     }
     // Generate struct copy constructor
     if (has_unique_ptr_member) {
-        WriteLineIndent(*s->name + "::" + *s->name + "(const " + *s->name + "& other)");     
+        WriteLineIndent(*s->name + "::" + *s->name + "(const " + *s->name + "& other)");
         Indent(1);
         // generate the base copy
         first = true;

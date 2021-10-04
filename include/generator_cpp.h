@@ -78,6 +78,8 @@ private:
     void GenerateFBEFieldModelString_Source();
     void GenerateFBEFieldModelOptional_Header();
     void GenerateFBEFieldModelOptional_Inline();
+    void GenerateFBEFieldModelPtr_Header();
+    void GenerateFBEFieldModelPtr_Inline();
     void GenerateFBEFieldModelArray_Header();
     void GenerateFBEFieldModelArray_Inline();
     void GenerateFBEFieldModelVector_Header();
@@ -96,6 +98,8 @@ private:
     void GenerateFBEFinalModelString_Source();
     void GenerateFBEFinalModelOptional_Header();
     void GenerateFBEFinalModelOptional_Inline();
+    void GenerateFBEFinalModelPtr_Header();
+    void GenerateFBEFinalModelPtr_Inline();
     void GenerateFBEFinalModelArray_Header();
     void GenerateFBEFinalModelArray_Inline();
     void GenerateFBEFinalModelVector_Header();
