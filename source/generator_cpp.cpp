@@ -8031,7 +8031,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                   if (field->map || field->hash) {
                     WriteLineIndent("for (auto& [key, val]: other." + *field->name + ")");
                     Indent(1);
-                    WriteLineIndent(*field->name + ".emplace(key, std::make_unique<" + ConvertTypeName(*p->name, *field->type, false, false) + "(*val));");
+                    WriteLineIndent(*field->name + ".emplace(key, std::make_unique<" + ConvertTypeName(*p->name, *field->type, false, false) + ">(*val));");
                     Indent(-1);
                   } else if (field->vector || field->list) {
                     WriteLineIndent("for (auto& it : other." + *field->name + ")");
