@@ -2266,12 +2266,12 @@ void FieldModel<std::string>::set(const std::string& value)
     Write(code);
 }
 
-void GeneratorCpp::GenerateFBEFieldModelOptional_Header()
-{
-    std::string code = R"CODE(
-// Fast Binary Encoding field model optional specialization
+    void GeneratorCpp::GenerateFBEFieldModelPtr_Header()
+    {
+        std::string code = R"CODE(
+// Fast Binary Encoding field model unique_ptr specialization
 template <typename T>
-class FieldModel<std::optional<T>>
+class FieldModel<std::unique_ptr<T>>
 {
 public:
     FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), value(buffer, 0) {}
@@ -2303,7 +2303,7 @@ public:
     void get_end(size_t fbe_begin) const noexcept;
 
     // Get the optional value
-    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+    void get(std::unique_ptr<T>& opt, const std::unique_ptr<T>& defaults = std::nullptr) const noexcept;
 
     // Set the optional value (begin phase)
     size_t set_begin(bool has_value);
@@ -2323,11 +2323,11 @@ public:
 };
 )CODE";
 
-    // Prepare code template
-    code = std::regex_replace(code, std::regex("\n"), EndLine());
+        // Prepare code template
+        code = std::regex_replace(code, std::regex("\n"), EndLine());
 
-    Write(code);
-}
+        Write(code);
+    }
 
     void GeneratorCpp::GenerateFBEFieldModelPtr_Inline()
     {
@@ -2465,6 +2465,68 @@ inline void FieldModel<std::unique_ptr<T>>::set(const std::unique_ptr<T>& ptr)
         Write(code);
     }
 
+    void GeneratorCpp::GenerateFBEFieldModelOptional_Header()
+{
+    std::string code = R"CODE(
+// Fast Binary Encoding field model optional specialization
+template <typename T>
+class FieldModel<std::optional<T>>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), value(buffer, 0) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 1 + 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    //! Is the value present?
+    explicit operator bool() const noexcept { return has_value(); }
+
+    // Checks if the object contains a value
+    bool has_value() const noexcept;
+
+    // Check if the optional value is valid
+    bool verify() const noexcept;
+
+    // Get the optional value (being phase)
+    size_t get_begin() const noexcept;
+    // Get the optional value (end phase)
+    void get_end(size_t fbe_begin) const noexcept;
+
+    // Get the optional value
+    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+
+    // Set the optional value (begin phase)
+    size_t set_begin(bool has_value);
+    // Set the optional value (end phase)
+    void set_end(size_t fbe_begin);
+
+    // Set the optional value
+    void set(const std::optional<T>& opt);
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+
+public:
+    // Base field model value
+    FieldModel<T> value;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
 
 void GeneratorCpp::GenerateFBEFieldModelOptional_Inline()
 {
@@ -6495,6 +6557,7 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelUUID_Header();
     GenerateFBEFieldModelBytes_Header();
     GenerateFBEFieldModelString_Header();
+    GenerateFBEFieldModelPtr_Header();
     GenerateFBEFieldModelOptional_Header();
     GenerateFBEFieldModelArray_Header();
     GenerateFBEFieldModelVector_Header();
@@ -6533,6 +6596,7 @@ void GeneratorCpp::GenerateFBEModels_Inline(const CppCommon::Path& path)
 
     // Generate field models
     GenerateFBEFieldModel_Inline();
+    GenerateFBEFieldModelPtr_Inline();
     GenerateFBEFieldModelOptional_Inline();
     GenerateFBEFieldModelArray_Inline();
     GenerateFBEFieldModelVector_Inline();
@@ -10582,7 +10646,7 @@ std::string GeneratorCpp::ConvertEnumType(const std::string& type)
     return "";
 }
 
-// because of the y file. optional and typeptr will not be true in the same.
+// because of the y file. optional and typeptr will not be true in the same, and the ptr will never pointer to primitive type.
 std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr)
 {
     if (optional)
@@ -10657,15 +10721,10 @@ std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, 
 {
     if (field.ptr)
         return ConvertTypeName(package, field);
-    if (field.optional || field.array || field.vector || field.list ||
-        field.set || field.map || field.hash)
-        return "const " + ConvertTypeName(package, field) + "&";
-
     if (IsPrimitiveType(*field.type, false))
         return ConvertTypeName(package, field);
 
-    return "const " +
-           ConvertTypeName(package, field) + "&";
+    return "const " + ConvertTypeName(package, field) + "&";
 }
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
