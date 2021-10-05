@@ -2297,20 +2297,22 @@ public:
     // Check if the optional value is valid
     bool verify() const noexcept;
 
-    // Get the optional value (being phase)
+    // Get the unique_ptr value (being phase)
     size_t get_begin() const noexcept;
-    // Get the optional value (end phase)
+
+    // Get the unique_ptr value (end phase)
     void get_end(size_t fbe_begin) const noexcept;
 
-    // Get the optional value
-    void get(std::unique_ptr<T>& opt, const std::unique_ptr<T>& defaults = std::nullptr) const noexcept;
+    // Get the unique_ptr value
+    void get(std::unique_ptr<T>& opt, const std::unique_ptr<T>& defaults = std::unique_ptr<T>()) const noexcept;
 
-    // Set the optional value (begin phase)
+    // Set the unique_ptr value (begin phase)
     size_t set_begin(bool has_value);
-    // Set the optional value (end phase)
+
+    // Set the unique_ptr value (end phase)
     void set_end(size_t fbe_begin);
 
-    // Set the optional value
+    // Set the unique_ptr value
     void set(const std::unique_ptr<T>& opt);
 
 private:
