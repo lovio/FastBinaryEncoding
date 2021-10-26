@@ -2404,7 +2404,7 @@ inline void FieldModel<std::unique_ptr<T>>::get_end(size_t fbe_begin) const noex
 template <typename T>
 inline void FieldModel<std::unique_ptr<T>>::get(std::unique_ptr<T>& ptr, const std::unique_ptr<T>& defaults) const noexcept
 {
-    ptr.reset(defaults.release());
+    ptr.reset(defaults.get());
 
     size_t fbe_begin = get_begin();
     if (fbe_begin == 0)
@@ -2450,7 +2450,7 @@ inline void FieldModel<std::unique_ptr<T>>::set_end(size_t fbe_begin)
 template <typename T>
 inline void FieldModel<std::unique_ptr<T>>::set(const std::unique_ptr<T>& ptr)
 {
-    size_t fbe_begin = set_begin(ptr.has_value());
+    size_t fbe_begin = set_begin(ptr.get() != nullptr);
     if (fbe_begin == 0)
         return;
 
@@ -8890,7 +8890,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
                     WriteLineIndent("{");
                     Indent(1);
                     WriteLineIndent("fbe_value." + *field->name + ".reset(new " + ConvertTypeName(*p->name, *field->type, field->optional, false) + ");");
-                    WriteLineIndent(*field->name + ".get(*fbe_value." + *field->name +  ".get());");
+                    WriteLineIndent(*field->name + ".get(fbe_value." + *field->name +  ");");
                     Indent(-1);
                     WriteLineIndent("}");
 
@@ -8980,11 +8980,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                if (!field->ptr) {
-                    WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
-                } else {
-                    WriteLineIndent(*field->name + ".set(*fbe_value." + *field->name + ");");
-                }
+                WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
             }
     }
     Indent(-1);
