@@ -3059,7 +3059,7 @@ inline void FieldModelVector<T>::get(std::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -8889,7 +8889,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
                 } else {
                     WriteLineIndent("{");
                     Indent(1);
-                    WriteLineIndent("fbe_value." + *field->name + ".reset(new " + ConvertTypeName(*p->name, *field->type, field->optional, false) + ");");
+                    // WriteLineIndent("fbe_value." + *field->name + ".reset(new " + ConvertTypeName(*p->name, *field->type, field->optional, false) + ");");
                     WriteLineIndent(*field->name + ".get(fbe_value." + *field->name +  ");");
                     Indent(-1);
                     WriteLineIndent("}");
