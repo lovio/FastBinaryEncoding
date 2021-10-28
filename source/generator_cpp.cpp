@@ -3078,7 +3078,7 @@ inline void FieldModelVector<T>::get(std::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3346,7 +3346,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) con
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(key, std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3368,7 +3368,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>& v
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(key, std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -4988,7 +4988,7 @@ inline size_t FinalModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) c
         size_t offset_value = fbe_model_value.get(value);
         fbe_model_key.fbe_shift(offset_value);
         fbe_model_value.fbe_shift(offset_value);
-        values.emplace(key, value);
+        values.emplace(key, std::move(value));
         size += offset_key + offset_value;
     }
     return size;
@@ -5020,7 +5020,7 @@ inline size_t FinalModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>&
         size_t offset_value = fbe_model_value.get(value);
         fbe_model_key.fbe_shift(offset_value);
         fbe_model_value.fbe_shift(offset_value);
-        values.emplace(key, value);
+        values.emplace(key, std::move(value));
         size += offset_key + offset_value;
     }
     return size;
