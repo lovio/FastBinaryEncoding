@@ -55,6 +55,7 @@ private:
     void GenerateImportsProtocol(const std::shared_ptr<Package>& p, bool final);
     void GenerateImportsJson();
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
+    void GenerateBaseModel_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();
@@ -66,6 +67,7 @@ private:
     void GenerateFBEBuffer_Header();
     void GenerateFBEBuffer_Source();
     void GenerateFBEBaseModel_Header();
+    void GenerateFBEBaseFieldModel_Header();
     void GenerateFBEFieldModel_Header();
     void GenerateFBEFieldModel_Inline();
     void GenerateFBEFieldModelDecimal_Header();
@@ -150,7 +152,9 @@ private:
     void GenerateStructLoggingStream(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructHash(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructJson(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateStructFieldPtrModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateStructFieldPtrModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
