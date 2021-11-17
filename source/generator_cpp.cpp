@@ -7892,7 +7892,9 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
             WriteIndent();
             if (field->attributes && field->attributes->deprecated)
                 Write("[[deprecated]] ");
-            WriteLine(ConvertTypeName(*p->name, *field) + " " + *field->name + ";");
+            Write(ConvertTypeName(*p->name, *field->type, false, false));
+            if (field->ptr) Write("*");
+            WriteLine(" " + *field->name + ";");
         }
         if (!s->body->fields.empty())
             WriteLine();
@@ -7928,10 +7930,13 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         {
             for (const auto& field : s->body->fields)
             {
-              Write(std::string(first ? "" : ", ") +
-                   ConvertTypeNameAsArgument(*p->name, *field) + " arg_" +
-                    *field->name);
-              first = false;
+                if (field->ptr) {
+                    // TODO: refactor ConvertTypeNameAsArgument
+                    Write(std::string(first ? "" : ", ") + "std::unique_ptr<" + ConvertTypeNameAsArgument(*p->name, *field) + "> arg_" + *field->name);
+                } else {
+                    Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
+                }
+                first = false;
             }
         }
         WriteLine(");");
@@ -8047,10 +8052,11 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                 if (field->ptr) {
                     has_unique_ptr_member = true;
                     unique_ptr_members.push_back(*field->name);
+                    // TODO: refactor ConvertTypeNameAsArgument
+                    Write(std::string(first ? "" : ", ") + "std::unique_ptr<" + ConvertTypeNameAsArgument(*p->name, *field) + "> arg_" + *field->name);
+                } else {
+                    Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
                 }
-                Write(std::string(first ? "" : ", ") +
-                      ConvertTypeNameAsArgument(*p->name, *field) + " arg_" +
-                      *field->name);
                 first = false;
             }
         }
@@ -8067,11 +8073,11 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
             for (const auto& field : s->body->fields)
             {
                 // TODO: 这里需要注意一下，是否所有的inner struct都必须使用指针呢？
-                // if (field->ptr) {
-                //     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(arg_" + *field->name + "))");
-                // } else {
-                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ")");
-                // }
+                if (field->ptr) {
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ".release())");
+                } else {
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ")");
+                }
                 first = false;
             }
         }
@@ -11129,9 +11135,10 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     std::string result = type;
     bool pkg = !CppCommon::StringUtils::ReplaceAll(result, ".", "::");
     std::string ret = (pkg ? ("::" + package) : "") + "::" + result;
-    if (typeptr) {
-        ret += "*";
-    }
+    // if (typeptr) {
+    //     ret += "*";
+    //     // ret = "std::unique_ptr<" + ret + ">";
+    // }
     return ret;
 }
 
