@@ -7958,7 +7958,7 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
     } else {
         WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = delete;");
     }
-    WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other) = default;");
+    WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other);");
 
     // Generate struct compare operators
     WriteLine();
@@ -8084,7 +8084,6 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         Indent(-1);
         WriteLineIndent("{}");
     }
-    // TODO: 需要copy cstr吗？
     // Generate struct copy constructor
     if (!has_unique_ptr_member) {
         WriteLineIndent(*s->name + "::" + *s->name + "(const " + *s->name + "& other)");
@@ -8178,8 +8177,9 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                 //     collection_of_ptrs.push_back(field);
                 // }
                 WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", nullptr))");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + "))");
             } else {
-                // TODO: 可以给基础类型使用std::move吗？
                 WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
             }
             first = false;
@@ -8269,6 +8269,53 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         }
     }
     WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLineIndent("}");
+
+
+    // Generate struct move assignment operator
+    WriteLine();
+    WriteLineIndent(*s->name + "& " + *s->name + "::operator=(" + *s->name + "&& other)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (this != &other)");
+    WriteLineIndent("{");
+    Indent(1);
+    // generate the base move
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent("Base::operator = (std::move(other))");
+    }
+    // generate the field move
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            if (field->ptr) {
+                // TODO: remove pointer to container
+                // if (!field->optional && !field->array && !field->vector && !field->list && !field->set && !field->map && !field->hash) {
+                //   WriteLineIndent(
+                //       std::string(first ? ": " : ", ") + *field->name +
+                //       "(new " +
+                //       ConvertTypeName(*p->name, *field->type, false, false) +
+                //       "(*other." + *field->name + "))");
+                // }
+                // else {
+                //     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "()");
+                //     collection_of_ptrs.push_back(field);
+                // }
+                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", nullptr);");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + ");");
+            } else {
+                WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
+            }
+            first = false;
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLineIndent("return *this;");
     Indent(-1);
     WriteLineIndent("}");
 
