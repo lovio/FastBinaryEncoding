@@ -174,10 +174,12 @@ private:
 
     bool IsKnownType(const std::string& type);
     bool IsPrimitiveType(const std::string& type, bool optional);
+    bool IsContainerType(const StructField &field);
 
     std::string ConvertEnumType(const std::string& type);
-    std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr);
-    std::string ConvertTypeName(const std::string& package, const StructField& field, bool withptr);
+    std::string ConvertTypeName(const std::string& package, const std::string& type);
+    std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr, bool as_argument);
+    std::string ConvertTypeName(const std::string& package, const StructField& field, bool as_argument);
     std::string ConvertTypeNameAsArgument(const std::string& package, const StructField& field);
     std::string ConvertConstant(const std::string& type, const std::string& value, bool optional);
     std::string ConvertConstantPrefix(const std::string& type);
