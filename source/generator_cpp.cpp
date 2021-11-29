@@ -7892,9 +7892,8 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
             WriteIndent();
             if (field->attributes && field->attributes->deprecated)
                 Write("[[deprecated]] ");
-            Write(ConvertTypeName(*p->name, *field->type, false, false));
-            if (field->ptr) Write("*");
-            WriteLine(" " + *field->name + ";");
+            WriteLine(ConvertTypeName(*p->name, *field, true) + " " + *field->name + ";");
+            // Write(ConvertTypeName(*p->name, *field->type, false, false));
         }
         if (!s->body->fields.empty())
             WriteLine();
@@ -11190,41 +11189,41 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     std::string result = type;
     bool pkg = !CppCommon::StringUtils::ReplaceAll(result, ".", "::");
     std::string ret = (pkg ? ("::" + package) : "") + "::" + result;
-    // if (typeptr) {
-    //     ret += "*";
-    //     // ret = "std::unique_ptr<" + ret + ">";
-    // }
+    if (typeptr) {
+        ret += "*";
+    }
     return ret;
 }
 
 std::string
-GeneratorCpp::ConvertTypeName(const std::string &package, const StructField &field)
+GeneratorCpp::ConvertTypeName(const std::string &package, const StructField &field, bool withptr)
 {
+    bool typeptr = withptr ? field.ptr : false;
     if (field.array)
-        return "std::array<" + ConvertTypeName(package, *field.type, field.optional, field.ptr) + ", " + std::to_string(field.N) + ">";
+        return "std::array<" + ConvertTypeName(package, *field.type, field.optional, typeptr) + ", " + std::to_string(field.N) + ">";
     else if (field.vector)
-        return "std::vector<" + ConvertTypeName(package, *field.type, field.optional, field.ptr) + ">";
+        return "std::vector<" + ConvertTypeName(package, *field.type, field.optional, typeptr) + ">";
     else if (field.list)
-        return "std::list<" + ConvertTypeName(package, *field.type, field.optional, field.ptr) + ">";
+        return "std::list<" + ConvertTypeName(package, *field.type, field.optional, typeptr) + ">";
     else if (field.set)
-        return "std::set<" + ConvertTypeName(package, *field.key, false, field.ptr) + ">";
+        return "std::set<" + ConvertTypeName(package, *field.key, false, typeptr) + ">";
     else if (field.map)
-        return "std::map<" + ConvertTypeName(package, *field.key, false, false) + ", " + ConvertTypeName(package, *field.type, field.optional, field.ptr) +">";
+        return "std::map<" + ConvertTypeName(package, *field.key, false, false) + ", " + ConvertTypeName(package, *field.type, field.optional, typeptr) +">";
     else if (field.hash)
-        return "std::unordered_map<" + ConvertTypeName(package, *field.key, false, false) + ", " + ConvertTypeName(package, *field.type, field.optional, field.ptr) +">";
-    return ConvertTypeName(package, *field.type, field.optional, field.ptr);
+        return "std::unordered_map<" + ConvertTypeName(package, *field.key, false, false) + ", " + ConvertTypeName(package, *field.type, field.optional, typeptr) +">";
+    return ConvertTypeName(package, *field.type, field.optional, typeptr);
 }
 
 std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, const StructField& field)
 {
     if (field.ptr)
-        return ConvertTypeName(package, field);
+        return ConvertTypeName(package, field, false);
     if (IsPrimitiveType(*field.type, false))
-        return ConvertTypeName(package, field);
+        return ConvertTypeName(package, field, false);
     if (IsKnownType(*field.type))
-        return "const " + ConvertTypeName(package, field) + "&";
+        return "const " + ConvertTypeName(package, field, false) + "&";
 
-    return ConvertTypeName(package, field) + "&&";
+    return ConvertTypeName(package, field, false) + "&&";
 }
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
