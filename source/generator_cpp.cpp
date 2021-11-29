@@ -8072,11 +8072,12 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         {
             for (const auto& field : s->body->fields)
             {
-                // TODO: 这里需要注意一下，是否所有的inner struct都必须使用指针呢？
                 if (field->ptr) {
                     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ".release())");
-                } else {
+                } else if (IsKnownType(*field->type)) {
                     WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ")");
+                } else {
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(arg_" + *field->name + "))");
                 }
                 first = false;
             }
@@ -8905,20 +8906,24 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     WriteLineIndent("public:");
     Indent(1);
     if (s->base && !s->base->empty())
+        // TODO: check if this is correct
         WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *s->base, false, false) + "> parent;");
     if (s->body)
     {
         for (const auto& field : s->body->fields)
         { 
             // TODO: container包含ptr可能有问题的，之后需要移动到ConvertTypeName之中
-            if (field->ptr) {
-                WriteLineIndent("FieldModelPtr_" +  *p->name + "_" + *field->type + " " + *field->name + ";");
-            } else if (field->array)
+            if (!IsKnownType(*field->type))
+                WriteLineIndent(std::string("FieldModel") + (field->ptr ? "Ptr_" : "_") +  *p->name + "_" + *field->type + " " + *field->name + ";");
+            else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr) + "> " + *field->name + ";");
             else if (field->map || field->hash)
                 WriteLineIndent("FieldModelMap<" + ConvertTypeName(*p->name, *field->key, false, false) + ", " + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr) + "> " + *field->name + ";");
+            // else if (!IsKnownType(*field->type))
+            // // FieldModel_extra_Info
+            //     WriteLineIndent("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
             else
                 WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr) + "> " + *field->name + ";");
         }
@@ -9467,7 +9472,10 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
+                if (!IsKnownType(*field->type) && !field->ptr)
+                    WriteLineIndent(*field->name + ".set(dynamic_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
+                else
+                    WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
             }
     }
     Indent(-1);
@@ -11213,8 +11221,10 @@ std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, 
         return ConvertTypeName(package, field);
     if (IsPrimitiveType(*field.type, false))
         return ConvertTypeName(package, field);
+    if (IsKnownType(*field.type))
+        return "const " + ConvertTypeName(package, field) + "&";
 
-    return "const " + ConvertTypeName(package, field) + "&";
+    return ConvertTypeName(package, field) + "&&";
 }
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
