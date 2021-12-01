@@ -153,8 +153,10 @@ private:
     void GenerateStructHash(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructJson(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldPtrModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateStructContainerFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> & field);
     void GenerateStructFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldPtrModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateStructContainerFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> & field);
     void GenerateStructFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
