@@ -7,6 +7,7 @@
 */
 
 #include <iostream>
+#include <utility>
 #include "generator_cpp.h"
 #include "fbe.h"
 
@@ -7165,6 +7166,7 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             GenerateStructFieldPtrModel_Header(p, s);
         }
 
+        std::set<std::string> unique_container_set;
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -7172,8 +7174,12 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             if (s->body) {
                 for (const auto& field : s->body->fields)
                 {
-                    if (IsContainerType(*field) )
-                        GenerateStructContainerFieldModel_Header(p, field);
+                    std::string class_name, model_name, struct_name;
+                    std::tie(class_name, model_name, struct_name) = ConvertContainerFieldModelNames(p, field);
+                    if (IsContainerType(*field) && unique_container_set.find(class_name) == unique_container_set.end()) {
+                        GenerateStructContainerFieldModel_Header(class_name, model_name, struct_name);
+                        unique_container_set.insert(class_name);
+                    }
                 }
             }
             // Generate struct field models
@@ -7216,6 +7222,7 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     WriteLine();
     WriteLineIndent("namespace FBE {");
 
+    std::set<std::string> unique_container_set;
     // Generate namespace body
     if (p->body)
     {
@@ -7228,8 +7235,12 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
             if (s->body) {
                 for (const auto& field : s->body->fields)
                 {
-                    if (IsContainerType(*field) )
+                    std::string class_name = std::get<0>( ConvertContainerFieldModelNames(p, field));
+                    if (IsContainerType(*field) && unique_container_set.find(class_name) == unique_container_set.end())
+                    {
                         GenerateStructContainerFieldModel_Source(p, field);
+                        unique_container_set.insert(class_name);
+                    }
                 }
             }
             GenerateStructModel_Source(p, s);
@@ -8798,22 +8809,8 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Header(const std::shared_ptr<Pack
 }
 
 // Child
-void GeneratorCpp::GenerateStructContainerFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field)
+void GeneratorCpp::GenerateStructContainerFieldModel_Header(const std::string& class_name, const std::string& model_name, const std::string& struct_name)
 {
-    std::string class_name = "FieldModel";
-    if (field->ptr) class_name += "Ptr";
-    std::string model_name = class_name;
-    if (field->array)
-        class_name += "Array";
-    else if (field->vector || field->list || field->set)
-        class_name += "Vector";
-    else if (field->map || field->hash)
-        class_name += "Map";
-    class_name += "_" + *p->name + "_" + *field->type;
-    model_name += "_" + *p->name + "_" + *field->type;
-
-    std::string struct_name = ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false);
-    
     WriteLine();
     WriteLineIndent("class " + class_name);
     WriteLineIndent("{");
@@ -9213,19 +9210,8 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
 
 void GeneratorCpp::GenerateStructContainerFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> & field)
 {
-    std::string class_name = "FieldModel";
-    if (field->ptr) class_name += "Ptr";
-    std::string model_name = class_name;
-    if (field->array)
-        class_name += "Array";
-    else if (field->vector || field->list || field->set)
-        class_name += "Vector";
-    else if (field->map || field->hash)
-        class_name += "Map";
-    class_name += "_" + *p->name + "_" + *field->type;
-    model_name += "_" + *p->name + "_" + *field->type;
-
-    std::string struct_name = ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false);
+    std::string class_name, model_name, struct_name;
+    std::tie(class_name, model_name, struct_name) = ConvertContainerFieldModelNames(p, field);
 
     WriteLine();
     WriteLineIndent("// Implement " + class_name);
@@ -11619,6 +11605,26 @@ GeneratorCpp::ConvertTypeName(const std::string &package, const StructField &fie
     if (!IsKnownType(*field.type) && !field.ptr && as_argument)
         s += "&&";
     return s;
+}
+
+std::tuple<std::string, std::string, std::string>
+GeneratorCpp::ConvertContainerFieldModelNames(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field)
+{
+    std::string class_name = "FieldModel";
+    if (field->ptr) class_name += "Ptr";
+    std::string model_name = class_name;
+    if (field->array)
+        class_name += "Array";
+    else if (field->vector || field->list || field->set)
+        class_name += "Vector";
+    else if (field->map || field->hash)
+        class_name += "Map";
+    class_name += "_" + *p->name + "_" + *field->type;
+    model_name += "_" + *p->name + "_" + *field->type;
+
+    std::string struct_name = ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false);
+
+    return std::make_tuple(class_name, model_name, struct_name);
 }
 
 

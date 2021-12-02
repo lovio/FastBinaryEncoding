@@ -153,7 +153,7 @@ private:
     void GenerateStructHash(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructJson(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldPtrModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
-    void GenerateStructContainerFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> & field);
+    void GenerateStructContainerFieldModel_Header(const std::string& class_name, const std::string& model_name, const std::string& struct_name);
     void GenerateStructFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldPtrModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructContainerFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> & field);
@@ -184,6 +184,7 @@ private:
     std::string ConvertTypeName(const std::string& package, const StructField& field, bool as_argument);
     std::string ConvertTypeNameAsArgument(const std::string& package, const StructField& field);
     std::string ConvertConstant(const std::string& type, const std::string& value, bool optional);
+    std::tuple<std::string, std::string, std::string> ConvertContainerFieldModelNames(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field);
     std::string ConvertConstantPrefix(const std::string& type);
     std::string ConvertConstantSuffix(const std::string& type);
     std::string ConvertDefault(const std::string& package, const std::string& type);
