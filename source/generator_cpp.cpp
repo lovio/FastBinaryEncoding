@@ -9743,7 +9743,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
     {
-        WriteLineIndent(struct_name + "& fbe_value = dynamic_cast<" + struct_name + "&>(base_fbe_value);");
+        WriteLineIndent(struct_name + "& fbe_value = static_cast<" + struct_name + "&>(base_fbe_value);");
         WriteLineIndent("size_t fbe_current_size = 4 + 4;");
         if (s->base && !s->base->empty())
         {
@@ -9853,7 +9853,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("void " + class_name + "::set_fields(const ::FBE::Base& base_fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
-    WriteLineIndent("const " + struct_name + "& fbe_value = dynamic_cast<const " + struct_name + "&>(base_fbe_value);");
+    WriteLineIndent("const " + struct_name + "& fbe_value = static_cast<const " + struct_name + "&>(base_fbe_value);");
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
     {
         if (s->base && !s->base->empty())
@@ -9862,7 +9862,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
             for (const auto& field : s->body->fields)
             {
                 if (!IsKnownType(*field->type) && !field->ptr && !IsContainerType(*field))
-                    WriteLineIndent(*field->name + ".set(dynamic_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
+                    WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
             }
