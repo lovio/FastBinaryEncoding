@@ -8185,8 +8185,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                 Indent(-1);
             }
         }
-        // TODO: fix indent
-        // Indent(-1);
+        Indent(-1);
         WriteLine("}");
     }
 
