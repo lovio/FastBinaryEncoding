@@ -8877,13 +8877,6 @@ void GeneratorCpp::GenerateStructContainerFieldModel_Header(const std::string& c
     WriteLineIndent("FBEBuffer& _buffer;");
     WriteLineIndent("size_t _offset;");
 
-    // Generate struct field model accessors
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("public:");
-    Indent(1);
-    WriteLineIndent("std::vector<" + model_name + "> v;");
-
     // Generate struct field model end
     Indent(-1);
     WriteLineIndent("};");
