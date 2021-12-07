@@ -90,6 +90,8 @@ private:
     void GenerateFBEFieldModelCustomVector_Inline();
     void GenerateFBEFieldModelMap_Header();
     void GenerateFBEFieldModelMap_Inline();
+    void GenerateFBEFieldModelCustomMap_Header();
+    void GenerateFBEFieldModelCustomMap_Inline();
     void GenerateFBEFinalModel_Header();
     void GenerateFBEFinalModel_Inline();
     void GenerateFBEFinalModelDecimal_Header();

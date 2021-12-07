@@ -3874,6 +3874,350 @@ inline void FieldModelMap<TKey, TValue>::set(const std::unordered_map<TKey, TVal
     Write(code);
 }
 
+
+void GeneratorCpp::GenerateFBEFieldModelCustomMap_Header()
+{
+    std::string code = R"CODE(
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+class FieldModelCustomMap
+{
+public:
+    FieldModelCustomMap(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Get the map offset
+    size_t offset() const noexcept;
+    // Get the map size
+    size_t size() const noexcept;
+
+    // Map index operator
+    std::pair<TKey, TValue> operator[](size_t index) const noexcept;
+
+    // Resize the map and get its first model
+    std::pair<TKey, TValue> resize(size_t size);
+
+    // Check if the map is valid
+    bool verify() const noexcept;
+
+    // Get the map as std::map
+    void get(std::map<TKStruct, TValueStruct>& values) const noexcept;
+    void get(std::map<TKStruct, TValueStruct*>& values) const noexcept;
+    // Get the map as std::unordered_map
+    void get(std::unordered_map<TKStruct, TValueStruct>& values) const noexcept;
+    void get(std::unordered_map<TKStruct, TValueStruct*>& values) const noexcept;
+
+    // Set the map as std::map
+    void set(const std::map<TKStruct, TValueStruct>& values) noexcept;
+    void set(const std::map<TKStruct, TValueStruct*>& values) noexcept;
+    // Set the map as std::unordered_map
+    void set(const std::unordered_map<TKStruct, TValueStruct>& values) noexcept;
+    void set(const std::unordered_map<TKStruct, TValueStruct*>& values) noexcept;
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelCustomMap_Inline()
+{
+    std::string code = R"CODE(
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+
+    size_t fbe_result = 4;
+    TKey fbe_model_key(_buffer, fbe_map_offset + 4);
+    TValue fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        fbe_result += fbe_model_key.fbe_size() + fbe_model_key.fbe_extra();
+        fbe_model_key.fbe_shift(fbe_model_key.fbe_size() + fbe_model_value.fbe_size());
+        fbe_result += fbe_model_value.fbe_size() + fbe_model_value.fbe_extra();
+        fbe_model_value.fbe_shift(fbe_model_key.fbe_size() + fbe_model_value.fbe_size());
+    }
+    return fbe_result;
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::offset() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    return fbe_map_offset;
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::size() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    return fbe_map_size;
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline std::pair<TKey, TValue> FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::operator[](size_t index) const noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+
+    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4) <= _buffer.size())) && "Model is broken!");
+
+    [[maybe_unused]] uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    assert((index < fbe_map_size) && "Index is out of bounds!");
+
+    TKey fbe_model_key(_buffer, fbe_map_offset + 4);
+    TValue fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    fbe_model_key.fbe_shift(index * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
+    fbe_model_value.fbe_shift(index * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
+    return std::make_pair(fbe_model_key, fbe_model_value);
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline std::pair<TKey, TValue> FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::resize(size_t size)
+{
+    TKey fbe_model_key(_buffer, fbe_offset());
+    TValue fbe_model_value(_buffer, fbe_offset() + fbe_model_key.fbe_size());
+
+    uint32_t fbe_map_size = (uint32_t)(size * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
+    uint32_t fbe_map_offset = (uint32_t)(_buffer.allocate(4 + fbe_map_size) - _buffer.offset());
+    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4 + fbe_map_size) <= _buffer.size())) && "Model is broken!");
+
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_map_offset;
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset)) = (uint32_t)size;
+
+    memset((char*)(_buffer.data() + _buffer.offset() + fbe_map_offset + 4), 0, fbe_map_size);
+
+    return std::make_pair(TKey(_buffer, fbe_map_offset + 4), TValue(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size()));
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline bool FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if (fbe_map_offset == 0)
+        return true;
+
+    if ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size())
+        return false;
+
+    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+
+    TKey fbe_model_key(_buffer, fbe_map_offset + 4);
+    TValue fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        if (!fbe_model_key.verify())
+            return false;
+        fbe_model_key.fbe_shift(fbe_model_key.fbe_size() + fbe_model_value.fbe_size());
+        if (!fbe_model_value.verify())
+            return false;
+        fbe_model_value.fbe_shift(fbe_model_key.fbe_size() + fbe_model_value.fbe_size());
+    }
+
+    return true;
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::map<TKStruct, TValueStruct>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKStruct key;
+        TValueStruct value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(std::move(key), std::move(value));
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::map<TKStruct, TValueStruct*>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKStruct key;
+        TValueStruct* value = new TValueStruct();
+        fbe_model.first.get(key);
+        fbe_model.second.get(&value);
+        values.emplace(key, value);
+        values.emplace(std::move(key), value);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::unordered_map<TKStruct, TValueStruct>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKStruct key;
+        TValueStruct value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(std::move(key), std::move(value));
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::unordered_map<TKStruct, TValueStruct*>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKStruct key;
+        TValueStruct* value = new TValueStruct();
+        fbe_model.first.get(key);
+        fbe_model.second.get(&value);
+        values.emplace(std::move(key), value);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const std::map<TKStruct, TValueStruct>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const std::map<TKStruct, TValueStruct*>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const std::unordered_map<TKStruct, TValueStruct>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
+inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const std::unordered_map<TKStruct, TValueStruct*>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateFBEFinalModel_Header()
 {
     std::string code = R"CODE(
@@ -7026,6 +7370,7 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelVector_Header();
     GenerateFBEFieldModelCustomVector_Header();
     GenerateFBEFieldModelMap_Header();
+    GenerateFBEFieldModelCustomMap_Header();
 
     // Generate namespace end
     WriteLine();
@@ -7066,6 +7411,7 @@ void GeneratorCpp::GenerateFBEModels_Inline(const CppCommon::Path& path)
     GenerateFBEFieldModelVector_Inline();
     GenerateFBEFieldModelCustomVector_Inline();
     GenerateFBEFieldModelMap_Inline();
+    GenerateFBEFieldModelCustomMap_Inline();
 
     // Generate namespace end
     WriteLine();
@@ -8479,14 +8825,14 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                 for (const auto& field : collection_of_container_ptrs) {
                     if (field->map || field->hash) {
                         // TODO: check
-                        WriteLineIndent("for (auto& it: other." + *field->name + ")");
+                        WriteLineIndent("for (auto& it: arg_" + *field->name + ")");
                         Indent(1);
-                        WriteLineIndent(*field->name + ".push_back(it.first, it.second.release());");
+                        WriteLineIndent(*field->name + ".emplace(it.first, it.second.release());");
                         Indent(-1);
                     } else if (field->vector || field->list) {
                         WriteLineIndent("for (auto& it : arg_" + *field->name + ")");
                         Indent(1);
-                        WriteLineIndent(*field->name + ".push_back(it.release());");
+                        WriteLineIndent(*field->name + ".emplace_back(it.release());");
                         Indent(-1);
                     } else if (field->array) {
                         WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
@@ -9273,11 +9619,22 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
                 if (IsContainerType(*field)) {
                     WriteIndent("FieldModelCustom");
                     if (field->array)
+                        // TODO: with Array
                         Write("Array");
                     else if (field->vector || field->list || field->set)
                         Write("Vector<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ">");
-                    else if (field->map || field->hash)
-                        Write("Map");
+                    else if (field->map || field->hash){
+                        // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
+                        std::string kType = "FieldModel";
+                        if (IsKnownType(*field->key)) {
+                            kType += "<" + ConvertTypeName(*p->name, *field->key) + ">";
+                        } else {
+                            kType +=  "_" + *p->name + "_" + *field->type;
+                        }
+                        auto kStruct = ConvertTypeName(*p->name, *field->key);
+                        auto vStruct = ConvertTypeName(*p->name, *field->type);
+                        Write("Map<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
+                    }
                     Write(" " +  *field->name + ";");
                     WriteLine();
                 } else {
