@@ -84,6 +84,8 @@ private:
     void GenerateFBEFieldModelPtr_Inline();
     void GenerateFBEFieldModelArray_Header();
     void GenerateFBEFieldModelArray_Inline();
+    void GenerateFBEFieldModelCustomArray_Header();
+    void GenerateFBEFieldModelCustomArray_Inline();
     void GenerateFBEFieldModelVector_Header();
     void GenerateFBEFieldModelVector_Inline();
     void GenerateFBEFieldModelCustomVector_Header();

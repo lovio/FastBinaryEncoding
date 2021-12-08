@@ -2942,6 +2942,315 @@ inline void FieldModelArray<T, N>::set(const std::vector<T>& values) noexcept
     Write(code);
 }
 
+void GeneratorCpp::GenerateFBEFieldModelCustomArray_Header()
+{
+    std::string code = R"CODE(
+// Fast Binary Encoding field model array
+template <typename T, typename TStruct, size_t N>
+class FieldModelCustomArray
+{
+public:
+    FieldModelCustomArray(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), _model(buffer, offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return N * _model.fbe_size(); }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept { return 0; }
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Get the array
+    const uint8_t* data() const noexcept;
+    // Get the array
+    uint8_t* data() noexcept;
+    // Get the array offset
+    size_t offset() const noexcept { return 0; }
+    // Get the array size
+    size_t size() const noexcept { return N; }
+
+    // Array index operator
+    T operator[](size_t index) const noexcept;
+
+    // Check if the array is valid
+    bool verify() const noexcept;
+
+    // Get the array as C-array
+    template <size_t S>
+    void get(TStruct (&values)[S]) const noexcept;
+    template <size_t S>
+    void get(TStruct* (&values)[S]) const noexcept;
+    // Get the array as std::array
+    template <size_t S>
+    void get(std::array<TStruct, S>& values) const noexcept;
+    template <size_t S>
+    void get(std::array<TStruct*, S>& values) const noexcept;
+    // Get the array as std::vector
+    void get(std::vector<TStruct>& values) const noexcept;
+    void get(std::vector<TStruct*>& values) const noexcept;
+
+    // Set the array as C-array
+    template <size_t S>
+    void set(const TStruct (&values)[S]) noexcept;
+    template <size_t S>
+    void set(const TStruct* (&values)[S]) noexcept;
+    // Set the array as std::array
+    template <size_t S>
+    void set(const std::array<TStruct, S>& values) noexcept;
+    template <size_t S>
+    void set(const std::array<TStruct*, S>& values) noexcept;
+    // Set the array as std::vector
+    void set(const std::vector<TStruct>& values) noexcept;
+    void set(const std::vector<TStruct*>& values) noexcept;
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+    T _model;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelCustomArray_Inline()
+{
+    std::string code = R"CODE(
+template <typename T, typename TStruct, size_t N>
+
+inline const uint8_t* FieldModelCustomArray<T, TStruct, N>::data() const noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    return _buffer.data() + _buffer.offset() + fbe_offset();
+}
+
+template <typename T, typename TStruct, size_t N>
+inline uint8_t* FieldModelCustomArray<T, TStruct, N>::data() noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    return _buffer.data() + _buffer.offset() + fbe_offset();
+}
+
+template <typename T, typename TStruct, size_t N>
+inline T FieldModelCustomArray<T, TStruct, N>::operator[](size_t index) const noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    assert((index < N) && "Index is out of bounds!");
+
+    T fbe_model(_buffer, fbe_offset());
+    fbe_model.fbe_shift(index * fbe_model.fbe_size());
+    return fbe_model;
+}
+
+template <typename T, typename TStruct, size_t N>
+inline bool FieldModelCustomArray<T, TStruct, N>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return false;
+
+    T fbe_model(_buffer, fbe_offset());
+    for (size_t i = N; i-- > 0;)
+    {
+        if (!fbe_model.verify())
+            return false;
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+
+    return true;
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::get(TStruct (&values)[S]) const noexcept
+{
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.get(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::get(TStruct* (&values)[S]) const noexcept
+{
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        TStruct* value = new TStruct();
+        fbe_model.get(&value);
+        values[i] = value;
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::array<TStruct, S>& values) const noexcept
+{
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.get(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::array<TStruct*, S>& values) const noexcept
+{
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        TStruct* value = new TStruct();
+        fbe_model.get(&value);
+        values[i] = value;
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct>& values) const noexcept
+{
+    values.clear();
+    values.reserve(N);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = N; i-- > 0;)
+    {
+        TStruct value;
+        fbe_model.get(value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct*>& values) const noexcept
+{
+    values.clear();
+    values.reserve(N);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = N; i-- > 0;)
+    {
+        TStruct* value = new TStruct();
+        fbe_model.get(&value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const TStruct (&values)[S]) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const TStruct* (&values)[S]) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const std::array<TStruct, S>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+template <size_t S>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const std::array<TStruct*, S>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < S) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < values.size()) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct*>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = 0; (i < values.size()) && (i < N); ++i)
+    {
+        fbe_model.set(values[i]);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateFBEFieldModelVector_Header()
 {
     std::string code = R"CODE(
@@ -7367,6 +7676,7 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelPtr_Header();
     GenerateFBEFieldModelOptional_Header();
     GenerateFBEFieldModelArray_Header();
+    GenerateFBEFieldModelCustomArray_Header();
     GenerateFBEFieldModelVector_Header();
     GenerateFBEFieldModelCustomVector_Header();
     GenerateFBEFieldModelMap_Header();
@@ -7408,6 +7718,7 @@ void GeneratorCpp::GenerateFBEModels_Inline(const CppCommon::Path& path)
     GenerateFBEFieldModelPtr_Inline();
     GenerateFBEFieldModelOptional_Inline();
     GenerateFBEFieldModelArray_Inline();
+    GenerateFBEFieldModelCustomArray_Inline();
     GenerateFBEFieldModelVector_Inline();
     GenerateFBEFieldModelCustomVector_Inline();
     GenerateFBEFieldModelMap_Inline();
@@ -8575,31 +8886,6 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         }
     }
 
-    // TODO: remove
-    bool has_unique_ptr_member = false;
-    // Generate struct forward declaration if has ptr field;
-    if (s->body)
-    {
-        std::set<std::string> unique_type_set;
-        for (const auto& field : s->body->fields)
-        {
-            if (field->ptr)
-            {
-                has_unique_ptr_member = true;
-                if (IsKnownType(*field->type)) {
-                    continue;
-                }
-                if (unique_type_set.find(*field->type) != unique_type_set.end()) {
-                    continue;
-                } else {
-                    WriteLine();
-                    WriteLineIndent("struct " + *field->type + ";");
-                    unique_type_set.insert(*field->type);
-                }
-            }
-        }
-    }
-
     // Generate struct begin
     WriteLine();
     WriteIndent("struct " + std::string(s->attributes->deprecated ? "[[deprecated]] " : "") + *s->name);
@@ -8674,23 +8960,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         WriteLine(");");
     }
 
-    // Generate struct copy/move constructor, destructor and assign operators
-    // Disable copy constructor
-    // if (!has_unique_ptr_member) {
-    //     WriteLineIndent(*s->name + "(const " + *s->name + "& other) = default;");
-    //     WriteLineIndent(*s->name + "(" + *s->name + "&& other) = default;");
-    //     WriteLineIndent("~" + *s->name + "() = default;");
-    // } else {
     WriteLineIndent(*s->name + "(const " + *s->name + "& other) = delete;");
     WriteLineIndent(*s->name + "(" + *s->name + "&& other);");
     WriteLineIndent("~" + *s->name + "();");
-    // }
     WriteLine();
-    // if (!has_unique_ptr_member) {
-    //     WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = default;");
-    // } else {
     WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = delete;");
-    // }
     WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other);");
 
     // Generate struct compare operators
@@ -8824,7 +9098,6 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                 Indent(1);
                 for (const auto& field : collection_of_container_ptrs) {
                     if (field->map || field->hash) {
-                        // TODO: check
                         WriteLineIndent("for (auto& it: arg_" + *field->name + ")");
                         Indent(1);
                         WriteLineIndent(*field->name + ".emplace(it.first, it.second.release());");
@@ -8837,7 +9110,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                     } else if (field->array) {
                         WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
                         Indent(1);
-                        WriteLineIndent(*field->name + "[i].reset(arg_" + *field->name + "[i].release()");
+                        WriteLineIndent(*field->name + "[i] = arg_" + *field->name + "[i].release();");
                         Indent(-1);
                     }
                 }
@@ -8880,18 +9153,18 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     WriteLineIndent("{}");
 
 
+    WriteLine();
+    WriteLineIndent(*s->name + "::~" + *s->name + "()");
+    WriteLine("{");
     // destructor
     if (!unique_ptr_members.empty() || !collection_of_container_ptrs.empty()) {
-        WriteLine();
-        WriteLineIndent(*s->name + "::~" + *s->name + "()");
-        WriteLine("{");
+
         Indent(1);
         for (const auto& field : unique_ptr_members) {
             WriteLineIndent("if (" + field + ") delete " + field + ";");
         }
         for (const auto& field : collection_of_container_ptrs) {
             if (field->map || field->hash) {
-                // TODO: check
                 WriteLineIndent("for (auto& it: " + *field->name + ")");
                 Indent(1);
                 WriteLineIndent("delete it.second;");
@@ -8904,13 +9177,13 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
             } else if (field->array) {
                 WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
                 Indent(1);
-                WriteLineIndent(*field->name + "[i].reset(arg_" + *field->name + "[i].release()");
+                WriteLineIndent(std::string("delete ") + *field->name + "[i];");
                 Indent(-1);
             }
         }
         Indent(-1);
-        WriteLine("}");
     }
+    WriteLine("}");
 
     // Generate struct compare operators
     WriteLine();
@@ -9459,7 +9732,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Header(const std::shared_ptr<Pack
     WriteLineIndent("// Get the field extra size");
     WriteLineIndent("size_t fbe_extra() const noexcept;");
     WriteLineIndent("// Get the field type");
-    WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + std::to_string(s->type) + "; }"); // TODO: 这里应该怎么处理呢？见GenerateStructFieldModel_Header
+    WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + std::to_string(s->type) + "; }");
     WriteLine();
     WriteLineIndent("// Shift the current field offset");
     WriteLineIndent("void fbe_shift(size_t size) noexcept { _offset += size; }");
@@ -9618,9 +9891,9 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
                 std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
                 if (IsContainerType(*field)) {
                     WriteIndent("FieldModelCustom");
-                    if (field->array)
-                        // TODO: with Array
-                        Write("Array");
+                    if (field->array) {
+                        Write("Array<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
+                    }
                     else if (field->vector || field->list || field->set)
                         Write("Vector<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ">");
                     else if (field->map || field->hash){
@@ -10237,7 +10510,7 @@ void GeneratorCpp::GenerateStructModel_Header(const std::shared_ptr<Package>& p,
     WriteLineIndent("// Get the model size");
     WriteLineIndent("size_t fbe_size() const noexcept { return model.fbe_size() + model.fbe_extra(); }");
     WriteLineIndent("// Get the model type");
-    WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + class_name + "::fbe_type(); }"); // TODO: class_name
+    WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + class_name + "::fbe_type(); }");
 
     // Generate struct model verify() method
     WriteLine();
