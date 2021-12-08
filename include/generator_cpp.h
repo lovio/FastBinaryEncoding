@@ -181,6 +181,9 @@ private:
     bool IsKnownType(const std::string& type);
     bool IsPrimitiveType(const std::string& type, bool optional);
     bool IsContainerType(const StructField &field);
+    bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
+    // bool IsEnumType(const StructField &field);
+    // bool IsFlagsType(const StructField &field);
 
     std::string ConvertEnumType(const std::string& type);
     std::string ConvertTypeName(const std::string& package, const std::string& type);

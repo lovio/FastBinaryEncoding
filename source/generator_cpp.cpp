@@ -9885,9 +9885,9 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     if (s->body)
     {
         for (const auto& field : s->body->fields)
-        { 
+        {
             // Struct
-            if (!IsKnownType(*field->type)) {
+            if (IsStructType(p, field) && !IsKnownType(*field->type)) {
                 std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
                 if (IsContainerType(*field)) {
                     WriteIndent("FieldModelCustom");
@@ -12086,6 +12086,16 @@ void GeneratorCpp::GenerateClient_Source(const std::shared_ptr<Package>& p, bool
 
 bool GeneratorCpp::IsContainerType(const StructField &field) {
     return (field.array || field.vector || field.list || field.set || field.map || field.hash);
+}
+
+bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
+    // TODO: import 可能会有问题的。可能需要一个全局的vector
+    for (const auto &s:  p->body->structs) {
+        if (*s->name == *field->type) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool GeneratorCpp::IsKnownType(const std::string& type)
