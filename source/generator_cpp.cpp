@@ -28,7 +28,7 @@ void GeneratorCpp::Generate(const std::shared_ptr<Package>& package)
         GenerateFBECustomModels_Header(_output);
         GenerateFBECustomModels_Inline(_output);
 
-            // Generate package files
+        // Generate package files
         GeneratePtrPackage_Header(package);
         GeneratePtrPackage_Source(package);
         // Generate package models files
@@ -8027,7 +8027,7 @@ void GeneratorCpp::GeneratePtrPackage_Header(const std::shared_ptr<Package>& p)
 
         // Generate child structs
         for (const auto& s : p->body->structs)
-            GenerateStruct_Header(p, s);
+            GeneratePtrStruct_Header(p, s);
     }
 
     // Generate namespace end
@@ -8091,7 +8091,7 @@ void GeneratorCpp::GeneratePtrPackage_Source(const std::shared_ptr<Package>& p)
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
-            GenerateStruct_Source(p, s);
+            GeneratePtrStruct_Source(p, s);
 
             // Generate struct output stream
             GenerateStructOutputStream(p, s);
@@ -8206,13 +8206,6 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             GenerateFlagsFieldModel(p, f);
         }
 
-        // Generate child ptr structs
-        for (const auto& s : p->body->structs)
-        {
-            // Generate struct ptr field models
-            GenerateStructFieldPtrModel_Header(p, s);
-        }
-
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -8254,7 +8247,6 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     WriteLine();
     WriteLineIndent("namespace FBE {");
 
-    std::set<std::string> unique_container_set;
     // Generate namespace body
     if (p->body)
     {
@@ -8262,7 +8254,6 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
         for (const auto& s : p->body->structs)
         {
             // Generate struct field models
-            GenerateStructFieldPtrModel_Source(p, s);
             GenerateStructFieldModel_Source(p, s);
             GenerateStructModel_Source(p, s);
         }
@@ -8329,8 +8320,8 @@ void GeneratorCpp::GeneratePtrPackageModels_Header(const std::shared_ptr<Package
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
-            GenerateStructFieldModel_Header(p, s);
-            GenerateStructModel_Header(p, s);
+            GeneratePtrStructFieldModel_Header(p, s);
+            GeneratePtrStructModel_Header(p, s);
         }
     }
 
@@ -8354,7 +8345,7 @@ void GeneratorCpp::GeneratePtrPackageModels_Source(const std::shared_ptr<Package
     CppCommon::Directory::CreateTree(output);
 
     // Generate the output file
-    output /= *p->name + "_custom_models.cpp";
+    output /= *p->name + "_ptr_models.cpp";
     WriteBegin();
 
     // Generate package models source
@@ -8367,7 +8358,6 @@ void GeneratorCpp::GeneratePtrPackageModels_Source(const std::shared_ptr<Package
     WriteLine();
     WriteLineIndent("namespace FBE {");
 
-    std::set<std::string> unique_container_set;
     // Generate namespace body
     if (p->body)
     {
@@ -8376,8 +8366,8 @@ void GeneratorCpp::GeneratePtrPackageModels_Source(const std::shared_ptr<Package
         {
             // Generate struct field models
             GenerateStructFieldPtrModel_Source(p, s);
-            GenerateStructFieldModel_Source(p, s);
-            GenerateStructModel_Source(p, s);
+            GeneratePtrStructFieldModel_Source(p, s);
+            GeneratePtrStructModel_Source(p, s);
         }
     }
 
@@ -8997,6 +8987,29 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
         }
     }
 
+    // Generate struct forward declaration if has ptr field;
+    if (s->body)
+    {
+        std::set<std::string> unique_type_set;
+        for (const auto& field : s->body->fields)
+        {
+            if (field->ptr)
+            {
+                if (IsKnownType(*field->type) || *field->type == *s->name) {
+                    continue;
+                }
+                if (unique_type_set.find(*field->type) != unique_type_set.end()) {
+                    continue;
+                } else {
+                    WriteLine();
+                    WriteLineIndent("struct " + *field->type + ";");
+                    unique_type_set.insert(*field->type);
+                }
+            }
+        }
+    }
+
+
     // Generate struct begin
     WriteLine();
     WriteIndent("struct " + std::string(s->attributes->deprecated ? "[[deprecated]] " : "") + *s->name);
@@ -9126,6 +9139,465 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 }
 
 void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    WriteLine();
+
+    // Generate struct default constructor
+    bool first = true;
+    WriteLineIndent(*s->name + "::" + *s->name + "()");
+    Indent(1);
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent(": " + ConvertTypeName(*p->name, *s->base) + "()");
+        first = false;
+    }
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            WriteLineIndent(std::string(first ? ": " : ", ") +
+                *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
+            first = false;
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("{}");
+
+    std::vector<std::string> unique_ptr_members;
+    std::vector<std::shared_ptr<StructField>> collection_of_container_ptrs;
+    // Generate struct initialization constructor
+    if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
+    {
+        first = true;
+        WriteLine();
+        WriteIndent(*s->name + "::" + *s->name + "(");
+        if (s->base && !s->base->empty())
+        {
+            Write("const " + ConvertTypeName(*p->name, *s->base) + "& base");
+            first = false;
+        }
+        if (s->body)
+        {
+            for (const auto& field : s->body->fields)
+            {
+                Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
+                first = false;
+            }
+        }
+        WriteLine(")");
+        Indent(1);
+        first = true;
+        if (s->base && !s->base->empty())
+        {
+            WriteLineIndent(": " + ConvertTypeName(*p->name, *s->base) + "(base)");
+            first = false;
+        }
+        if (s->body)
+        {
+            for (const auto& field : s->body->fields)
+            {
+                // 对于指针类型，非容器可以直接处理，容器则需要在body中逐个释放
+                if (field->ptr) {
+                    if (IsContainerType(*field)) {
+                        collection_of_container_ptrs.push_back(field);
+                        WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "()");
+                    }
+                    else {
+                        unique_ptr_members.push_back(*field->name);
+                        WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ".release())");
+                    }
+                } else if (IsKnownType(*field->type)) {
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(arg_" + *field->name + ")");
+                } else {
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(arg_" + *field->name + "))");
+                }
+                first = false;
+            }
+        }
+        Indent(-1);
+        if (collection_of_container_ptrs.empty()) {
+            WriteLineIndent("{}");
+        } else {
+                WriteLineIndent("{");
+                Indent(1);
+                for (const auto& field : collection_of_container_ptrs) {
+                    if (field->map || field->hash) {
+                        WriteLineIndent("for (auto& it: arg_" + *field->name + ")");
+                        Indent(1);
+                        WriteLineIndent(*field->name + ".emplace(it.first, it.second.release());");
+                        Indent(-1);
+                    } else if (field->vector || field->list) {
+                        WriteLineIndent("for (auto& it : arg_" + *field->name + ")");
+                        Indent(1);
+                        WriteLineIndent(*field->name + ".emplace_back(it.release());");
+                        Indent(-1);
+                    } else if (field->array) {
+                        WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
+                        Indent(1);
+                        WriteLineIndent(*field->name + "[i] = arg_" + *field->name + "[i].release();");
+                        Indent(-1);
+                    }
+                }
+                Indent(-1);
+                WriteLineIndent("}");
+
+        }
+    }
+
+    // Generate struct move constructor
+    WriteLine();
+    WriteLineIndent(*s->name + "::" + *s->name + "(" + *s->name + "&& other)");
+    Indent(1);
+    // generate the base move
+    first = true;
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent(": "+ ConvertTypeName(*p->name, *s->base) + "(std::move(other))");
+        first = false;
+    }
+    // generate the field move
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            if (field->ptr) {
+                if (IsContainerType(*field))
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
+                else
+                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", nullptr))");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + "))");
+            } else {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
+            }
+            first = false;
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("{}");
+
+
+    WriteLine();
+    WriteLineIndent(*s->name + "::~" + *s->name + "()");
+    WriteLine("{");
+    // destructor
+    if (!unique_ptr_members.empty() || !collection_of_container_ptrs.empty()) {
+
+        Indent(1);
+        for (const auto& field : unique_ptr_members) {
+            WriteLineIndent("if (" + field + ") delete " + field + ";");
+        }
+        for (const auto& field : collection_of_container_ptrs) {
+            if (field->map || field->hash) {
+                WriteLineIndent("for (auto& it: " + *field->name + ")");
+                Indent(1);
+                WriteLineIndent("delete it.second;");
+                Indent(-1);
+            } else if (field->vector || field->list) {
+                WriteLineIndent("for (auto& it : " + *field->name + ")");
+                Indent(1);
+                WriteLineIndent("delete it;");
+                Indent(-1);
+            } else if (field->array) {
+                WriteLineIndent("for (uint32_t i = 0 ; i < " + std::to_string(field->N) + "; ++i)");
+                Indent(1);
+                WriteLineIndent(std::string("delete ") + *field->name + "[i];");
+                Indent(-1);
+            }
+        }
+        Indent(-1);
+    }
+    WriteLine("}");
+
+    // Generate struct compare operators
+    WriteLine();
+    WriteLineIndent("bool " + *s->name + "::operator==(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("return (");
+    Indent(1);
+    first = true;
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent(ConvertTypeName(*p->name, *s->base) + "::operator==(other)");
+        first = false;
+    }
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            if (field->keys)
+            {
+                WriteLineIndent(std::string(first ? "(" : "&& (") + *field->name + " == other." + *field->name + ")");
+                first = false;
+            }
+        }
+    }
+    if (!s->keys)
+    {
+        WriteLineIndent(std::string(first ? "true" : "&& true"));
+        first = false;
+    }
+    WriteLineIndent(");");
+    Indent(-1);
+    Indent(-1);
+    WriteLineIndent("}");
+
+    WriteLine();
+    WriteLineIndent("bool " + *s->name + "::operator<(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent("if (" + ConvertTypeName(*p->name, *s->base) + "::operator<(other))");
+        Indent(1);
+        WriteLineIndent("return true;");
+        Indent(-1);
+        WriteLineIndent("if (other." + ConvertTypeName(*p->name, *s->base) + "::operator<(*this))");
+        Indent(1);
+        WriteLineIndent("return false;");
+        Indent(-1);
+    }
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            if (field->keys)
+            {
+                WriteLineIndent("if (" + *field->name + " < other." + *field->name + ")");
+                Indent(1);
+                WriteLineIndent("return true;");
+                Indent(-1);
+                WriteLineIndent("if (other." + *field->name + " < " + *field->name + ")");
+                Indent(1);
+                WriteLineIndent("return false;");
+                Indent(-1);
+            }
+        }
+    }
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLineIndent("}");
+
+
+    // Generate struct move assignment operator
+    WriteLine();
+    WriteLineIndent(*s->name + "& " + *s->name + "::operator=(" + *s->name + "&& other)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (this != &other)");
+    WriteLineIndent("{");
+    Indent(1);
+    // generate the base move
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent("Base::operator = (std::move(other))");
+    }
+    // generate the field move
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            if (field->ptr) {
+                if (IsContainerType(*field))
+                    WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
+                else
+                    WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", nullptr);");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + ");");
+            } else {
+                WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
+            }
+            first = false;
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLineIndent("return *this;");
+    Indent(-1);
+    WriteLineIndent("}");
+
+    // Generate struct swap method
+    WriteLine();
+    WriteLineIndent("void " + *s->name + "::swap(" + *s->name + "& other) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("using std::swap;");
+    if (s->base && !s->base->empty())
+        WriteLineIndent(ConvertTypeName(*p->name, *s->base) + "::swap(other);");
+    if (s->body)
+        for (const auto& field : s->body->fields)
+            WriteLineIndent("swap(" + *field->name + ", other." + *field->name + ");");
+    Indent(-1);
+    WriteLineIndent("}");
+}
+
+void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    // Generate struct response forward declaration
+    if (s->response)
+    {
+        std::string response = *s->response->response;
+        bool imported = CppCommon::StringUtils::ReplaceAll(response, ".", "");
+        if (!imported)
+        {
+            WriteLine();
+            WriteLineIndent("struct " + response + ";");
+        }
+    }
+
+    // Generate struct forward declaration if has ptr field;
+    if (s->body)
+    {
+        std::set<std::string> unique_type_set;
+        for (const auto& field : s->body->fields)
+        {
+            if (field->ptr)
+            {
+                if (IsKnownType(*field->type) || *field->type == *s->name) {
+                    continue;
+                }
+                if (unique_type_set.find(*field->type) != unique_type_set.end()) {
+                    continue;
+                } else {
+                    WriteLine();
+                    WriteLineIndent("struct " + *field->type + ";");
+                    unique_type_set.insert(*field->type);
+                }
+            }
+        }
+    }
+
+
+    // Generate struct begin
+    WriteLine();
+    WriteIndent("struct " + std::string(s->attributes->deprecated ? "[[deprecated]] " : "") + *s->name);
+    if (s->base && !s->base->empty()) {
+        Write(" : public " + ConvertTypeName(*p->name, *s->base));
+    } else {
+        Write(" : FBE::Base");
+    }
+    WriteLine();
+    WriteLineIndent("{");
+    Indent(1);
+
+    // Generate struct response type definition
+    if (s->response)
+    {
+        std::string response = *s->response->response;
+        CppCommon::StringUtils::ReplaceAll(response, ".", "::");
+        WriteLineIndent("typedef " + response + " Response;");
+        if (s->body && !s->body->fields.empty())
+            WriteLine();
+    }
+
+
+    // Generate struct body
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            WriteIndent();
+            if (field->attributes && field->attributes->deprecated)
+                Write("[[deprecated]] ");
+            WriteLine(ConvertTypeName(*p->name, *field, false) + " " + *field->name + ";");
+        }
+        if (!s->body->fields.empty())
+            WriteLine();
+    }
+
+    // Generate struct FBE type property
+    if (s->base && !s->base->empty() && (s->type == 0))
+        WriteLineIndent("size_t fbe_type() const noexcept { return " + ConvertTypeName(*p->name, *s->base) + "::fbe_type(); }");
+    else
+        WriteLineIndent("size_t fbe_type() const noexcept { return " + std::to_string(s->type) + "; }");
+
+    // Generate struct default constructor
+    bool first = true;
+    WriteLine();
+    WriteLineIndent(*s->name + "();");
+
+    // Generate struct initialization constructor
+    if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
+    {
+        first = true;
+        size_t args = 0;
+        if (s->base && !s->base->empty())
+            ++args;
+        if (s->body && !s->body->fields.empty())
+            args += s->body->fields.size();
+        WriteIndent(((args <= 1) ? "explicit " : "") + *s->name + "(");
+        if (s->base && !s->base->empty())
+        {
+            Write("const " + ConvertTypeName(*p->name, *s->base) + "& base");
+            first = false;
+        }
+        if (s->body)
+        {
+            for (const auto& field : s->body->fields)
+            {
+                Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
+                first = false;
+            }
+        }
+        WriteLine(");");
+    }
+
+    WriteLineIndent(*s->name + "(const " + *s->name + "& other) = delete;");
+    WriteLineIndent(*s->name + "(" + *s->name + "&& other);");
+    WriteLineIndent("~" + *s->name + "();");
+    WriteLine();
+    WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = delete;");
+    WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other);");
+
+    // Generate struct compare operators
+    WriteLine();
+    WriteLineIndent("bool operator==(const " + *s->name + "& other) const noexcept;");
+    WriteLineIndent("bool operator!=(const " + *s->name + "& other) const noexcept { return !operator==(other); }");
+    WriteLineIndent("bool operator<(const " + *s->name + "& other) const noexcept;");
+    WriteLineIndent("bool operator<=(const " + *s->name + "& other) const noexcept { return operator<(other) || operator==(other); }");
+    WriteLineIndent("bool operator>(const " + *s->name + "& other) const noexcept { return !operator<=(other); }");
+    WriteLineIndent("bool operator>=(const " + *s->name + "& other) const noexcept { return !operator<(other); }");
+
+    // Generate struct string convert
+    WriteLine();
+    WriteLineIndent("std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }");
+
+    // Generate struct output stream operator
+    WriteLine();
+    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
+
+    // Generate struct output stream operator
+    if (Logging())
+    {
+        WriteLine();
+        WriteLineIndent("#if defined(LOGGING_PROTOCOL)");
+        WriteLineIndent("friend CppLogging::Record& operator<<(CppLogging::Record& record, const " + *s->name + "& value);");
+        WriteLineIndent("#endif");
+    }
+
+    // Generate struct swap methods
+    WriteLine();
+    WriteLineIndent("void swap(" + *s->name + "& other) noexcept;");
+    WriteLineIndent("friend void swap(" + *s->name + "& value1, " + *s->name + "& value2) noexcept { value1.swap(value2); }");
+
+    // Generate struct end
+    Indent(-1);
+    WriteLineIndent("};");
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace " + *p->name);
+
+    // Generate struct hash
+    GenerateStructHash(p, s);
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace " + *p->name + " {");
+}
+
+void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
 {
     WriteLine();
 
@@ -10040,214 +10512,6 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     WriteLineIndent("};");
 }
 
-void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
-{
-    std::string struct_name = "::" + *p->name + "::" + *s->name;
-    std::string class_name = "FieldModelPtr_" + *p->name + "_" + *s->name;
-
-    // Generate struct field model constructor
-    WriteLine();
-    WriteLineIndent(class_name + "::" + class_name +"(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
-    WriteLineIndent("{}");
-    WriteLine();
-
-    WriteLineIndent(class_name + "::~" + class_name +"()");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("if (ptr) delete ptr;");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field ptr model FBE methods
-    WriteLineIndent("size_t " + class_name + "::fbe_extra() const noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("if (!ptr) return 0;");
-    WriteLine();
-    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
-    WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
-    WriteLineIndent("size_t fbe_result = ptr->fbe_size() + ptr->fbe_extra();");
-    WriteLineIndent("_buffer.unshift(fbe_ptr_offset);");
-    WriteLine();
-    WriteLineIndent("return fbe_result;");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model verify() method
-    WriteLineIndent("bool " + class_name + "::verify() const noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("if (!ptr) return true;");
-    WriteLine();
-    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
-    Indent(1);
-    WriteLineIndent("return true;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
-    WriteLineIndent("if (fbe_has_value == 0)");
-    Indent(1);
-    WriteLineIndent("return true;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint32_t fbe_optional_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
-    WriteLineIndent("if (fbe_optional_offset == 0)");
-    Indent(1);
-    WriteLineIndent("return false;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("_buffer.shift(fbe_optional_offset);");
-    WriteLineIndent("bool fbe_result = ptr->verify();");
-    WriteLineIndent("_buffer.unshift(fbe_optional_offset);");
-    WriteLineIndent("return fbe_result;");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model has_value() method
-    WriteLineIndent("bool " + class_name + "::has_value() const noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
-    Indent(1);
-    WriteLineIndent("return false;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
-    WriteLineIndent("return (fbe_has_value != 0);");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model get_begin() method
-    WriteLineIndent("size_t " + class_name + "::get_begin() const noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("if (!has_value())");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
-    WriteLineIndent("assert((fbe_ptr_offset > 0) && \"Model is broken!\");");
-    WriteLineIndent("if (fbe_ptr_offset == 0)");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
-    WriteLineIndent("return fbe_ptr_offset;");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model get_end() method
-    WriteLineIndent("void " + class_name + "::get_end(size_t fbe_begin) const noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("_buffer.unshift(fbe_begin);");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model get() method
-    WriteLineIndent("void " + class_name + "::get(" + struct_name + "** fbe_value) noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("size_t fbe_begin = get_begin();");
-    WriteLineIndent("if (fbe_begin == 0)");
-    Indent(1);
-    WriteLineIndent("return;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("ptr = new FieldModel_" + *p->name + "_" + *s->name + "(_buffer, 0);");
-    WriteLine();
-    WriteLineIndent(struct_name + " *tempModel = new " + struct_name + "();");
-    WriteLineIndent("ptr->get(*tempModel);");
-    WriteLineIndent("*fbe_value = tempModel;");
-    WriteLine();
-    WriteLineIndent("get_end(fbe_begin);");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model set_begin() method
-    WriteLineIndent("size_t " + class_name + "::set_begin(bool has_value)");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
-    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = has_value ? 1 : 0;");
-    WriteLineIndent("*((uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;");
-    WriteLineIndent("if (fbe_has_value == 0)");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_size = 4;");
-    WriteLineIndent("uint32_t fbe_ptr_offset = (uint32_t)(_buffer.allocate(fbe_ptr_size) - _buffer.offset());");
-    WriteLineIndent("assert(((fbe_ptr_offset > 0) && ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) <= _buffer.size())) && \"Model is broken!\");");
-    WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) > _buffer.size()))");
-    Indent(1);
-    WriteLineIndent("return 0;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;");
-    WriteLine();
-    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
-    WriteLineIndent("return fbe_ptr_offset;");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model set_end() method
-    WriteLineIndent("void " + class_name + "::set_end(size_t fbe_begin)");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("_buffer.unshift(fbe_begin);");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-
-    // Generate struct field model set() method
-    WriteLineIndent("void " + class_name + "::set(const " + struct_name + "* fbe_value) noexcept");
-    WriteLineIndent("{");
-    Indent(1);
-    WriteLineIndent("size_t fbe_begin = set_begin(fbe_value != nullptr);");
-    WriteLineIndent("if (fbe_begin == 0)");
-    Indent(1);
-    WriteLineIndent("return;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("if (fbe_value != nullptr) {");
-    Indent(1);
-    WriteLineIndent("BaseFieldModel* temp = new FieldModel_" + *p->name + "_" + *s->name + "(_buffer, 0);");
-    WriteLineIndent("ptr = temp;");
-    WriteLineIndent("ptr->set(*fbe_value);");
-    Indent(-1);
-    WriteLineIndent("}");
-    WriteLine();
-    WriteLineIndent("set_end(fbe_begin);");
-    Indent(-1);
-    WriteLineIndent("}");
-}
-
 void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
 {
     std::string struct_name = "::" + *p->name + "::" + *s->name;
@@ -10585,13 +10849,704 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                if (!IsKnownType(*field->type) && !field->ptr && !IsContainerType(*field))
+                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field))
                     // TODO: fix enum and flags
                     WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
             }
     }
+    Indent(-1);
+    WriteLineIndent("}");
+}
+
+void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    std::string struct_name = "::" + *p->name + "::" + *s->name;
+    std::string class_name = "FieldModel_" + *p->name + "_" + *s->name;
+
+    // Generate struct field model begin
+    WriteLine();
+    WriteLineIndent("// Fast Binary Encoding " + struct_name + " field model");
+    WriteLineIndent("class " + class_name + " : public BaseFieldModel");
+    WriteLineIndent("{");
+    WriteLineIndent("public:");
+    Indent(1);
+
+    // Generate struct field model constructor
+    WriteLineIndent(class_name + "(FBEBuffer& buffer, size_t offset) noexcept;");
+
+    // Generate struct field model FBE methods
+    WriteLine();
+    WriteLineIndent("// Get the field offset");
+    WriteLineIndent("size_t fbe_offset() const noexcept override { return _offset; }");
+    WriteLineIndent("// Get the field size");
+    WriteLineIndent("size_t fbe_size() const noexcept override { return 4; }");
+    WriteLineIndent("// Get the field body size");
+    WriteLineIndent("size_t fbe_body() const noexcept;");
+    WriteLineIndent("// Get the field extra size");
+    WriteLineIndent("size_t fbe_extra() const noexcept override;");
+    WriteLineIndent("// Get the field type");
+    if (s->base && !s->base->empty() && (s->type == 0))
+        WriteLineIndent("static constexpr size_t fbe_type() noexcept { return FieldModel<" + ConvertTypeName(*p->name, *s->base) + ">::fbe_type(); }");
+    else
+        WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + std::to_string(s->type) + "; }");
+    WriteLine();
+    WriteLineIndent("// Shift the current field offset");
+    WriteLineIndent("void fbe_shift(size_t size) noexcept override { _offset += size; }");
+    WriteLineIndent("// Unshift the current field offset");
+    WriteLineIndent("void fbe_unshift(size_t size) noexcept override { _offset -= size; }");
+
+    // Generate struct field model verify(), verify_fields() methods
+    WriteLine();
+    WriteLineIndent("// Check if the struct value is valid");
+    WriteLineIndent("bool verify(bool fbe_verify_type = true) const noexcept override;");
+    WriteLineIndent("// Check if the struct fields are valid");
+    WriteLineIndent("bool verify_fields(size_t fbe_struct_size) const noexcept override;");
+
+    // Generate struct field model get_begin(), get_end() methods
+    WriteLine();
+    WriteLineIndent("// Get the struct value (begin phase)");
+    WriteLineIndent("size_t get_begin() const noexcept override;");
+    WriteLineIndent("// Get the struct value (end phase)");
+    WriteLineIndent("void get_end(size_t fbe_begin) const noexcept override;");
+
+    // Generate struct field model get(), get_fields() methods
+    WriteLine();
+    WriteLineIndent("// Get the struct value");
+    WriteLineIndent("void get(::FBE::Base& fbe_value) noexcept override;");
+    WriteLineIndent("// Get the struct fields values");
+    WriteLineIndent("void get_fields(::FBE::Base& fbe_value, size_t fbe_struct_size) noexcept override;");
+
+    // Generate struct field model set_begin(), set_end() methods
+    WriteLine();
+    WriteLineIndent("// Set the struct value (begin phase)");
+    WriteLineIndent("size_t set_begin() override;");
+    WriteLineIndent("// Set the struct value (end phase)");
+    WriteLineIndent("void set_end(size_t fbe_begin) override;");
+
+    // Generate struct field model set(), set_fields() methods
+    WriteLine();
+    WriteLineIndent("// Set the struct value");
+    WriteLineIndent("void set(const ::FBE::Base& fbe_value) noexcept override;");
+    WriteLineIndent("// Set the struct fields values");
+    WriteLineIndent("void set_fields(const ::FBE::Base& fbe_value) noexcept override;");
+
+    // Generate struct field model buffer & offset
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("private:");
+    Indent(1);
+    WriteLineIndent("FBEBuffer& _buffer;");
+    WriteLineIndent("size_t _offset;");
+
+    // Generate struct field model accessors
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("public:");
+    Indent(1);
+    if (s->base && !s->base->empty())
+        // TODO: check if this is correct
+        WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *s->base) + "> parent;");
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            // Struct
+            if (IsStructType(p, field) && !IsKnownType(*field->type)) {
+                std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
+                if (IsContainerType(*field)) {
+                    WriteIndent("FieldModelCustom");
+                    if (field->array) {
+                        Write("Array<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
+                    }
+                    else if (field->vector || field->list || field->set)
+                        Write("Vector<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ">");
+                    else if (field->map || field->hash){
+                        // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
+                        std::string kType = "FieldModel";
+                        if (IsKnownType(*field->key)) {
+                            kType += "<" + ConvertTypeName(*p->name, *field->key) + ">";
+                        } else {
+                            kType +=  "_" + *p->name + "_" + *field->type;
+                        }
+                        auto kStruct = ConvertTypeName(*p->name, *field->key);
+                        auto vStruct = ConvertTypeName(*p->name, *field->type);
+                        Write("Map<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
+                    }
+                    Write(" " +  *field->name + ";");
+                    WriteLine();
+                } else {
+                    WriteLineIndent(model_name + " " + *field->name + ";");
+                }
+            } else if (field->array)
+                WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
+            else if (field->vector || field->list || field->set)
+                WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+            else if (field->map || field->hash)
+                WriteLineIndent("FieldModelMap<" + ConvertTypeName(*p->name, *field->key) + ", " + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+            else
+                WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+        }
+    }
+
+    // Generate struct field model end
+    Indent(-1);
+    WriteLineIndent("};");
+}
+
+void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    std::string struct_name = "::" + *p->name + "::" + *s->name;
+    std::string class_name = "FieldModel_" + *p->name + "_" + *s->name;
+
+    // Generate struct field model constructor
+    WriteLine();
+    WriteLineIndent(class_name + "::" + class_name + "(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    Indent(1);
+    std::string prev_offset("4");
+    std::string prev_size("4");
+    if (s->base && !s->base->empty())
+    {
+        WriteLineIndent(", parent(buffer, " + prev_offset + " + " + prev_size + ")");
+        prev_offset = "parent.fbe_offset()";
+        prev_size = "parent.fbe_body() - 4 - 4";
+    }
+    if (s->body)
+    {
+        for (const auto& field : s->body->fields)
+        {
+            WriteLineIndent(", " + *field->name + "(buffer, " + prev_offset + " + " + prev_size + ")");
+            prev_offset = *field->name + ".fbe_offset()";
+            prev_size = *field->name + ".fbe_size()";
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("{}");
+    WriteLine();
+
+    // Generate struct field model FBE methods
+    WriteLineIndent("size_t " + class_name + "::fbe_body() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_result = 4 + 4");
+    Indent(1);
+    if (s->base && !s->base->empty())
+        WriteLineIndent("+ parent.fbe_body() - 4 - 4");
+    if (s->body)
+        for (const auto& field : s->body->fields)
+            WriteLineIndent("+ " + *field->name + ".fbe_size()");
+    WriteLineIndent(";");
+    Indent(-1);
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+    WriteLineIndent("size_t " + class_name + "::fbe_extra() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_struct_offset);");
+    WriteLine();
+    WriteLineIndent("size_t fbe_result = fbe_body()");
+    Indent(1);
+    if (s->base && !s->base->empty())
+        WriteLineIndent("+ parent.fbe_extra()");
+    if (s->body)
+        for (const auto& field : s->body->fields)
+            WriteLineIndent("+ " + *field->name + ".fbe_extra()");
+    WriteLineIndent(";");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.unshift(fbe_struct_offset);");
+    WriteLine();
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model verify() method
+    WriteLineIndent("bool " + class_name + "::verify(bool fbe_verify_type) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("if (fbe_struct_size < (4 + 4))");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));");
+    WriteLineIndent("if (fbe_verify_type && (fbe_struct_type != fbe_type()))");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_struct_offset);");
+    WriteLineIndent("bool fbe_result = verify_fields(fbe_struct_size);");
+    WriteLineIndent("_buffer.unshift(fbe_struct_offset);");
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model verify_fields() method
+    WriteLineIndent("bool " + class_name + "::verify_fields(size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
+    {
+        WriteLineIndent("size_t fbe_current_size = 4 + 4;");
+        if (s->base && !s->base->empty())
+        {
+            WriteLine();
+            WriteLineIndent("if ((fbe_current_size + parent.fbe_body() - 4 - 4) > fbe_struct_size)");
+            Indent(1);
+            WriteLineIndent("return true;");
+            Indent(-1);
+            WriteLineIndent("if (!parent.verify_fields(fbe_struct_size))");
+            Indent(1);
+            WriteLineIndent("return false;");
+            Indent(-1);
+            WriteLineIndent("fbe_current_size += parent.fbe_body() - 4 - 4;");
+        }
+        if (s->body)
+        {
+            for (const auto& field : s->body->fields)
+            {
+                WriteLine();
+                WriteLineIndent("if ((fbe_current_size + " + *field->name + ".fbe_size()) > fbe_struct_size)");
+                Indent(1);
+                WriteLineIndent("return true;");
+                Indent(-1);
+                WriteLineIndent("if (!" + *field->name + ".verify())");
+                Indent(1);
+                WriteLineIndent("return false;");
+                Indent(-1);
+                WriteLineIndent("fbe_current_size += " + *field->name + ".fbe_size();");
+            }
+        }
+        WriteLine();
+    }
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get_begin() method
+    WriteLineIndent("size_t " + class_name + "::get_begin() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("assert((fbe_struct_size >= (4 + 4)) && \"Model is broken!\");");
+    WriteLineIndent("if (fbe_struct_size < (4 + 4))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_struct_offset);");
+    WriteLineIndent("return fbe_struct_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get_end() method
+    WriteLineIndent("void " + class_name + "::get_end(size_t fbe_begin) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get() method
+    WriteLineIndent("void " + class_name + "::get(::FBE::Base& fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = get_begin();");
+    WriteLineIndent("if (fbe_begin == 0)");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));");
+    WriteLineIndent("get_fields(fbe_value, fbe_struct_size);");
+    WriteLineIndent("get_end(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get_fields() method
+    WriteLineIndent("void " + class_name + "::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
+    {
+        WriteLineIndent(struct_name + "& fbe_value = static_cast<" + struct_name + "&>(base_fbe_value);");
+        WriteLineIndent("size_t fbe_current_size = 4 + 4;");
+        if (s->base && !s->base->empty())
+        {
+            WriteLine();
+            WriteLineIndent("if ((fbe_current_size + parent.fbe_body() - 4 - 4) <= fbe_struct_size)");
+            Indent(1);
+            WriteLineIndent("parent.get_fields(fbe_value, fbe_struct_size);");
+            Indent(-1);
+            WriteLineIndent("fbe_current_size += parent.fbe_body() - 4 - 4;");
+        }
+        if (s->body)
+        {
+            for (const auto& field : s->body->fields)
+            {
+                WriteLine();
+                WriteLineIndent("if ((fbe_current_size + " + *field->name + ".fbe_size()) <= fbe_struct_size)");
+                Indent(1);
+                if (!field->ptr || IsContainerType(*field)) {
+                    WriteLineIndent("{");
+                    Indent(1);
+                    WriteLineIndent(*field->name + ".get(fbe_value." + *field->name + ");");
+                    Indent(-1);
+                    WriteLineIndent("}");
+                } else {
+                    WriteLineIndent("{");
+                    Indent(1);
+                    WriteLineIndent(*field->name + ".get(&fbe_value." + *field->name + ");");
+                    Indent(-1);
+                    WriteLineIndent("}");
+
+
+                }
+                Indent(-1);
+                WriteLineIndent("else");
+                Indent(1);
+                if (field->array)
+                {
+                    // Do nothing here...
+                }
+                else if (field->vector || field->list || field->set || field->map || field->hash || ((*field->type == "bytes") && !field->optional))
+                    WriteLineIndent("fbe_value." + *field->name + ".clear();");
+                else
+                    WriteLineIndent("fbe_value." + *field->name + " = " + ConvertDefault(*p->name, *field) + ";");
+                Indent(-1);
+                WriteLineIndent("fbe_current_size += " + *field->name + ".fbe_size();");
+            }
+        }
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set_begin() method
+    WriteLineIndent("size_t " + class_name + "::set_begin()");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_size = (uint32_t)fbe_body();");
+    WriteLineIndent("uint32_t fbe_struct_offset = (uint32_t)(_buffer.allocate(fbe_struct_size) - _buffer.offset());");
+    WriteLineIndent("assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;");
+    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;");
+    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();");
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_struct_offset);");
+    WriteLineIndent("return fbe_struct_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set_end() method
+    WriteLineIndent("void " + class_name + "::set_end(size_t fbe_begin)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set() method
+    WriteLineIndent("void " + class_name + "::set(const ::FBE::Base& fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = set_begin();");
+    WriteLineIndent("if (fbe_begin == 0)");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("set_fields(fbe_value);");
+    WriteLineIndent("set_end(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set_fields() method
+    WriteLineIndent("void " + class_name + "::set_fields(const ::FBE::Base& base_fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("const " + struct_name + "& fbe_value = static_cast<const " + struct_name + "&>(base_fbe_value);");
+    if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
+    {
+        if (s->base && !s->base->empty())
+            WriteLineIndent("parent.set_fields(fbe_value);");
+        if (s->body)
+            for (const auto& field : s->body->fields)
+            {
+                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field))
+                    // TODO: fix enum and flags
+                    WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
+                else
+                    WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
+            }
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+}
+
+void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    std::string struct_name = "::" + *p->name + "::" + *s->name;
+    std::string class_name = "FieldModelPtr_" + *p->name + "_" + *s->name;
+
+    // Generate struct field model constructor
+    WriteLine();
+    WriteLineIndent(class_name + "::" + class_name +"(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    WriteLineIndent("{}");
+    WriteLine();
+
+    WriteLineIndent(class_name + "::~" + class_name +"()");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (ptr) delete ptr;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field ptr model FBE methods
+    WriteLineIndent("size_t " + class_name + "::fbe_extra() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (!ptr) return 0;");
+    WriteLine();
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
+    WriteLineIndent("size_t fbe_result = ptr->fbe_size() + ptr->fbe_extra();");
+    WriteLineIndent("_buffer.unshift(fbe_ptr_offset);");
+    WriteLine();
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model verify() method
+    WriteLineIndent("bool " + class_name + "::verify() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (!ptr) return true;");
+    WriteLine();
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("if (fbe_has_value == 0)");
+    Indent(1);
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_optional_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("if (fbe_optional_offset == 0)");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_optional_offset);");
+    WriteLineIndent("bool fbe_result = ptr->verify();");
+    WriteLineIndent("_buffer.unshift(fbe_optional_offset);");
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model has_value() method
+    WriteLineIndent("bool " + class_name + "::has_value() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("return (fbe_has_value != 0);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get_begin() method
+    WriteLineIndent("size_t " + class_name + "::get_begin() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if (!has_value())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("assert((fbe_ptr_offset > 0) && \"Model is broken!\");");
+    WriteLineIndent("if (fbe_ptr_offset == 0)");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
+    WriteLineIndent("return fbe_ptr_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get_end() method
+    WriteLineIndent("void " + class_name + "::get_end(size_t fbe_begin) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get() method
+    WriteLineIndent("void " + class_name + "::get(" + struct_name + "** fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = get_begin();");
+    WriteLineIndent("if (fbe_begin == 0)");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("ptr = new FieldModel_" + *p->name + "_" + *s->name + "(_buffer, 0);");
+    WriteLine();
+    WriteLineIndent(struct_name + " *tempModel = new " + struct_name + "();");
+    WriteLineIndent("ptr->get(*tempModel);");
+    WriteLineIndent("*fbe_value = tempModel;");
+    WriteLine();
+    WriteLineIndent("get_end(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set_begin() method
+    WriteLineIndent("size_t " + class_name + "::set_begin(bool has_value)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint8_t fbe_has_value = has_value ? 1 : 0;");
+    WriteLineIndent("*((uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;");
+    WriteLineIndent("if (fbe_has_value == 0)");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_ptr_size = 4;");
+    WriteLineIndent("uint32_t fbe_ptr_offset = (uint32_t)(_buffer.allocate(fbe_ptr_size) - _buffer.offset());");
+    WriteLineIndent("assert(((fbe_ptr_offset > 0) && ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;");
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
+    WriteLineIndent("return fbe_ptr_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set_end() method
+    WriteLineIndent("void " + class_name + "::set_end(size_t fbe_begin)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model set() method
+    WriteLineIndent("void " + class_name + "::set(const " + struct_name + "* fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = set_begin(fbe_value != nullptr);");
+    WriteLineIndent("if (fbe_begin == 0)");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("if (fbe_value != nullptr) {");
+    Indent(1);
+    WriteLineIndent("BaseFieldModel* temp = new FieldModel_" + *p->name + "_" + *s->name + "(_buffer, 0);");
+    WriteLineIndent("ptr = temp;");
+    WriteLineIndent("ptr->set(*fbe_value);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+    WriteLineIndent("set_end(fbe_begin);");
     Indent(-1);
     WriteLineIndent("}");
 }
@@ -10665,6 +11620,164 @@ void GeneratorCpp::GenerateStructModel_Header(const std::shared_ptr<Package>& p,
 }
 
 void GeneratorCpp::GenerateStructModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace " + *p->name + " {");
+
+    std::string struct_name = "::" + *p->name + "::" + *s->name;
+    std::string model_name = *s->name + "Model";
+
+    // Generate struct model verify() method
+    WriteLine();
+    WriteLineIndent("bool " + model_name + "::verify()");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("if (fbe_full_size < model.fbe_size())");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("return model.verify();");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct model create_begin() method
+    WriteLineIndent("size_t " + model_name + "::create_begin()");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = this->buffer().allocate(4 + model.fbe_size());");
+    WriteLineIndent("return fbe_begin;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct model create_end() method
+    WriteLineIndent("size_t " + model_name + "::create_end(size_t fbe_begin)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_end = this->buffer().size();");
+    WriteLineIndent("uint32_t fbe_full_size = (uint32_t)(fbe_end - fbe_begin);");
+    WriteLineIndent("*((uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4)) = fbe_full_size;");
+    WriteLineIndent("return fbe_full_size;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct model serialize() method
+    WriteLineIndent("size_t " + model_name + "::serialize(const " + struct_name + "& value)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("size_t fbe_begin = create_begin();");
+    WriteLineIndent("model.set(value);");
+    WriteLineIndent("size_t fbe_full_size = create_end(fbe_begin);");
+    WriteLineIndent("return fbe_full_size;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct model deserialize() method
+    WriteLineIndent("size_t " + model_name + "::deserialize(" + struct_name + "& value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("assert((fbe_full_size >= model.fbe_size()) && \"Model is broken!\");");
+    WriteLineIndent("if (fbe_full_size < model.fbe_size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("model.get(value);");
+    WriteLineIndent("return fbe_full_size;");
+    Indent(-1);
+    WriteLineIndent("}");
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace " + *p->name);
+}
+
+void GeneratorCpp::GeneratePtrStructModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
+{
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace " + *p->name + " {");
+
+    std::string struct_name = "::" + *p->name + "::" + *s->name;
+    std::string class_name = "FieldModel_" + *p->name + "_" + *s->name;
+
+    // Generate struct model begin
+    WriteLine();
+    WriteLineIndent("// Fast Binary Encoding " + *s->name + " model");
+    WriteLineIndent("class " + *s->name + "Model : public FBE::Model");
+    WriteLineIndent("{");
+    WriteLineIndent("public:");
+    Indent(1);
+
+    // Generate struct model constructor
+    WriteLineIndent(*s->name + "Model() : model(this->buffer(), 4) {}");
+    WriteLineIndent(*s->name + "Model(const std::shared_ptr<FBEBuffer>& buffer) : FBE::Model(buffer), model(this->buffer(), 4) {}");
+
+    // Generate struct model FBE methods
+    WriteLine();
+    WriteLineIndent("// Get the model size");
+    WriteLineIndent("size_t fbe_size() const noexcept { return model.fbe_size() + model.fbe_extra(); }");
+    WriteLineIndent("// Get the model type");
+    WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + class_name + "::fbe_type(); }");
+
+    // Generate struct model verify() method
+    WriteLine();
+    WriteLineIndent("// Check if the struct value is valid");
+    WriteLineIndent("bool verify();");
+
+    // Generate struct model create_begin(), create_end() methods
+    WriteLine();
+    WriteLineIndent("// Create a new model (begin phase)");
+    WriteLineIndent("size_t create_begin();");
+    WriteLineIndent("// Create a new model (end phase)");
+    WriteLineIndent("size_t create_end(size_t fbe_begin);");
+
+    // Generate struct model serialize(), deserialize() methods
+    WriteLine();
+    WriteLineIndent("// Serialize the struct value");
+    WriteLineIndent("size_t serialize(const " + struct_name + "& value);");
+    WriteLineIndent("// Deserialize the struct value");
+    WriteLineIndent("size_t deserialize(" + struct_name + "& value) noexcept;");
+
+    // Generate struct model next() method
+    WriteLine();
+    WriteLineIndent("// Move to the next struct value");
+    WriteLineIndent("void next(size_t prev) noexcept { model.fbe_shift(prev); }");
+
+    // Generate struct model accessor
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("public:");
+    Indent(1);
+    WriteLineIndent(class_name + " model;");
+
+    // Generate struct model end
+    Indent(-1);
+    WriteLineIndent("};");
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace " + *p->name);
+}
+
+void GeneratorCpp::GeneratePtrStructModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
 {
     // Generate namespace begin
     WriteLine();
