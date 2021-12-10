@@ -23,6 +23,20 @@ void GeneratorCpp::Generate(const std::shared_ptr<Package>& package)
     GenerateFBEModels_Header(_output);
     GenerateFBEModels_Inline(_output);
     GenerateFBEModels_Source(_output);
+
+    if (Ptr()) {
+        GenerateFBECustomModels_Header(_output);
+        GenerateFBECustomModels_Inline(_output);
+
+            // Generate package files
+        GeneratePackage_Header(package);
+        GeneratePackage_Source(package);
+        // Generate package models files
+        GeneratePackageModels_Header(package);
+        GeneratePackageModels_Source(package);
+        return;
+    }
+
     if (Final())
     {
         GenerateFBEFinalModels_Header(_output);
@@ -2334,207 +2348,6 @@ void FieldModel<std::string>::set(const std::string& value)
 
     Write(code);
 }
-
-    void GeneratorCpp::GenerateFBEFieldModelPtr_Header()
-    {
-        std::string code = R"CODE(
-// Fast Binary Encoding field model unique_ptr specialization
-template <typename T>
-class FieldModel<std::unique_ptr<T>>
-{
-public:
-    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), value(buffer, 0) {}
-
-    // Get the field offset
-    size_t fbe_offset() const noexcept { return _offset; }
-    // Get the field size
-    size_t fbe_size() const noexcept { return 1 + 4; }
-    // Get the field extra size
-    size_t fbe_extra() const noexcept;
-
-    // Shift the current field offset
-    void fbe_shift(size_t size) noexcept { _offset += size; }
-    // Unshift the current field offset
-    void fbe_unshift(size_t size) noexcept { _offset -= size; }
-
-    //! Is the value present?
-    explicit operator bool() const noexcept { return has_value(); }
-
-    // Checks if the object contains a value
-    bool has_value() const noexcept;
-
-    // Check if the optional value is valid
-    bool verify() const noexcept;
-
-    // Get the unique_ptr value (being phase)
-    size_t get_begin() const noexcept;
-
-    // Get the unique_ptr value (end phase)
-    void get_end(size_t fbe_begin) const noexcept;
-
-    // Get the unique_ptr value
-    void get(std::unique_ptr<T>& opt, const std::unique_ptr<T>& defaults = std::unique_ptr<T>()) const noexcept;
-
-    // Set the unique_ptr value (begin phase)
-    size_t set_begin(bool has_value);
-
-    // Set the unique_ptr value (end phase)
-    void set_end(size_t fbe_begin);
-
-    // Set the unique_ptr value
-    void set(const std::unique_ptr<T>& opt);
-
-private:
-    FBEBuffer& _buffer;
-    size_t _offset;
-
-public:
-    // Base field model value
-    FieldModel<T> value;
-};
-)CODE";
-
-        // Prepare code template
-        code = std::regex_replace(code, std::regex("\n"), EndLine());
-
-        Write(code);
-    }
-
-    void GeneratorCpp::GenerateFBEFieldModelPtr_Inline()
-    {
-        std::string code = R"CODE(
-template <typename T>
-inline size_t FieldModel<std::unique_ptr<T>>::fbe_extra() const noexcept
-{
-    if (!has_value())
-        return 0;
-
-    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
-    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))
-        return 0;
-
-    _buffer.shift(fbe_ptr_offset);
-    size_t fbe_result = value.fbe_size() + value.fbe_extra();
-    _buffer.unshift(fbe_ptr_offset);
-    return fbe_result;
-}
-
-template <typename T>
-inline bool FieldModel<std::unique_ptr<T>>::has_value() const noexcept
-{
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return false;
-
-    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    return (fbe_has_value != 0);
-}
-
-template <typename T>
-inline bool FieldModel<std::unique_ptr<T>>::verify() const noexcept
-{
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return true;
-
-    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    if (fbe_has_value == 0)
-        return true;
-
-    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
-    if (fbe_ptr_offset == 0)
-        return false;
-
-    _buffer.shift(fbe_ptr_offset);
-    bool fbe_result = value.verify();
-    _buffer.unshift(fbe_ptr_offset);
-    return fbe_result;
-}
-
-template <typename T>
-inline size_t FieldModel<std::unique_ptr<T>>::get_begin() const noexcept
-{
-    if (!has_value())
-        return 0;
-
-    uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
-    assert((fbe_ptr_offset > 0) && "Model is broken!");
-    if (fbe_ptr_offset == 0)
-        return 0;
-
-    _buffer.shift(fbe_ptr_offset);
-    return fbe_ptr_offset;
-}
-
-template <typename T>
-inline void FieldModel<std::unique_ptr<T>>::get_end(size_t fbe_begin) const noexcept
-{
-    _buffer.unshift(fbe_begin);
-}
-
-template <typename T>
-inline void FieldModel<std::unique_ptr<T>>::get(std::unique_ptr<T>& ptr, const std::unique_ptr<T>& defaults) const noexcept
-{
-    ptr.reset(defaults.release());
-
-    size_t fbe_begin = get_begin();
-    if (fbe_begin == 0)
-        return;
-
-    T* temp = new T;
-    value.get(*temp);
-    ptr.reset(temp);
-
-    get_end(fbe_begin);
-}
-
-template <typename T>
-inline size_t FieldModel<std::unique_ptr<T>>::set_begin(bool has_value)
-{
-    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return 0;
-
-    uint8_t fbe_has_value = has_value ? 1 : 0;
-    *((uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
-    if (fbe_has_value == 0)
-        return 0;
-
-    uint32_t fbe_ptr_size = (uint32_t)value.fbe_size();
-    uint32_t fbe_ptr_offset = (uint32_t)(_buffer.allocate(fbe_ptr_size) - _buffer.offset());
-    assert(((fbe_ptr_offset > 0) && ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) <= _buffer.size())) && "Model is broken!");
-    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) > _buffer.size()))
-        return 0;
-
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;
-
-    _buffer.shift(fbe_ptr_offset);
-    return fbe_ptr_offset;
-}
-
-template <typename T>
-inline void FieldModel<std::unique_ptr<T>>::set_end(size_t fbe_begin)
-{
-    _buffer.unshift(fbe_begin);
-}
-
-template <typename T>
-inline void FieldModel<std::unique_ptr<T>>::set(const std::unique_ptr<T>& ptr)
-{
-    size_t fbe_begin = set_begin(ptr.has_value());
-    if (fbe_begin == 0)
-        return;
-
-    if (ptr)
-        value.set(*ptr);
-
-    set_end(fbe_begin);
-}
-)CODE";
-
-        // Prepare code template
-        code = std::regex_replace(code, std::regex("\n"), EndLine());
-
-        Write(code);
-    }
 
     void GeneratorCpp::GenerateFBEFieldModelOptional_Header()
 {
@@ -7667,20 +7480,15 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     WriteLineIndent("namespace FBE {");
 
     // Generate field models
-    GenerateFBEBaseFieldModel_Header();
     GenerateFBEFieldModel_Header();
     GenerateFBEFieldModelDecimal_Header();
     GenerateFBEFieldModelUUID_Header();
     GenerateFBEFieldModelBytes_Header();
     GenerateFBEFieldModelString_Header();
-    GenerateFBEFieldModelPtr_Header();
     GenerateFBEFieldModelOptional_Header();
     GenerateFBEFieldModelArray_Header();
-    GenerateFBEFieldModelCustomArray_Header();
     GenerateFBEFieldModelVector_Header();
-    GenerateFBEFieldModelCustomVector_Header();
     GenerateFBEFieldModelMap_Header();
-    GenerateFBEFieldModelCustomMap_Header();
 
     // Generate namespace end
     WriteLine();
@@ -7715,14 +7523,10 @@ void GeneratorCpp::GenerateFBEModels_Inline(const CppCommon::Path& path)
 
     // Generate field models
     GenerateFBEFieldModel_Inline();
-    GenerateFBEFieldModelPtr_Inline();
     GenerateFBEFieldModelOptional_Inline();
     GenerateFBEFieldModelArray_Inline();
-    GenerateFBEFieldModelCustomArray_Inline();
     GenerateFBEFieldModelVector_Inline();
-    GenerateFBEFieldModelCustomVector_Inline();
     GenerateFBEFieldModelMap_Inline();
-    GenerateFBEFieldModelCustomMap_Inline();
 
     // Generate namespace end
     WriteLine();
@@ -7760,6 +7564,79 @@ void GeneratorCpp::GenerateFBEModels_Source(const CppCommon::Path& path)
     GenerateFBEFieldModelUUID_Source();
     GenerateFBEFieldModelBytes_Source();
     GenerateFBEFieldModelString_Source();
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace FBE");
+
+    // Generate field models footer
+    GenerateFooter();
+
+    // Store the field models file
+    WriteEnd();
+    Store(common);
+}
+
+void GeneratorCpp::GenerateFBECustomModels_Header(const CppCommon::Path& path)
+{
+    // Create package path
+    CppCommon::Directory::CreateTree(path);
+
+    // Generate the field models file
+    CppCommon::Path common = path / "fbe_custom_models.h";
+    WriteBegin();
+
+    // Generate field models header
+    GenerateHeader("FBE");
+
+    // Generate imports
+    GenerateImports("fbe_models.h");
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace FBE {");
+
+    // Generate field models
+    GenerateFBEBaseFieldModel_Header();
+    GenerateFBEFieldModelCustomArray_Header();
+    GenerateFBEFieldModelCustomVector_Header();
+    GenerateFBEFieldModelCustomMap_Header();
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace FBE");
+
+    // Generate inline import
+    GenerateImports("fbe_custom_models.inl");
+
+    // Generate field models footer
+    GenerateFooter();
+
+    // Store the field models file
+    WriteEnd();
+    Store(common);
+}
+
+void GeneratorCpp::GenerateFBECustomModels_Inline(const CppCommon::Path& path)
+{
+    // Create package path
+    CppCommon::Directory::CreateTree(path);
+
+    // Generate the field models file
+    CppCommon::Path common = path / "fbe_custom_models.inl";
+    WriteBegin();
+
+    // Generate field models inline
+    GenerateInline("FBE");
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace FBE {");
+
+    // Generate field models
+    GenerateFBEFieldModelCustomArray_Inline();
+    GenerateFBEFieldModelCustomVector_Inline();
+    GenerateFBEFieldModelCustomMap_Inline();
 
     // Generate namespace end
     WriteLine();
@@ -10475,6 +10352,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
             for (const auto& field : s->body->fields)
             {
                 if (!IsKnownType(*field->type) && !field->ptr && !IsContainerType(*field))
+                    // TODO: fix enum and flags
                     WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
@@ -12089,7 +11967,6 @@ bool GeneratorCpp::IsContainerType(const StructField &field) {
 }
 
 bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
-    // TODO: import 可能会有问题的。可能需要一个全局的vector
     for (const auto &s:  p->body->structs) {
         if (*s->name == *field->type) {
             return true;

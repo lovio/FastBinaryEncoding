@@ -202,6 +202,7 @@ int main(int argc, char** argv)
     parser.add_option("--final").dest("final").action("store_true").set_default(0).help("Generate Final serialization code");
     parser.add_option("--json").dest("json").action("store_true").set_default(0).help("Generate JSON serialization code");
     parser.add_option("--proto").dest("proto").action("store_true").set_default(0).help("Generate Sender/Receiver protocol code");
+    parser.add_option("--ptr").dest("ptr").action("store_true").set_default(0).help("Generate pointer-based serialization code, conflicts with --final");
 
     optparse::Values options = parser.parse_args(argc, argv);
 
@@ -234,6 +235,7 @@ int main(int argc, char** argv)
     bool final = options.get("final");
     bool json = options.get("json");
     bool proto = options.get("proto");
+    bool ptr = options.get("ptr");
     char space = tabs ? '\t' : ' ';
 
     // Check for the input path
@@ -290,7 +292,7 @@ int main(int argc, char** argv)
     if (cpp)
     {
         if (!quiet) std::cout << "Generating C++ code...";
-        FBE::GeneratorCpp(input, output, (indent ? indent : 4), space).Final(final).JSON(json).Proto(proto).Logging(cpp_logging).Generate(FBE::Package::root);
+        FBE::GeneratorCpp(input, output, (indent ? indent : 4), space).Final(final).JSON(json).Proto(proto).Logging(cpp_logging).Ptr(ptr).Generate(FBE::Package::root);
         if (!quiet) std::cout << "Done!" << std::endl;
     }
     if (csharp)

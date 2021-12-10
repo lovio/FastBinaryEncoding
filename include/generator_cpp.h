@@ -34,6 +34,10 @@ public:
     bool Logging() const noexcept { return _logging; }
     GeneratorCpp& Logging(bool logging) noexcept { _logging = logging; return *this; }
 
+    // Logging ptr-based code generation
+    bool Ptr() const noexcept { return _ptr; }
+    GeneratorCpp& Ptr(bool ptr) noexcept { _ptr = ptr; return *this; }
+
     void Generate(const std::shared_ptr<Package>& package) override;
 
 private:
@@ -41,6 +45,7 @@ private:
     bool _json{false};
     bool _proto{false};
     bool _logging{false};
+    bool _ptr{false};
 
     void GenerateHeader(const std::string& source);
     void GenerateInline(const std::string& source);
@@ -124,6 +129,8 @@ private:
     void GenerateFBEModels_Header(const CppCommon::Path& path);
     void GenerateFBEModels_Inline(const CppCommon::Path& path);
     void GenerateFBEModels_Source(const CppCommon::Path& path);
+    void GenerateFBECustomModels_Header(const CppCommon::Path& path);
+    void GenerateFBECustomModels_Inline(const CppCommon::Path& path);
     void GenerateFBEFinalModels_Header(const CppCommon::Path& path);
     void GenerateFBEFinalModels_Inline(const CppCommon::Path& path);
     void GenerateFBEFinalModels_Source(const CppCommon::Path& path);
@@ -182,8 +189,6 @@ private:
     bool IsPrimitiveType(const std::string& type, bool optional);
     bool IsContainerType(const StructField &field);
     bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
-    // bool IsEnumType(const StructField &field);
-    // bool IsFlagsType(const StructField &field);
 
     std::string ConvertEnumType(const std::string& type);
     std::string ConvertTypeName(const std::string& package, const std::string& type);
