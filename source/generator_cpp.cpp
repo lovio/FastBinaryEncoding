@@ -29,11 +29,11 @@ void GeneratorCpp::Generate(const std::shared_ptr<Package>& package)
         GenerateFBECustomModels_Inline(_output);
 
             // Generate package files
-        GeneratePackage_Header(package);
-        GeneratePackage_Source(package);
+        GeneratePtrPackage_Header(package);
+        GeneratePtrPackage_Source(package);
         // Generate package models files
-        GeneratePackageModels_Header(package);
-        GeneratePackageModels_Source(package);
+        GeneratePtrPackageModels_Header(package);
+        GeneratePtrPackageModels_Source(package);
         return;
     }
 
@@ -268,11 +268,11 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     WriteLineIndent("} // namespace FBE");
 }
 
-void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool final)
+void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool final, bool ptr)
 {
     // Generate common imports
     WriteLine();
-    WriteLineIndent("#include \"" + *p->name + ".h\"");
+    WriteLineIndent("#include \"" + *p->name + (ptr ? "_ptr" : "") + ".h\"");
 
     // Generate packages import
     if (p->import)
@@ -7993,6 +7993,127 @@ void GeneratorCpp::GeneratePackage_Source(const std::shared_ptr<Package>& p)
     Store(output);
 }
 
+void GeneratorCpp::GeneratePtrPackage_Header(const std::shared_ptr<Package>& p)
+{
+    CppCommon::Path output = _output;
+
+    // Create package path
+    CppCommon::Directory::CreateTree(output);
+
+    // Generate the output file
+    output /= *p->name + "_ptr.h";
+    WriteBegin();
+
+    // Generate package header
+    GenerateHeader(CppCommon::Path(_input).filename().string());
+
+    // Generate imports
+    GenerateImports(p);
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace " + *p->name + " {");
+
+    // Generate namespace body
+    if (p->body)
+    {
+        // Generate child enums
+        for (const auto& e : p->body->enums)
+            GenerateEnum(p, e);
+
+        // Generate child flags
+        for (const auto& f : p->body->flags)
+            GenerateFlags(p, f);
+
+        // Generate child structs
+        for (const auto& s : p->body->structs)
+            GenerateStruct_Header(p, s);
+    }
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace " + *p->name);
+
+    // Generate package footer
+    GenerateFooter();
+
+    // Store the output file
+    WriteEnd();
+    Store(output);
+}
+
+void GeneratorCpp::GeneratePtrPackage_Source(const std::shared_ptr<Package>& p)
+{
+    CppCommon::Path output = _output;
+
+    // Create package path
+    CppCommon::Directory::CreateTree(output);
+
+    // Generate the output file
+    output /= *p->name + "_ptr.cpp";
+    WriteBegin();
+
+    // Generate package source
+    GenerateSource(CppCommon::Path(_input).filename().string());
+
+    // Generate imports
+    GenerateImports(*p->name + "_ptr.h");
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace " + *p->name + " {");
+
+    // Generate namespace body
+    if (p->body)
+    {
+        // Generate child enums
+        for (const auto& e : p->body->enums)
+        {
+            // Generate enum output stream
+            GenerateEnumOutputStream(e);
+
+            // Generate enum logging stream
+            if (Logging())
+                GenerateEnumLoggingStream(e);
+        }
+
+        // Generate child flags
+        for (const auto& f : p->body->flags)
+        {
+            // Generate flags output stream
+            GenerateFlagsOutputStream(f);
+
+            // Generate flags logging stream
+            if (Logging())
+                GenerateFlagsLoggingStream(f);
+        }
+
+        // Generate child structs
+        for (const auto& s : p->body->structs)
+        {
+            GenerateStruct_Source(p, s);
+
+            // Generate struct output stream
+            GenerateStructOutputStream(p, s);
+
+            // Generate struct logging stream
+            if (Logging())
+                GenerateStructLoggingStream(p, s);
+        }
+    }
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace " + *p->name);
+
+    // Generate package footer
+    GenerateFooter();
+
+    // Store the output file
+    WriteEnd();
+    Store(output);
+}
+
 void GeneratorCpp::GeneratePackage_Json(const std::shared_ptr<Package>& p)
 {
     CppCommon::Path output = _output;
@@ -8062,7 +8183,7 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
 
     // Generate imports
     GenerateImports("fbe_models.h");
-    GenerateImportsModels(p, false);
+    GenerateImportsModels(p, false, false);
 
     // Generate namespace begin
     WriteLine();
@@ -8159,6 +8280,119 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     Store(output);
 }
 
+void GeneratorCpp::GeneratePtrPackageModels_Header(const std::shared_ptr<Package>& p)
+{
+    CppCommon::Path output = _output;
+
+    // Create package path
+    CppCommon::Directory::CreateTree(output);
+
+    // Generate the output file
+    output /= *p->name + "_ptr_models.h";
+    WriteBegin();
+
+    // Generate package models header
+    GenerateHeader(CppCommon::Path(_input).filename().string());
+
+    // Generate imports
+    GenerateImports("fbe_custom_models.h");
+    GenerateImportsModels(p, false, true);
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace FBE {");
+
+    // Generate namespace body
+    if (p->body)
+    {
+        // Generate child enums
+        for (const auto& e : p->body->enums)
+        {
+            // Generate enum field model
+            GenerateEnumFieldModel(p, e);
+        }
+
+        // Generate child flags
+        for (const auto& f : p->body->flags)
+        {
+            // Generate flags field model
+            GenerateFlagsFieldModel(p, f);
+        }
+
+        // Generate child ptr structs
+        for (const auto& s : p->body->structs)
+        {
+            // Generate struct ptr field models
+            GenerateStructFieldPtrModel_Header(p, s);
+        }
+
+        // Generate child structs
+        for (const auto& s : p->body->structs)
+        {
+            GenerateStructFieldModel_Header(p, s);
+            GenerateStructModel_Header(p, s);
+        }
+    }
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace FBE");
+
+    // Generate package footer
+    GenerateFooter();
+
+    // Store the output file
+    WriteEnd();
+    Store(output);
+}
+
+void GeneratorCpp::GeneratePtrPackageModels_Source(const std::shared_ptr<Package>& p)
+{
+    CppCommon::Path output = _output;
+
+    // Create package path
+    CppCommon::Directory::CreateTree(output);
+
+    // Generate the output file
+    output /= *p->name + "_custom_models.cpp";
+    WriteBegin();
+
+    // Generate package models source
+    GenerateSource(CppCommon::Path(_input).filename().string());
+
+    // Generate imports
+    GenerateImports(*p->name + "_ptr_models.h");
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace FBE {");
+
+    std::set<std::string> unique_container_set;
+    // Generate namespace body
+    if (p->body)
+    {
+        // Generate child structs
+        for (const auto& s : p->body->structs)
+        {
+            // Generate struct field models
+            GenerateStructFieldPtrModel_Source(p, s);
+            GenerateStructFieldModel_Source(p, s);
+            GenerateStructModel_Source(p, s);
+        }
+    }
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace FBE");
+
+    // Generate package footer
+    GenerateFooter();
+
+    // Store the output file
+    WriteEnd();
+    Store(output);
+}
+
 void GeneratorCpp::GeneratePackageFinalModels_Header(const std::shared_ptr<Package>& p)
 {
     CppCommon::Path output = _output;
@@ -8175,7 +8409,7 @@ void GeneratorCpp::GeneratePackageFinalModels_Header(const std::shared_ptr<Packa
 
     // Generate imports
     GenerateImports("fbe_final_models.h");
-    GenerateImportsModels(p, true);
+    GenerateImportsModels(p, true, false);
 
     // Generate namespace begin
     WriteLine();

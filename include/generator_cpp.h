@@ -56,7 +56,7 @@ private:
     void GenerateImports();
     void GenerateImports(const std::string& source);
     void GenerateImports(const std::shared_ptr<Package>& p);
-    void GenerateImportsModels(const std::shared_ptr<Package>& p, bool final);
+    void GenerateImportsModels(const std::shared_ptr<Package>& p, bool final, bool ptr);
     void GenerateImportsProtocol(const std::shared_ptr<Package>& p, bool final);
     void GenerateImportsJson();
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
@@ -140,9 +140,13 @@ private:
 
     void GeneratePackage_Header(const std::shared_ptr<Package>& p);
     void GeneratePackage_Source(const std::shared_ptr<Package>& p);
+    void GeneratePtrPackage_Header(const std::shared_ptr<Package>& p);
+    void GeneratePtrPackage_Source(const std::shared_ptr<Package>& p);
     void GeneratePackage_Json(const std::shared_ptr<Package>& p);
     void GeneratePackageModels_Header(const std::shared_ptr<Package>& p);
     void GeneratePackageModels_Source(const std::shared_ptr<Package>& p);
+    void GeneratePtrPackageModels_Header(const std::shared_ptr<Package>& p);
+    void GeneratePtrPackageModels_Source(const std::shared_ptr<Package>& p);
     void GeneratePackageFinalModels_Header(const std::shared_ptr<Package>& p);
     void GeneratePackageFinalModels_Source(const std::shared_ptr<Package>& p);
     void GeneratePackageProtocol_Header(const std::shared_ptr<Package>& p, bool final);
