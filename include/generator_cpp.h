@@ -201,9 +201,8 @@ private:
     bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
 
     std::string ConvertEnumType(const std::string& type);
-    std::string ConvertTypeName(const std::string& package, const std::string& type);
-    std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr, bool as_argument);
-    std::string ConvertTypeName(const std::string& package, const StructField& field, bool as_argument);
+    std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional);
+    std::string ConvertTypeName(const std::string& package, const StructField& field);
     std::string ConvertTypeNameAsArgument(const std::string& package, const StructField& field);
     std::string ConvertPtrTypeName(const std::string& package, const std::string& type);
     std::string ConvertPtrTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr, bool as_argument);
