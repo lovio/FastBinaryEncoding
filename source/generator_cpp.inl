@@ -1464,7 +1464,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
     WriteLine();
     WriteIndent("struct " + std::string(s->attributes->deprecated ? "[[deprecated]] " : "") + *s->name);
     if (s->base && !s->base->empty()) {
-        Write(" : public " + ConvertTypeName(*p->name, *s->base));
+        Write(" : public " + ConvertPtrTypeName(*p->name, *s->base));
     } else {
         Write(" : FBE::Base");
     }
@@ -1491,7 +1491,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
             WriteIndent();
             if (field->attributes && field->attributes->deprecated)
                 Write("[[deprecated]] ");
-            WriteLine(ConvertTypeName(*p->name, *field, false) + " " + *field->name + ";");
+            WriteLine(ConvertPtrTypeName(*p->name, *field, false) + " " + *field->name + ";");
         }
         if (!s->body->fields.empty())
             WriteLine();
@@ -1499,7 +1499,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
 
     // Generate struct FBE type property
     if (s->base && !s->base->empty() && (s->type == 0))
-        WriteLineIndent("size_t fbe_type() const noexcept { return " + ConvertTypeName(*p->name, *s->base) + "::fbe_type(); }");
+        WriteLineIndent("size_t fbe_type() const noexcept { return " + ConvertPtrTypeName(*p->name, *s->base) + "::fbe_type(); }");
     else
         WriteLineIndent("size_t fbe_type() const noexcept { return " + std::to_string(s->type) + "; }");
 
@@ -1520,14 +1520,14 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
         WriteIndent(((args <= 1) ? "explicit " : "") + *s->name + "(");
         if (s->base && !s->base->empty())
         {
-            Write("const " + ConvertTypeName(*p->name, *s->base) + "& base");
+            Write("const " + ConvertPtrTypeName(*p->name, *s->base) + "& base");
             first = false;
         }
         if (s->body)
         {
             for (const auto& field : s->body->fields)
             {
-                Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
+                Write(std::string(first ? "" : ", ") + ConvertPtrTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
                 first = false;
             }
         }
@@ -1598,7 +1598,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     Indent(1);
     if (s->base && !s->base->empty())
     {
-        WriteLineIndent(": " + ConvertTypeName(*p->name, *s->base) + "()");
+        WriteLineIndent(": " + ConvertPtrTypeName(*p->name, *s->base) + "()");
         first = false;
     }
     if (s->body)
@@ -1623,14 +1623,14 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
         WriteIndent(*s->name + "::" + *s->name + "(");
         if (s->base && !s->base->empty())
         {
-            Write("const " + ConvertTypeName(*p->name, *s->base) + "& base");
+            Write("const " + ConvertPtrTypeName(*p->name, *s->base) + "& base");
             first = false;
         }
         if (s->body)
         {
             for (const auto& field : s->body->fields)
             {
-                Write(std::string(first ? "" : ", ") + ConvertTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
+                Write(std::string(first ? "" : ", ") + ConvertPtrTypeNameAsArgument(*p->name, *field) + " arg_" + *field->name);
                 first = false;
             }
         }
@@ -1639,7 +1639,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
         first = true;
         if (s->base && !s->base->empty())
         {
-            WriteLineIndent(": " + ConvertTypeName(*p->name, *s->base) + "(base)");
+            WriteLineIndent(": " + ConvertPtrTypeName(*p->name, *s->base) + "(base)");
             first = false;
         }
         if (s->body)
@@ -1702,7 +1702,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     first = true;
     if (s->base && !s->base->empty())
     {
-        WriteLineIndent(": "+ ConvertTypeName(*p->name, *s->base) + "(std::move(other))");
+        WriteLineIndent(": "+ ConvertPtrTypeName(*p->name, *s->base) + "(std::move(other))");
         first = false;
     }
     // generate the field move
@@ -1769,7 +1769,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     first = true;
     if (s->base && !s->base->empty())
     {
-        WriteLineIndent(ConvertTypeName(*p->name, *s->base) + "::operator==(other)");
+        WriteLineIndent(ConvertPtrTypeName(*p->name, *s->base) + "::operator==(other)");
         first = false;
     }
     if (s->body)
@@ -1799,11 +1799,11 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     Indent(1);
     if (s->base && !s->base->empty())
     {
-        WriteLineIndent("if (" + ConvertTypeName(*p->name, *s->base) + "::operator<(other))");
+        WriteLineIndent("if (" + ConvertPtrTypeName(*p->name, *s->base) + "::operator<(other))");
         Indent(1);
         WriteLineIndent("return true;");
         Indent(-1);
-        WriteLineIndent("if (other." + ConvertTypeName(*p->name, *s->base) + "::operator<(*this))");
+        WriteLineIndent("if (other." + ConvertPtrTypeName(*p->name, *s->base) + "::operator<(*this))");
         Indent(1);
         WriteLineIndent("return false;");
         Indent(-1);
@@ -1874,7 +1874,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     Indent(1);
     WriteLineIndent("using std::swap;");
     if (s->base && !s->base->empty())
-        WriteLineIndent(ConvertTypeName(*p->name, *s->base) + "::swap(other);");
+        WriteLineIndent(ConvertPtrTypeName(*p->name, *s->base) + "::swap(other);");
     if (s->body)
         for (const auto& field : s->body->fields)
             WriteLineIndent("swap(" + *field->name + ", other." + *field->name + ");");
@@ -1997,7 +1997,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     WriteLineIndent("size_t fbe_extra() const noexcept override;");
     WriteLineIndent("// Get the field type");
     if (s->base && !s->base->empty() && (s->type == 0))
-        WriteLineIndent("static constexpr size_t fbe_type() noexcept { return FieldModel<" + ConvertTypeName(*p->name, *s->base) + ">::fbe_type(); }");
+        WriteLineIndent("static constexpr size_t fbe_type() noexcept { return FieldModel<" + ConvertPtrTypeName(*p->name, *s->base) + ">::fbe_type(); }");
     else
         WriteLineIndent("static constexpr size_t fbe_type() noexcept { return " + std::to_string(s->type) + "; }");
     WriteLine();
@@ -2056,7 +2056,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     Indent(1);
     if (s->base && !s->base->empty())
         // TODO: check if this is correct
-        WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *s->base) + "> parent;");
+        WriteLineIndent("FieldModel<" + ConvertPtrTypeName(*p->name, *s->base) + "> parent;");
     if (s->body)
     {
         for (const auto& field : s->body->fields)
@@ -2067,20 +2067,20 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
                 if (IsContainerType(*field)) {
                     WriteIndent("FieldModelCustom");
                     if (field->array) {
-                        Write("Array<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
+                        Write("Array<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
                     }
                     else if (field->vector || field->list || field->set)
-                        Write("Vector<" + model_name + ", " + ConvertTypeName(*p->name, *field->type) + ">");
+                        Write("Vector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
                     else if (field->map || field->hash){
                         // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
                         std::string kType = "FieldModel";
                         if (IsKnownType(*field->key)) {
-                            kType += "<" + ConvertTypeName(*p->name, *field->key) + ">";
+                            kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
                         } else {
                             kType +=  "_" + *p->name + "_" + *field->type;
                         }
-                        auto kStruct = ConvertTypeName(*p->name, *field->key);
-                        auto vStruct = ConvertTypeName(*p->name, *field->type);
+                        auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
+                        auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
                         Write("Map<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
                     }
                     Write(" " +  *field->name + ";");
@@ -2089,13 +2089,13 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
                     WriteLineIndent(model_name + " " + *field->name + ";");
                 }
             } else if (field->array)
-                WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
+                WriteLineIndent("FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
-                WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+                WriteLineIndent("FieldModelVector<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
             else if (field->map || field->hash)
-                WriteLineIndent("FieldModelMap<" + ConvertTypeName(*p->name, *field->key) + ", " + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+                WriteLineIndent("FieldModelMap<" + ConvertPtrTypeName(*p->name, *field->key) + ", " + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
             else
-                WriteLineIndent("FieldModel<" + ConvertTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+                WriteLineIndent("FieldModel<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
         }
     }
 
@@ -2818,109 +2818,109 @@ void GeneratorCpp::GeneratePtrStructModel_Source(const std::shared_ptr<Package>&
     WriteLineIndent("} // namespace " + *p->name);
 }
 
-// std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std::string& type) {
-//     if (type == "bool")
-//         return "bool";
-//     else if (type == "byte")
-//         return "uint8_t";
-//     else if (type == "bytes")
-//         return "FBE::buffer_t";
-//     else if (type == "char")
-//         return "char";
-//     else if (type == "wchar")
-//         return "wchar_t";
-//     else if (type == "int8")
-//         return "int8_t";
-//     else if (type == "uint8")
-//         return "uint8_t";
-//     else if (type == "int16")
-//         return "int16_t";
-//     else if (type == "uint16")
-//         return "uint16_t";
-//     else if (type == "int32")
-//         return "int32_t";
-//     else if (type == "uint32")
-//         return "uint32_t";
-//     else if (type == "int64")
-//         return "int64_t";
-//     else if (type == "uint64")
-//         return "uint64_t";
-//     else if (type == "float")
-//         return "float";
-//     else if (type == "double")
-//         return "double";
-//     else if (type == "decimal")
-//         return "FBE::decimal_t";
-//     else if (type == "string")
-//         return "std::string";
-//     else if (type == "timestamp")
-//         return "uint64_t";
-//     else if (type == "uuid")
-//         return "FBE::uuid_t";
+std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const std::string& type) {
+    if (type == "bool")
+        return "bool";
+    else if (type == "byte")
+        return "uint8_t";
+    else if (type == "bytes")
+        return "FBE::buffer_t";
+    else if (type == "char")
+        return "char";
+    else if (type == "wchar")
+        return "wchar_t";
+    else if (type == "int8")
+        return "int8_t";
+    else if (type == "uint8")
+        return "uint8_t";
+    else if (type == "int16")
+        return "int16_t";
+    else if (type == "uint16")
+        return "uint16_t";
+    else if (type == "int32")
+        return "int32_t";
+    else if (type == "uint32")
+        return "uint32_t";
+    else if (type == "int64")
+        return "int64_t";
+    else if (type == "uint64")
+        return "uint64_t";
+    else if (type == "float")
+        return "float";
+    else if (type == "double")
+        return "double";
+    else if (type == "decimal")
+        return "FBE::decimal_t";
+    else if (type == "string")
+        return "std::string";
+    else if (type == "timestamp")
+        return "uint64_t";
+    else if (type == "uuid")
+        return "FBE::uuid_t";
     
-//     std::string result = type;
-//     bool pkg = !CppCommon::StringUtils::ReplaceAll(result, ".", "::");
-//     std::string ret = (pkg ? ("::" + package) : "") + "::" + result;
-//     return ret;
-// }
+    std::string result = type;
+    bool pkg = !CppCommon::StringUtils::ReplaceAll(result, ".", "::");
+    std::string ret = (pkg ? ("::" + package) : "") + "::" + result;
+    return ret;
+}
 
-// // because of the y file. optional and typeptr will not be true in the same, and the ptr will never pointer to primitive type.
-// std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr, bool as_argument)
-// {
-//     // TODO: conflict with pointer, we need to check. Or omit?
-//     if (optional)
-//         return "std::optional<" + ConvertTypeName(package, type) + ">";
+// because of the y file. optional and typeptr will not be true in the same, and the ptr will never pointer to primitive type.
+std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const std::string& type, bool optional, bool typeptr, bool as_argument)
+{
+    // TODO: conflict with pointer, we need to check. Or omit?
+    if (optional)
+        return "std::optional<" + ConvertPtrTypeName(package, type) + ">";
 
-//     auto ret =  ConvertTypeName(package, type);
-//     if (typeptr)
-//     {
-//         if (as_argument)
-//             return "std::unique_ptr<" + ret + ">";
-//         else
-//             return ret + "*";
-//     }
-//     return ret;
-// }
+    auto ret =  ConvertPtrTypeName(package, type);
+    if (typeptr)
+    {
+        if (as_argument)
+            return "std::unique_ptr<" + ret + ">";
+        else
+            return ret + "*";
+    }
+    return ret;
+}
 
-// std::string
-// GeneratorCpp::ConvertTypeName(const std::string &package, const StructField &field, bool as_argument)
-// {
-//     // bool typeptr = withptr ? field.ptr : false;
-//     bool typeptr = field.ptr;
-//     if (field.array)
-//         return "std::array<" + ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
-//     else if (field.optional)
-//         return "std::optional<" + ConvertTypeName(package, *field.type) + ">";
-//     else if (field.vector)
-//         return "std::vector<" + ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
-//     else if (field.list)
-//         return "std::list<" + ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
-//     else if (field.set)
-//         return "std::set<" + ConvertTypeName(package, *field.key, false, typeptr, as_argument) + ">";
-//     else if (field.map)
-//         return "std::map<" + ConvertTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
-//     else if (field.hash)
-//         return "std::unordered_map<" + ConvertTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
-//     auto s = ConvertTypeName(package, *field.type, field.optional, typeptr, as_argument);
-//     if (Ptr() && !IsKnownType(*field.type) && !field.ptr && as_argument)
-//         s += "&&";
-//     return s;
-// }
+std::string
+GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &field, bool as_argument)
+{
+    // bool typeptr = withptr ? field.ptr : false;
+    bool typeptr = field.ptr;
+    if (field.array)
+        return "std::array<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
+    else if (field.optional)
+        return "std::optional<" + ConvertPtrTypeName(package, *field.type) + ">";
+    else if (field.vector)
+        return "std::vector<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
+    else if (field.list)
+        return "std::list<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
+    else if (field.set)
+        return "std::set<" + ConvertPtrTypeName(package, *field.key, false, typeptr, as_argument) + ">";
+    else if (field.map)
+        return "std::map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
+    else if (field.hash)
+        return "std::unordered_map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
+    auto s = ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument);
+    if (Ptr() && !IsKnownType(*field.type) && !field.ptr && as_argument)
+        s += "&&";
+    return s;
+}
 
-// // two cases:
-// // 1. struct should be rvalue references, because we disable copy cstr
-// // 2. for container of ptrs, use unique_ptr instead.
-// std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, const StructField& field)
-// {
-//     if (field.ptr)
-//         return ConvertTypeName(package, field, true);
-//     if (IsPrimitiveType(*field.type, false))
-//         return ConvertTypeName(package, field, true);
-//     if (IsKnownType(*field.type))
-//         return "const " + ConvertTypeName(package, field, true) + "&";
+// two cases:
+// 1. struct should be rvalue references, because we disable copy cstr
+// 2. for container of ptrs, use unique_ptr instead.
+std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& package, const StructField& field)
+{
+    if (field.ptr)
+        return ConvertPtrTypeName(package, field, true);
+    if (IsPrimitiveType(*field.type, false))
+        return ConvertPtrTypeName(package, field, true);
+    if (IsKnownType(*field.type))
+        return "const " + ConvertPtrTypeName(package, field, true) + "&";
 
-//     return ConvertTypeName(package, field, true);
-// }
+    return ConvertPtrTypeName(package, field, true);
+}
 } // namespace FBE
 
 
