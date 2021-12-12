@@ -2818,6 +2818,19 @@ void GeneratorCpp::GeneratePtrStructModel_Source(const std::shared_ptr<Package>&
     WriteLineIndent("} // namespace " + *p->name);
 }
 
+bool GeneratorCpp::IsContainerType(const StructField &field) {
+    return (field.array || field.vector || field.list || field.set || field.map || field.hash);
+}
+
+bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
+    for (const auto &s:  p->body->structs) {
+        if (*s->name == *field->type) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const std::string& type) {
     if (type == "bool")
         return "bool";
@@ -2922,18 +2935,3 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
     return ConvertPtrTypeName(package, field, true);
 }
 } // namespace FBE
-
-
-
-    // if (Ptr()) {
-    //     GenerateFBECustomModels_Header(_output);
-    //     GenerateFBECustomModels_Inline(_output);
-
-    //     // Generate package files
-    //     GeneratePtrPackage_Header(package);
-    //     GeneratePtrPackage_Source(package);
-    //     // Generate package models files
-    //     GeneratePtrPackageModels_Header(package);
-    //     GeneratePtrPackageModels_Source(package);
-    //     return;
-    // }

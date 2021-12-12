@@ -6,10 +6,7 @@
     \copyright MIT License
 */
 
-#include <iostream>
-#include <utility>
 #include "generator_cpp.h"
-#include "fbe.h"
 
 namespace FBE {
 
@@ -2282,7 +2279,7 @@ void FieldModel<std::string>::set(const std::string& value)
     Write(code);
 }
 
-    void GeneratorCpp::GenerateFBEFieldModelOptional_Header()
+void GeneratorCpp::GenerateFBEFieldModelOptional_Header()
 {
     std::string code = R"CODE(
 // Fast Binary Encoding field model optional specialization
@@ -6292,7 +6289,9 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     WriteLineIndent("namespace FBE {");
 
     // Generate common body
-    GenerateBaseModel_Header();
+    if (Ptr()){
+        GenerateBaseModel_Header();
+    }
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
@@ -6905,6 +6904,7 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
+            // Generate struct field models
             GenerateStructFieldModel_Header(p, s);
             GenerateStructModel_Header(p, s);
         }
@@ -7866,7 +7866,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
         for (const auto& field : s->body->fields)
         {
             if (field->attributes && field->attributes->hidden)
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + ")=***\";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=***\";");
             else if (field->array)
             {
                 WriteLineIndent("{");
@@ -7876,7 +7876,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("for (size_t i = 0; i < " + std::to_string(field->N) + "; ++i)");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type,  "value."+ *field->name + "[i]", field->ptr, field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "value."+ *field->name + "[i]", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -10275,19 +10275,6 @@ void GeneratorCpp::GenerateClient_Source(const std::shared_ptr<Package>& p, bool
     WriteLineIndent("}");
 }
 
-bool GeneratorCpp::IsContainerType(const StructField &field) {
-    return (field.array || field.vector || field.list || field.set || field.map || field.hash);
-}
-
-bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
-    for (const auto &s:  p->body->structs) {
-        if (*s->name == *field->type) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool GeneratorCpp::IsKnownType(const std::string& type)
 {
     return ((type == "bool") ||
@@ -10345,7 +10332,6 @@ std::string GeneratorCpp::ConvertEnumType(const std::string& type)
     yyerror("Unsupported enum base type - " + type);
     return "";
 }
-
 
 std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std::string& type, bool optional)
 {
@@ -10424,7 +10410,6 @@ std::string GeneratorCpp::ConvertTypeNameAsArgument(const std::string& package, 
 
     return "const " + ConvertTypeName(package, field) + "&";
 }
-
 
 std::string GeneratorCpp::ConvertConstant(const std::string& type, const std::string& value, bool optional)
 {
