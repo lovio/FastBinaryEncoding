@@ -18,6 +18,10 @@ class GeneratorCpp : public Generator
 public:
     using Generator::Generator;
 
+    // Ptr-based code generation
+    bool Ptr() const noexcept { return _ptr; }
+    GeneratorCpp& Ptr(bool ptr) noexcept { _ptr = ptr; return *this; }
+
     // Final protocol code generation
     bool Final() const noexcept { return _final; }
     GeneratorCpp& Final(bool final) noexcept { _final = final; return *this; }
@@ -34,18 +38,14 @@ public:
     bool Logging() const noexcept { return _logging; }
     GeneratorCpp& Logging(bool logging) noexcept { _logging = logging; return *this; }
 
-    // Logging ptr-based code generation
-    bool Ptr() const noexcept { return _ptr; }
-    GeneratorCpp& Ptr(bool ptr) noexcept { _ptr = ptr; return *this; }
-
     void Generate(const std::shared_ptr<Package>& package) override;
 
 private:
+    bool _ptr{false};
     bool _final{false};
     bool _json{false};
     bool _proto{false};
     bool _logging{false};
-    bool _ptr{false};
 
     void GenerateHeader(const std::string& source);
     void GenerateInline(const std::string& source);
@@ -85,8 +85,6 @@ private:
     void GenerateFBEFieldModelString_Source();
     void GenerateFBEFieldModelOptional_Header();
     void GenerateFBEFieldModelOptional_Inline();
-    void GenerateFBEFieldModelPtr_Header();
-    void GenerateFBEFieldModelPtr_Inline();
     void GenerateFBEFieldModelArray_Header();
     void GenerateFBEFieldModelArray_Inline();
     void GenerateFBEFieldModelCustomArray_Header();
@@ -111,8 +109,6 @@ private:
     void GenerateFBEFinalModelString_Source();
     void GenerateFBEFinalModelOptional_Header();
     void GenerateFBEFinalModelOptional_Inline();
-    void GenerateFBEFinalModelPtr_Header();
-    void GenerateFBEFinalModelPtr_Inline();
     void GenerateFBEFinalModelArray_Header();
     void GenerateFBEFinalModelArray_Inline();
     void GenerateFBEFinalModelVector_Header();
