@@ -53,6 +53,10 @@
 
 namespace FBE {
 
+struct Base{
+    virtual ~Base() = default;
+};
+
 //! Bytes buffer type
 /*!
     Represents bytes buffer which is a lightweight wrapper around std::vector<uint8_t>

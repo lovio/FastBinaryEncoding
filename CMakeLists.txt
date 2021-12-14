@@ -101,6 +101,26 @@ if(NOT FBEC_MODULE)
     list(APPEND PROTO_FILES ${FBE_OUTPUT_FILE})
   endforeach()
 
+  # Proto ptr-based FBE models
+  file(GLOB FBE_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/ptr_proto" "ptr_proto/*.fbe")
+  foreach(FBE_FILE ${FBE_FILES})
+    string(REGEX REPLACE "(.*)\\.fbe" "\\1.h" FBE_HEADER ${FBE_FILE})
+    set(FBE_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ptr_proto")
+    set(FBE_INPUT_FILE "${FBE_INPUT_DIR}/${FBE_FILE}")
+    set(FBE_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/proto")
+    set(FBE_OUTPUT_FILE "${FBE_OUTPUT_DIR}/${FBE_HEADER}")
+    set(FBE_TARGET "${FBE_FILE}_PTR_TARGET")
+    add_custom_command(
+      OUTPUT ${FBE_OUTPUT_FILE}
+      COMMAND $<TARGET_FILE:fbec> --cpp --ptr --input ${FBE_INPUT_FILE} --output ${FBE_OUTPUT_DIR}
+      DEPENDS ${FBE_INPUT_FILE} COMMENT "Generating FBE proto for ${FBE_INPUT_FILE}..." VERBATIM
+    )
+    add_custom_target(${FBE_TARGET} DEPENDS ${FBE_OUTPUT_FILE})
+    set_target_properties(${FBE_TARGET} PROPERTIES FOLDER "proto")
+    list(APPEND PROTO_DEPENDENCIES ${FBE_TARGET})
+    list(APPEND PROTO_FILES ${FBE_OUTPUT_FILE})
+  endforeach()
+
   # Proto library
   file(GLOB_RECURSE PROTO_HEADER_FILES "proto/*.h")
   file(GLOB_RECURSE PROTO_INLINE_FILES "proto/*.inl")
