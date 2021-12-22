@@ -75,6 +75,203 @@ public:
     Write(code);
 }
 
+void GeneratorCpp::GenerateFBEFieldModelCustomOptional_Header()
+{
+    std::string code = R"CODE(
+template <typename T, typename TStruct>
+class FieldModelCustomOptional
+{
+public:
+    FieldModelCustomOptional(FBEBuffer& buffer, size_t offset) noexcept: _buffer(buffer), _offset(offset), value(buffer, 0) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 1 + 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    //! Is the value present?
+    explicit operator bool() const noexcept { return has_value(); }
+
+    // Checks if the object contains a value
+    bool has_value() const noexcept;
+
+    // Check if the optional value is valid
+    bool verify() const noexcept;
+
+    // Get the optional value (being phase)
+    size_t get_begin() const noexcept;
+    // Get the optional value (end phase)
+    void get_end(size_t fbe_begin) const noexcept;
+
+    // Get the optional value
+    void get(std::optional<TStruct>& opt) noexcept;
+
+    // Set the optional value (begin phase)
+    size_t set_begin(bool has_value);
+    // Set the optional value (end phase)
+    void set_end(size_t fbe_begin);
+
+    // Set the optional value
+    void set(const std::optional<TStruct>& opt);
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+
+public:
+    // Base field model value
+    T value;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelCustomOptional_Inline()
+{
+    std::string code = R"CODE(
+template <typename T, typename TStruct>
+inline size_t FieldModelCustomOptional<T, TStruct>::fbe_extra() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_optional_offset);
+    size_t fbe_result = value.fbe_size() + value.fbe_extra();
+    _buffer.unshift(fbe_optional_offset);
+    return fbe_result;
+}
+
+template <typename T, typename TStruct>
+inline bool FieldModelCustomOptional<T, TStruct>::has_value() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return false;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    return (fbe_has_value != 0);
+}
+
+template <typename T, typename TStruct>
+inline bool FieldModelCustomOptional<T, TStruct>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if (fbe_has_value == 0)
+        return true;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if (fbe_optional_offset == 0)
+        return false;
+
+    _buffer.shift(fbe_optional_offset);
+    bool fbe_result = value.verify();
+    _buffer.unshift(fbe_optional_offset);
+    return fbe_result;
+}
+
+template <typename T, typename TStruct>
+inline size_t FieldModelCustomOptional<T, TStruct>::get_begin() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    assert((fbe_optional_offset > 0) && "Model is broken!");
+    if (fbe_optional_offset == 0)
+        return 0;
+
+    _buffer.shift(fbe_optional_offset);
+    return fbe_optional_offset;
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelCustomOptional<T, TStruct>::get_end(size_t fbe_begin) const noexcept
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelCustomOptional<T, TStruct>::get(std::optional<TStruct>& opt) noexcept
+{
+
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    TStruct temp = TStruct();
+    value.get(temp);
+    opt.emplace(std::move(temp));
+
+    get_end(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline size_t FieldModelCustomOptional<T, TStruct>::set_begin(bool has_value)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint8_t fbe_has_value = has_value ? 1 : 0;
+    *((uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
+    if (fbe_has_value == 0)
+        return 0;
+
+    uint32_t fbe_optional_size = (uint32_t)value.fbe_size();
+    uint32_t fbe_optional_offset = (uint32_t)(_buffer.allocate(fbe_optional_size) - _buffer.offset());
+    assert(((fbe_optional_offset > 0) && ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) > _buffer.size()))
+        return 0;
+
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_optional_offset;
+
+    _buffer.shift(fbe_optional_offset);
+    return fbe_optional_offset;
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelCustomOptional<T, TStruct>::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelCustomOptional<T, TStruct>::set(const std::optional<TStruct>& opt)
+{
+    size_t fbe_begin = set_begin(opt.has_value());
+    if (fbe_begin == 0)
+        return;
+
+    if (opt)
+        value.set(opt.value());
+
+    set_end(fbe_begin);
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateFBEFieldModelCustomArray_Header()
 {
     std::string code = R"CODE(
@@ -1140,6 +1337,7 @@ void GeneratorCpp::GenerateFBECustomModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelCustomArray_Header();
     GenerateFBEFieldModelCustomVector_Header();
     GenerateFBEFieldModelCustomMap_Header();
+    GenerateFBEFieldModelCustomOptional_Header();
 
     // Generate namespace end
     WriteLine();
@@ -1176,6 +1374,7 @@ void GeneratorCpp::GenerateFBECustomModels_Inline(const CppCommon::Path& path)
     GenerateFBEFieldModelCustomArray_Inline();
     GenerateFBEFieldModelCustomVector_Inline();
     GenerateFBEFieldModelCustomMap_Inline();
+    GenerateFBEFieldModelCustomOptional_Inline();
 
     // Generate namespace end
     WriteLine();
@@ -2064,7 +2263,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
             // Struct
             if (IsStructType(p, field) && !IsKnownType(*field->type)) {
                 std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
-                if (IsContainerType(*field)) {
+                if (IsContainerType(*field) || field->optional) {
                     WriteIndent("FieldModelCustom");
                     if (field->array) {
                         Write("Array<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
@@ -2082,6 +2281,9 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
                         auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
                         auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
                         Write("Map<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
+                    }
+                    else if (field->optional) {
+                        Write("Optional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
                     }
                     Write(" " +  *field->name + ";");
                     WriteLine();
@@ -2441,8 +2643,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field))
-                    // TODO: fix enum and flags
+                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field) && !field->optional)
                     WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
