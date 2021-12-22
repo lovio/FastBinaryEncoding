@@ -24,3 +24,10 @@ struct Simple {
   Extra[1] sa;
   Sex sex;
 }
+
+struct Complex {
+  string name;
+  Sex? sex;
+  MyFLags? flag;
+  Extra? extra;
+}

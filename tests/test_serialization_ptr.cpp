@@ -323,3 +323,63 @@ TEST_CASE("Serilization (identical with templated-based code without ptr)", "[Pt
     REQUIRE(osa_copy.sex == osa::Sex::male);
 
 }
+
+
+TEST_CASE("Serialization (optional)", "[Ptr-based FBE]") {
+    ::sa::Complex c1 = {
+        "test optional",
+        std::make_optional<::sa::Sex>(::sa::Sex::male),
+        std::make_optional<::sa::MyFLags>(::sa::MyFLags::flag1),
+        std::nullopt,
+    };
+
+    FBE::sa::ComplexModel c_writer;
+    size_t serialized_c = c_writer.serialize(c1);
+    REQUIRE(serialized_c == c_writer.buffer().size());
+    REQUIRE(c_writer.verify());
+
+    FBE::sa::ComplexModel c_reader;
+    c_reader.attach(c_writer.buffer());
+    REQUIRE(c_reader.verify());
+
+    ::sa::Complex copy;
+    size_t deserialized_c = c_reader.deserialize(copy);
+    REQUIRE(deserialized_c == c_reader.buffer().size());
+    assert(c_reader.verify());
+
+    REQUIRE(copy.name == "test optional");
+    REQUIRE(copy.sex.has_value());
+    REQUIRE(copy.sex.value() == ::sa::Sex::male);
+    REQUIRE(copy.flag.has_value());
+    REQUIRE(copy.flag.value() == ::sa::MyFLags::flag1);
+    REQUIRE(!copy.extra.has_value());
+
+    c1.extra = std::make_optional<::sa::Extra>(::sa::Extra("extra", "detail",::sa::Sex::female, ::sa::MyFLags::flag2));
+
+    c_writer.reset();
+    c_reader.reset();
+    size_t serialized_c1 = c_writer.serialize(c1);
+    REQUIRE(serialized_c1 == c_writer.buffer().size());
+    REQUIRE(c_writer.verify());
+    REQUIRE(serialized_c1 > serialized_c);
+
+    c_reader.attach(c_writer.buffer());
+
+    ::sa::Complex c1_copy;
+    size_t deserialized_c1 = c_reader.deserialize(c1_copy);
+    REQUIRE(deserialized_c1 == c_reader.buffer().size());
+    assert(c_reader.verify());
+
+    REQUIRE(deserialized_c1 == serialized_c1);
+
+    REQUIRE(c1_copy.name == "test optional");
+    REQUIRE(c1_copy.sex.has_value());
+    REQUIRE(c1_copy.sex.value() == ::sa::Sex::male);
+    REQUIRE(c1_copy.flag.has_value());
+    REQUIRE(c1_copy.flag.value() == ::sa::MyFLags::flag1);
+    REQUIRE(c1_copy.extra.has_value());
+    REQUIRE(c1_copy.extra->name == "extra");
+    REQUIRE(c1_copy.extra->detail == "detail");
+    REQUIRE(c1_copy.extra->sex == ::sa::Sex::female);
+    REQUIRE(c1_copy.extra->flag == ::sa::MyFLags::flag2);
+}

@@ -169,4 +169,73 @@ std::ostream& operator<<(std::ostream& stream, const Simple& value)
     return stream;
 }
 
+Complex::Complex()
+    : name()
+    , sex()
+    , flag()
+    , extra()
+{}
+
+Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra)
+    : name(arg_name)
+    , sex(std::move(arg_sex))
+    , flag(std::move(arg_flag))
+    , extra(std::move(arg_extra))
+{}
+
+Complex::Complex(Complex&& other)
+    : name(std::move(other.name))
+    , sex(std::move(other.sex))
+    , flag(std::move(other.flag))
+    , extra(std::move(other.extra))
+{}
+
+Complex::~Complex()
+{
+}
+
+bool Complex::operator==(const Complex& other) const noexcept
+{
+    return (
+        true
+        );
+}
+
+bool Complex::operator<(const Complex& other) const noexcept
+{
+    return false;
+}
+
+Complex& Complex::operator=(Complex&& other)
+{
+    if (this != &other)
+    {
+        name = std::move(other.name);
+        sex = std::move(other.sex);
+        flag = std::move(other.flag);
+        extra = std::move(other.extra);
+    }
+    return *this;
+}
+
+void Complex::swap(Complex& other) noexcept
+{
+    using std::swap;
+    swap(name, other.name);
+    swap(sex, other.sex);
+    swap(flag, other.flag);
+    swap(extra, other.extra);
+}
+
+std::ostream& operator<<(std::ostream& stream, const Complex& value)
+{
+    stream << "Complex(";
+    stream << "name="; stream << "\"" << value.name << "\"";
+    stream << ",sex="; if (value.sex) stream << *value.sex; else stream << "null";
+    stream << ",flag="; if (value.flag) stream << *value.flag; else stream << "null";
+    stream << ",extra="; if (value.extra) stream << *value.extra; else stream << "null";
+    stream << ")";
+    return stream;
+}
+
 } // namespace sa
