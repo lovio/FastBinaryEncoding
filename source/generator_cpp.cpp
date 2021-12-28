@@ -8150,7 +8150,7 @@ void GeneratorCpp::GenerateStructHash(const std::shared_ptr<Package>& p, const s
     WriteLineIndent("typedef " + *p->name + "::" + *s->name + " argument_type;");
     WriteLineIndent("typedef size_t result_type;");
     WriteLine();
-    WriteLineIndent("result_type operator() (const argument_type& value) const");
+    WriteLineIndent("result_type operator() ([[maybe_unused]] const argument_type& value) const");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("result_type result = 17;");

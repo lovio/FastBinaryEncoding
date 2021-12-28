@@ -1805,8 +1805,15 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     {
         for (const auto& field : s->body->fields)
         {
-            WriteLineIndent(std::string(first ? ": " : ", ") +
-                *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
+            WriteIndent();
+            Write(std::string(first ? ": " : ", ") + *field->name + "(");
+            if (field->ptr && !IsContainerType(*field)) {
+                Write("nullptr");
+            } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
+                Write(ConvertDefault(*p->name, *field));
+            }
+            Write(")");
+            WriteLine();
             first = false;
         }
     }
@@ -2162,7 +2169,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Header(const std::shared_ptr<Pack
     WriteLine();
     WriteLineIndent("public:");
     Indent(1);
-    WriteLineIndent("BaseFieldModel* ptr{nullptr};");
+    WriteLineIndent("BaseFieldModel* ptr;");
 
     // Generate struct field model end
     Indent(-1);
@@ -2661,7 +2668,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
 
     // Generate struct field model constructor
     WriteLine();
-    WriteLineIndent(class_name + "::" + class_name +"(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    WriteLineIndent(class_name + "::" + class_name +"(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)");
     WriteLineIndent("{}");
     WriteLine();
 
