@@ -1605,8 +1605,15 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     {
         for (const auto& field : s->body->fields)
         {
-            WriteLineIndent(std::string(first ? ": " : ", ") +
-                *field->name + "(" + ((field->value || IsPrimitiveType(*field->type, field->optional)) ? ConvertDefault(*p->name, *field) : "") + ")");
+            WriteIndent();
+            Write(std::string(first ? ": " : ", ") + *field->name + "(");
+            if (field->ptr && !IsContainerType(*field)) {
+                Write("nullptr");
+            } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
+                Write(ConvertDefault(*p->name, *field));
+            }
+            Write(")");
+            WriteLine();
             first = false;
         }
     }
