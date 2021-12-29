@@ -9,7 +9,7 @@ namespace extra {
 
 Info::Info()
     : info()
-    , extra()
+    , extra(nullptr)
     , extras()
     , extras1()
 {}
@@ -42,14 +42,14 @@ Info::~Info()
         delete it;
 }
 
-bool Info::operator==(const Info& other) const noexcept
+bool Info::operator==([[maybe_unused]] const Info& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Info::operator<(const Info& other) const noexcept
+bool Info::operator<([[maybe_unused]] const Info& other) const noexcept
 {
     return false;
 }
@@ -107,8 +107,8 @@ std::ostream& operator<<(std::ostream& stream, const Info& value)
 Extra::Extra()
     : num((int64_t)0ll)
     , data()
-    , info()
-    , info2()
+    , info(nullptr)
+    , info2(nullptr)
     , info3()
     , infov()
     , infopv()
@@ -155,14 +155,14 @@ Extra::~Extra()
         delete it;
 }
 
-bool Extra::operator==(const Extra& other) const noexcept
+bool Extra::operator==([[maybe_unused]] const Extra& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Extra::operator<(const Extra& other) const noexcept
+bool Extra::operator<([[maybe_unused]] const Extra& other) const noexcept
 {
     return false;
 }

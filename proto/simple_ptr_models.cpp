@@ -7,7 +7,7 @@
 
 namespace FBE {
 
-FieldModelPtr_simple_Simple::FieldModelPtr_simple_Simple(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_simple_Simple::FieldModelPtr_simple_Simple(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_simple_Simple::~FieldModelPtr_simple_Simple()

@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -21,6 +25,7 @@ namespace FBE {
 class BaseFieldModel
 {
 public:
+    virtual ~BaseFieldModel() = default;
     // Get the field offset
     virtual size_t fbe_offset() const noexcept = 0;
     // Get the field size

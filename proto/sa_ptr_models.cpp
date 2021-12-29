@@ -7,7 +7,7 @@
 
 namespace FBE {
 
-FieldModelPtr_sa_Extra::FieldModelPtr_sa_Extra(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_sa_Extra::FieldModelPtr_sa_Extra(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_sa_Extra::~FieldModelPtr_sa_Extra()
@@ -404,7 +404,7 @@ size_t ExtraModel::deserialize(::sa::Extra& value) noexcept
 
 } // namespace sa
 
-FieldModelPtr_sa_Simple::FieldModelPtr_sa_Simple(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_sa_Simple::FieldModelPtr_sa_Simple(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_sa_Simple::~FieldModelPtr_sa_Simple()
@@ -800,7 +800,7 @@ size_t SimpleModel::deserialize(::sa::Simple& value) noexcept
 
 } // namespace sa
 
-FieldModelPtr_sa_Complex::FieldModelPtr_sa_Complex(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_sa_Complex::FieldModelPtr_sa_Complex(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_sa_Complex::~FieldModelPtr_sa_Complex()

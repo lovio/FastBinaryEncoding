@@ -7,7 +7,7 @@
 
 namespace FBE {
 
-FieldModelPtr_extra_Info::FieldModelPtr_extra_Info(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_extra_Info::FieldModelPtr_extra_Info(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_extra_Info::~FieldModelPtr_extra_Info()
@@ -404,7 +404,7 @@ size_t InfoModel::deserialize(::extra::Info& value) noexcept
 
 } // namespace extra
 
-FieldModelPtr_extra_Extra::FieldModelPtr_extra_Extra(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModelPtr_extra_Extra::FieldModelPtr_extra_Extra(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset), ptr(nullptr)
 {}
 
 FieldModelPtr_extra_Extra::~FieldModelPtr_extra_Extra()

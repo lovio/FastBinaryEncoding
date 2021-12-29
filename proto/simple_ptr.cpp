@@ -9,7 +9,7 @@ namespace simple {
 
 Simple::Simple()
     : info()
-    , simple()
+    , simple(nullptr)
     , depth((int32_t)0ll)
     , spv()
     , sv()
@@ -51,14 +51,14 @@ Simple::~Simple()
         delete it.second;
 }
 
-bool Simple::operator==(const Simple& other) const noexcept
+bool Simple::operator==([[maybe_unused]] const Simple& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Simple::operator<(const Simple& other) const noexcept
+bool Simple::operator<([[maybe_unused]] const Simple& other) const noexcept
 {
     return false;
 }

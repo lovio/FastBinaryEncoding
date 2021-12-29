@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -69,7 +73,7 @@ private:
     size_t _offset;
 
 public:
-    BaseFieldModel* ptr{nullptr};
+    BaseFieldModel* ptr;
 };
 
 class FieldModelPtr_extra_Extra
@@ -122,7 +126,7 @@ private:
     size_t _offset;
 
 public:
-    BaseFieldModel* ptr{nullptr};
+    BaseFieldModel* ptr;
 };
 
 // Fast Binary Encoding ::extra::Info field model

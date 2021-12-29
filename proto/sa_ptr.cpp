@@ -47,14 +47,14 @@ Extra::~Extra()
 {
 }
 
-bool Extra::operator==(const Extra& other) const noexcept
+bool Extra::operator==([[maybe_unused]] const Extra& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Extra::operator<(const Extra& other) const noexcept
+bool Extra::operator<([[maybe_unused]] const Extra& other) const noexcept
 {
     return false;
 }
@@ -116,14 +116,14 @@ Simple::~Simple()
 {
 }
 
-bool Simple::operator==(const Simple& other) const noexcept
+bool Simple::operator==([[maybe_unused]] const Simple& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Simple::operator<(const Simple& other) const noexcept
+bool Simple::operator<([[maybe_unused]] const Simple& other) const noexcept
 {
     return false;
 }
@@ -194,14 +194,14 @@ Complex::~Complex()
 {
 }
 
-bool Complex::operator==(const Complex& other) const noexcept
+bool Complex::operator==([[maybe_unused]] const Complex& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Complex::operator<(const Complex& other) const noexcept
+bool Complex::operator<([[maybe_unused]] const Complex& other) const noexcept
 {
     return false;
 }
