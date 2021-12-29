@@ -89,6 +89,10 @@ void GeneratorCpp::GenerateHeader(const std::string& source)
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -7761,7 +7765,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
 
     // Generate struct compare operators
     WriteLine();
-    WriteLineIndent("bool " + *s->name + "::operator==(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("bool " + *s->name + "::operator==([[maybe_unused]] const " + *s->name + "& other) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("return (");
@@ -7794,7 +7798,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     WriteLineIndent("}");
 
     WriteLine();
-    WriteLineIndent("bool " + *s->name + "::operator<(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("bool " + *s->name + "::operator<([[maybe_unused]] const " + *s->name + "& other) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if (s->base && !s->base->empty())
@@ -8146,7 +8150,7 @@ void GeneratorCpp::GenerateStructHash(const std::shared_ptr<Package>& p, const s
     WriteLineIndent("typedef " + *p->name + "::" + *s->name + " argument_type;");
     WriteLineIndent("typedef size_t result_type;");
     WriteLine();
-    WriteLineIndent("result_type operator() (const argument_type& value) const");
+    WriteLineIndent("result_type operator() ([[maybe_unused]] const argument_type& value) const");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("result_type result = 17;");
