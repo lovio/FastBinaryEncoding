@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -22,6 +26,8 @@ using namespace FBE;
 namespace FBE {
 using namespace ::sa;
 } // namespace FBE
+
+#include "fbe_ptr.h"
 
 namespace sa {
 
@@ -93,7 +99,7 @@ struct hash<sa::Extra>
     typedef sa::Extra argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -147,7 +153,61 @@ struct hash<sa::Simple>
     typedef sa::Simple argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
+    {
+        result_type result = 17;
+        return result;
+    }
+};
+
+} // namespace std
+
+namespace sa {
+
+struct Complex : FBE::Base
+{
+    std::string name;
+    std::optional<::sa::Sex> sex;
+    std::optional<::sa::MyFLags> flag;
+    std::optional<::sa::Extra> extra;
+
+    size_t fbe_type() const noexcept { return 3; }
+
+    Complex();
+    Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra);
+    Complex(const Complex& other) = delete;
+    Complex(Complex&& other);
+    ~Complex();
+
+    Complex& operator=(const Complex& other) = delete;
+    Complex& operator=(Complex&& other);
+
+    bool operator==(const Complex& other) const noexcept;
+    bool operator!=(const Complex& other) const noexcept { return !operator==(other); }
+    bool operator<(const Complex& other) const noexcept;
+    bool operator<=(const Complex& other) const noexcept { return operator<(other) || operator==(other); }
+    bool operator>(const Complex& other) const noexcept { return !operator<=(other); }
+    bool operator>=(const Complex& other) const noexcept { return !operator<(other); }
+
+    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+
+    friend std::ostream& operator<<(std::ostream& stream, const Complex& value);
+
+    void swap(Complex& other) noexcept;
+    friend void swap(Complex& value1, Complex& value2) noexcept { value1.swap(value2); }
+};
+
+} // namespace sa
+
+namespace std {
+
+template<>
+struct hash<sa::Complex>
+{
+    typedef sa::Complex argument_type;
+    typedef size_t result_type;
+
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

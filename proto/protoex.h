@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -123,7 +127,7 @@ struct hash<protoex::Order>
     typedef protoex::Order argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -175,7 +179,7 @@ struct hash<protoex::Balance>
     typedef protoex::Balance argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<::proto::Balance>()(value);
@@ -232,7 +236,7 @@ struct hash<protoex::Account>
     typedef protoex::Account argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -284,7 +288,7 @@ struct hash<protoex::OrderMessage>
     typedef protoex::OrderMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -335,7 +339,7 @@ struct hash<protoex::BalanceMessage>
     typedef protoex::BalanceMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -386,7 +390,7 @@ struct hash<protoex::AccountMessage>
     typedef protoex::AccountMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -52,10 +56,6 @@
 #endif
 
 namespace FBE {
-
-struct Base{
-    virtual ~Base() = default;
-};
 
 //! Bytes buffer type
 /*!

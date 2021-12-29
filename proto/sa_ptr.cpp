@@ -47,14 +47,14 @@ Extra::~Extra()
 {
 }
 
-bool Extra::operator==(const Extra& other) const noexcept
+bool Extra::operator==([[maybe_unused]] const Extra& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Extra::operator<(const Extra& other) const noexcept
+bool Extra::operator<([[maybe_unused]] const Extra& other) const noexcept
 {
     return false;
 }
@@ -116,14 +116,14 @@ Simple::~Simple()
 {
 }
 
-bool Simple::operator==(const Simple& other) const noexcept
+bool Simple::operator==([[maybe_unused]] const Simple& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Simple::operator<(const Simple& other) const noexcept
+bool Simple::operator<([[maybe_unused]] const Simple& other) const noexcept
 {
     return false;
 }
@@ -165,6 +165,110 @@ std::ostream& operator<<(std::ostream& stream, const Simple& value)
         stream << "]";
     }
     stream << ",sex="; stream << value.sex;
+    stream << ")";
+    return stream;
+}
+
+Complex::Complex()
+    : name()
+    , sex()
+    , flag()
+    , extra()
+{}
+
+Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra)
+    : name(arg_name)
+    , sex()
+    , flag()
+    , extra()
+{
+    if (arg_sex.has_value()) {
+        sex.emplace(std::move(arg_sex.value()));
+        arg_sex.reset();
+    }
+    if (arg_flag.has_value()) {
+        flag.emplace(std::move(arg_flag.value()));
+        arg_flag.reset();
+    }
+    if (arg_extra.has_value()) {
+        extra.emplace(std::move(arg_extra.value()));
+        arg_extra.reset();
+    }
+}
+
+Complex::Complex(Complex&& other)
+    : name(std::move(other.name))
+    , sex()
+    , flag()
+    , extra()
+{
+    if (other.sex.has_value()) {
+        sex.emplace(std::move(other.sex.value()));
+        other.sex.reset();
+    }
+    if (other.flag.has_value()) {
+        flag.emplace(std::move(other.flag.value()));
+        other.flag.reset();
+    }
+    if (other.extra.has_value()) {
+        extra.emplace(std::move(other.extra.value()));
+        other.extra.reset();
+    }
+}
+
+Complex::~Complex()
+{
+}
+
+bool Complex::operator==([[maybe_unused]] const Complex& other) const noexcept
+{
+    return (
+        true
+        );
+}
+
+bool Complex::operator<([[maybe_unused]] const Complex& other) const noexcept
+{
+    return false;
+}
+
+Complex& Complex::operator=(Complex&& other)
+{
+    if (this != &other)
+    {
+        name = std::move(other.name);
+        if (other.sex.has_value()) {
+            sex.emplace(std::move(other.sex.value()));
+            other.sex.reset();
+        }
+        if (other.flag.has_value()) {
+            flag.emplace(std::move(other.flag.value()));
+            other.flag.reset();
+        }
+        if (other.extra.has_value()) {
+            extra.emplace(std::move(other.extra.value()));
+            other.extra.reset();
+        }
+    }
+    return *this;
+}
+
+void Complex::swap(Complex& other) noexcept
+{
+    using std::swap;
+    swap(name, other.name);
+    swap(sex, other.sex);
+    swap(flag, other.flag);
+    swap(extra, other.extra);
+}
+
+std::ostream& operator<<(std::ostream& stream, const Complex& value)
+{
+    stream << "Complex(";
+    stream << "name="; stream << "\"" << value.name << "\"";
+    stream << ",sex="; if (value.sex) stream << *value.sex; else stream << "null";
+    stream << ",flag="; if (value.flag) stream << *value.flag; else stream << "null";
+    stream << ",extra="; if (value.extra) stream << *value.extra; else stream << "null";
     stream << ")";
     return stream;
 }

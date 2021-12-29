@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -22,6 +26,8 @@ using namespace FBE;
 namespace FBE {
 using namespace ::extra;
 } // namespace FBE
+
+#include "fbe_ptr.h"
 
 namespace extra {
 
@@ -70,7 +76,7 @@ struct hash<extra::Info>
     typedef extra::Info argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -131,7 +137,7 @@ struct hash<extra::Extra>
     typedef extra::Extra argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
