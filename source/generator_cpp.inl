@@ -8,7 +8,7 @@
 
 namespace FBE {
 
-void GeneratorCpp::GenerateBaseModel_Header(const CppCommon::Path& path)
+void GeneratorCpp::GenerateFBEPtr_Header(const CppCommon::Path& path)
 {
     // Create package path
     CppCommon::Directory::CreateTree(path);

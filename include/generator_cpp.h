@@ -121,10 +121,10 @@ private:
     void GenerateFBEJson();
     void GenerateFBE_Header(const CppCommon::Path& path);
     void GenerateFBE_Source(const CppCommon::Path& path);
+    void GenerateFBEPtr_Header(const CppCommon::Path& path);
     void GenerateFBEModels_Header(const CppCommon::Path& path);
     void GenerateFBEModels_Inline(const CppCommon::Path& path);
     void GenerateFBEModels_Source(const CppCommon::Path& path);
-    void GenerateBaseModel_Header(const CppCommon::Path& path);
     void GenerateFBECustomModels_Header(const CppCommon::Path& path);
     void GenerateFBECustomModels_Inline(const CppCommon::Path& path);
     void GenerateFBEFinalModels_Header(const CppCommon::Path& path);
