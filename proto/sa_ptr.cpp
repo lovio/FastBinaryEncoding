@@ -178,17 +178,49 @@ Complex::Complex()
 
 Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra)
     : name(arg_name)
-    , sex(std::move(arg_sex))
-    , flag(std::move(arg_flag))
-    , extra(std::move(arg_extra))
-{}
+    , sex()
+    , flag()
+    , extra()
+{
+    if (arg_sex.has_value()) {
+        auto&& _v = arg_sex.value();
+        sex.emplace(std::move(_v));
+        arg_sex.reset();
+    }
+    if (arg_flag.has_value()) {
+        auto&& _v = arg_flag.value();
+        flag.emplace(std::move(_v));
+        arg_flag.reset();
+    }
+    if (arg_extra.has_value()) {
+        auto&& _v = arg_extra.value();
+        extra.emplace(std::move(_v));
+        arg_extra.reset();
+    }
+}
 
 Complex::Complex(Complex&& other)
     : name(std::move(other.name))
-    , sex(std::move(other.sex))
-    , flag(std::move(other.flag))
-    , extra(std::move(other.extra))
-{}
+    , sex()
+    , flag()
+    , extra()
+{
+    if (other.sex.has_value()) {
+        auto&& _v = other.sex.value();
+        sex.emplace(std::move(_v));
+        other.sex.reset();
+    }
+    if (other.flag.has_value()) {
+        auto&& _v = other.flag.value();
+        flag.emplace(std::move(_v));
+        other.flag.reset();
+    }
+    if (other.extra.has_value()) {
+        auto&& _v = other.extra.value();
+        extra.emplace(std::move(_v));
+        other.extra.reset();
+    }
+}
 
 Complex::~Complex()
 {
@@ -211,9 +243,21 @@ Complex& Complex::operator=(Complex&& other)
     if (this != &other)
     {
         name = std::move(other.name);
-        sex = std::move(other.sex);
-        flag = std::move(other.flag);
-        extra = std::move(other.extra);
+        if (other.sex.has_value()) {
+            auto&& _v = other.sex.value();
+            sex.emplace(std::move(_v));
+            other.sex.reset();
+        }
+        if (other.flag.has_value()) {
+            auto&& _v = other.flag.value();
+            flag.emplace(std::move(_v));
+            other.flag.reset();
+        }
+        if (other.extra.has_value()) {
+            auto&& _v = other.extra.value();
+            extra.emplace(std::move(_v));
+            other.extra.reset();
+        }
     }
     return *this;
 }
