@@ -6,3 +6,7 @@ images/* linguist-vendored
 modules/* linguist-vendored
 projects/* linguist-vendored
 temp/* linguist-vendored
+proto/* linguist-vendored
+proto/*.cpp linguist-generated=true
+proto/*.h linguist-generated=true
+proto/*.inl linguist-generated=true
