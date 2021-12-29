@@ -29,6 +29,7 @@ void GeneratorCpp::GenerateFBEBaseFieldModel_Header()
 class BaseFieldModel
 {
 public:
+    virtual ~BaseFieldModel() = default;
     // Get the field offset
     virtual size_t fbe_offset() const noexcept = 0;
     // Get the field size
