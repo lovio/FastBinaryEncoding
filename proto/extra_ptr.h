@@ -27,6 +27,8 @@ namespace FBE {
 using namespace ::extra;
 } // namespace FBE
 
+#include "fbe_ptr.h"
+
 namespace extra {
 
 struct Extra;

@@ -19,6 +19,8 @@
 
 #include "fbe_models.h"
 
+#include "fbe_ptr.h"
+
 namespace FBE {
 
 // base class for struct field

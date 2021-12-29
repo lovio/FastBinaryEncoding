@@ -27,6 +27,8 @@ namespace FBE {
 using namespace ::simple;
 } // namespace FBE
 
+#include "fbe_ptr.h"
+
 namespace simple {
 
 struct Simple : FBE::Base

@@ -22,6 +22,7 @@ void GeneratorCpp::Generate(const std::shared_ptr<Package>& package)
     GenerateFBEModels_Source(_output);
 
     if (Ptr()) {
+        GenerateBaseModel_Header(_output);
         GenerateFBECustomModels_Header(_output);
         GenerateFBECustomModels_Inline(_output);
 
@@ -6293,9 +6294,6 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     WriteLineIndent("namespace FBE {");
 
     // Generate common body
-    if (Ptr()){
-        GenerateBaseModel_Header();
-    }
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();

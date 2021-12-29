@@ -27,6 +27,8 @@ namespace FBE {
 using namespace ::sa;
 } // namespace FBE
 
+#include "fbe_ptr.h"
+
 namespace sa {
 
 enum class Sex

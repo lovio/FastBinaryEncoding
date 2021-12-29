@@ -8,10 +8,25 @@
 
 namespace FBE {
 
-void GeneratorCpp::GenerateBaseModel_Header()
+void GeneratorCpp::GenerateBaseModel_Header(const CppCommon::Path& path)
 {
+    // Create package path
+    CppCommon::Directory::CreateTree(path);
+
+    // Generate the common file
+    CppCommon::Path common = path / "fbe_ptr.h";
+    WriteBegin();
+
+    // Generate common header
+    GenerateHeader("FBE");
+
+    // Generate namespace begin
+    WriteLine();
+    WriteLineIndent("namespace FBE {");
+
     std::string code = R"CODE(
-struct Base{
+struct Base
+{
     virtual ~Base() = default;
 };
 )CODE";
@@ -20,6 +35,17 @@ struct Base{
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
     Write(code);
+
+    // Generate namespace end
+    WriteLine();
+    WriteLineIndent("} // namespace FBE");
+
+    // Generate common footer
+    GenerateFooter();
+
+    // Store the common file
+    WriteEnd();
+    Store(common);
 }
 
 void GeneratorCpp::GenerateFBEBaseFieldModel_Header()
@@ -1328,6 +1354,7 @@ void GeneratorCpp::GenerateFBECustomModels_Header(const CppCommon::Path& path)
 
     // Generate imports
     GenerateImports("fbe_models.h");
+    GenerateImports("fbe_ptr.h");
 
     // Generate namespace begin
     WriteLine();
@@ -1405,6 +1432,7 @@ void GeneratorCpp::GeneratePtrPackage_Header(const std::shared_ptr<Package>& p)
 
     // Generate imports
     GenerateImports(p);
+    GenerateImports("fbe_ptr.h");
 
     // Generate namespace begin
     WriteLine();

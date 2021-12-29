@@ -60,7 +60,6 @@ private:
     void GenerateImportsProtocol(const std::shared_ptr<Package>& p, bool final);
     void GenerateImportsJson();
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
-    void GenerateBaseModel_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();
@@ -127,6 +126,7 @@ private:
     void GenerateFBEModels_Header(const CppCommon::Path& path);
     void GenerateFBEModels_Inline(const CppCommon::Path& path);
     void GenerateFBEModels_Source(const CppCommon::Path& path);
+    void GenerateBaseModel_Header(const CppCommon::Path& path);
     void GenerateFBECustomModels_Header(const CppCommon::Path& path);
     void GenerateFBECustomModels_Inline(const CppCommon::Path& path);
     void GenerateFBEFinalModels_Header(const CppCommon::Path& path);
