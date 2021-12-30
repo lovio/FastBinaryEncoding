@@ -331,6 +331,7 @@ TEST_CASE("Serialization (optional)", "[Ptr-based FBE]") {
         std::make_optional<::sa::Sex>(::sa::Sex::male),
         std::make_optional<::sa::MyFLags>(::sa::MyFLags::flag1),
         std::nullopt,
+        {123}
     };
 
     FBE::sa::ComplexModel c_writer;
@@ -382,4 +383,6 @@ TEST_CASE("Serialization (optional)", "[Ptr-based FBE]") {
     REQUIRE(c1_copy.extra->detail == "detail");
     REQUIRE(c1_copy.extra->sex == ::sa::Sex::female);
     REQUIRE(c1_copy.extra->flag == ::sa::MyFLags::flag2);
+    REQUIRE(c1_copy.nums.size() == 1);
+    REQUIRE(c1_copy.nums[0] == 123);
 }

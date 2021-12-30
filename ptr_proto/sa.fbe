@@ -30,4 +30,5 @@ struct Complex {
   Sex? sex;
   MyFLags? flag;
   Extra? extra;
+  int64[] nums;
 }
