@@ -102,14 +102,14 @@ public:
     Write(code);
 }
 
-void GeneratorCpp::GenerateFBEFieldModelCustomOptional_Header()
+void GeneratorCpp::GenerateFBEFieldModelStructOptional_Header()
 {
     std::string code = R"CODE(
 template <typename T, typename TStruct>
-class FieldModelCustomOptional
+class FieldModelStructOptional
 {
 public:
-    FieldModelCustomOptional(FBEBuffer& buffer, size_t offset) noexcept: _buffer(buffer), _offset(offset), value(buffer, 0) {}
+    FieldModelStructOptional(FBEBuffer& buffer, size_t offset) noexcept: _buffer(buffer), _offset(offset), value(buffer, 0) {}
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -164,11 +164,11 @@ public:
     Write(code);
 }
 
-void GeneratorCpp::GenerateFBEFieldModelCustomOptional_Inline()
+void GeneratorCpp::GenerateFBEFieldModelStructOptional_Inline()
 {
     std::string code = R"CODE(
 template <typename T, typename TStruct>
-inline size_t FieldModelCustomOptional<T, TStruct>::fbe_extra() const noexcept
+inline size_t FieldModelStructOptional<T, TStruct>::fbe_extra() const noexcept
 {
     if (!has_value())
         return 0;
@@ -184,7 +184,7 @@ inline size_t FieldModelCustomOptional<T, TStruct>::fbe_extra() const noexcept
 }
 
 template <typename T, typename TStruct>
-inline bool FieldModelCustomOptional<T, TStruct>::has_value() const noexcept
+inline bool FieldModelStructOptional<T, TStruct>::has_value() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return false;
@@ -194,7 +194,7 @@ inline bool FieldModelCustomOptional<T, TStruct>::has_value() const noexcept
 }
 
 template <typename T, typename TStruct>
-inline bool FieldModelCustomOptional<T, TStruct>::verify() const noexcept
+inline bool FieldModelStructOptional<T, TStruct>::verify() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
@@ -214,7 +214,7 @@ inline bool FieldModelCustomOptional<T, TStruct>::verify() const noexcept
 }
 
 template <typename T, typename TStruct>
-inline size_t FieldModelCustomOptional<T, TStruct>::get_begin() const noexcept
+inline size_t FieldModelStructOptional<T, TStruct>::get_begin() const noexcept
 {
     if (!has_value())
         return 0;
@@ -229,13 +229,13 @@ inline size_t FieldModelCustomOptional<T, TStruct>::get_begin() const noexcept
 }
 
 template <typename T, typename TStruct>
-inline void FieldModelCustomOptional<T, TStruct>::get_end(size_t fbe_begin) const noexcept
+inline void FieldModelStructOptional<T, TStruct>::get_end(size_t fbe_begin) const noexcept
 {
     _buffer.unshift(fbe_begin);
 }
 
 template <typename T, typename TStruct>
-inline void FieldModelCustomOptional<T, TStruct>::get(std::optional<TStruct>& opt) noexcept
+inline void FieldModelStructOptional<T, TStruct>::get(std::optional<TStruct>& opt) noexcept
 {
 
     size_t fbe_begin = get_begin();
@@ -250,7 +250,7 @@ inline void FieldModelCustomOptional<T, TStruct>::get(std::optional<TStruct>& op
 }
 
 template <typename T, typename TStruct>
-inline size_t FieldModelCustomOptional<T, TStruct>::set_begin(bool has_value)
+inline size_t FieldModelStructOptional<T, TStruct>::set_begin(bool has_value)
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
@@ -274,13 +274,13 @@ inline size_t FieldModelCustomOptional<T, TStruct>::set_begin(bool has_value)
 }
 
 template <typename T, typename TStruct>
-inline void FieldModelCustomOptional<T, TStruct>::set_end(size_t fbe_begin)
+inline void FieldModelStructOptional<T, TStruct>::set_end(size_t fbe_begin)
 {
     _buffer.unshift(fbe_begin);
 }
 
 template <typename T, typename TStruct>
-inline void FieldModelCustomOptional<T, TStruct>::set(const std::optional<TStruct>& opt)
+inline void FieldModelStructOptional<T, TStruct>::set(const std::optional<TStruct>& opt)
 {
     size_t fbe_begin = set_begin(opt.has_value());
     if (fbe_begin == 0)
@@ -1365,7 +1365,7 @@ void GeneratorCpp::GenerateFBECustomModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelCustomArray_Header();
     GenerateFBEFieldModelCustomVector_Header();
     GenerateFBEFieldModelCustomMap_Header();
-    GenerateFBEFieldModelCustomOptional_Header();
+    GenerateFBEFieldModelStructOptional_Header();
 
     // Generate namespace end
     WriteLine();
@@ -1402,7 +1402,7 @@ void GeneratorCpp::GenerateFBECustomModels_Inline(const CppCommon::Path& path)
     GenerateFBEFieldModelCustomArray_Inline();
     GenerateFBEFieldModelCustomVector_Inline();
     GenerateFBEFieldModelCustomMap_Inline();
-    GenerateFBEFieldModelCustomOptional_Inline();
+    GenerateFBEFieldModelStructOptional_Inline();
 
     // Generate namespace end
     WriteLine();
@@ -2351,12 +2351,12 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
             if (IsStructType(p, field) && !IsKnownType(*field->type)) {
                 std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
                 if (IsContainerType(*field) || field->optional) {
-                    WriteIndent("FieldModelCustom");
+                    WriteIndent("FieldModel");
                     if (field->array) {
-                        Write("Array<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
+                        Write("CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
                     }
                     else if (field->vector || field->list || field->set)
-                        Write("Vector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
+                        Write("CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
                     else if (field->map || field->hash){
                         // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
                         std::string kType = "FieldModel";
@@ -2367,10 +2367,10 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
                         }
                         auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
                         auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
-                        Write("Map<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
+                        Write("CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
                     }
                     else if (field->optional) {
-                        Write("Optional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
+                        Write("StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
                     }
                     Write(" " +  *field->name + ";");
                     WriteLine();
