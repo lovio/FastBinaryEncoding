@@ -442,6 +442,7 @@ public:
     FieldModel<std::optional<::sa::Sex>> sex;
     FieldModel<std::optional<::sa::MyFLags>> flag;
     FieldModelStructOptional<FieldModel_sa_Extra, ::sa::Extra> extra;
+    FieldModelVector<int64_t> nums;
 };
 
 namespace sa {

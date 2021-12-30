@@ -938,6 +938,7 @@ FieldModel_sa_Complex::FieldModel_sa_Complex(FBEBuffer& buffer, size_t offset) n
     , sex(buffer, name.fbe_offset() + name.fbe_size())
     , flag(buffer, sex.fbe_offset() + sex.fbe_size())
     , extra(buffer, flag.fbe_offset() + flag.fbe_size())
+    , nums(buffer, extra.fbe_offset() + extra.fbe_size())
 {}
 
 size_t FieldModel_sa_Complex::fbe_body() const noexcept
@@ -947,6 +948,7 @@ size_t FieldModel_sa_Complex::fbe_body() const noexcept
         + sex.fbe_size()
         + flag.fbe_size()
         + extra.fbe_size()
+        + nums.fbe_size()
         ;
     return fbe_result;
 }
@@ -967,6 +969,7 @@ size_t FieldModel_sa_Complex::fbe_extra() const noexcept
         + sex.fbe_extra()
         + flag.fbe_extra()
         + extra.fbe_extra()
+        + nums.fbe_extra()
         ;
 
     _buffer.unshift(fbe_struct_offset);
@@ -1024,6 +1027,12 @@ bool FieldModel_sa_Complex::verify_fields(size_t fbe_struct_size) const noexcept
     if (!extra.verify())
         return false;
     fbe_current_size += extra.fbe_size();
+
+    if ((fbe_current_size + nums.fbe_size()) > fbe_struct_size)
+        return true;
+    if (!nums.verify())
+        return false;
+    fbe_current_size += nums.fbe_size();
 
     return true;
 }
@@ -1099,6 +1108,14 @@ void FieldModel_sa_Complex::get_fields(::FBE::Base& base_fbe_value, size_t fbe_s
     else
         fbe_value.extra = std::nullopt;
     fbe_current_size += extra.fbe_size();
+
+    if ((fbe_current_size + nums.fbe_size()) <= fbe_struct_size)
+        {
+            nums.get(fbe_value.nums);
+        }
+    else
+        fbe_value.nums.clear();
+    fbe_current_size += nums.fbe_size();
 }
 
 size_t FieldModel_sa_Complex::set_begin()
@@ -1143,6 +1160,7 @@ void FieldModel_sa_Complex::set_fields(const ::FBE::Base& base_fbe_value) noexce
     sex.set(fbe_value.sex);
     flag.set(fbe_value.flag);
     extra.set(fbe_value.extra);
+    nums.set(fbe_value.nums);
 }
 
 namespace sa {

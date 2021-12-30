@@ -174,13 +174,15 @@ Complex::Complex()
     , sex()
     , flag()
     , extra()
+    , nums()
 {}
 
-Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra)
+Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, std::optional<::sa::MyFLags> arg_flag, std::optional<::sa::Extra> arg_extra, std::vector<int64_t> arg_nums)
     : name(arg_name)
     , sex()
     , flag()
     , extra()
+    , nums(arg_nums)
 {
     if (arg_sex.has_value()) {
         sex.emplace(std::move(arg_sex.value()));
@@ -201,6 +203,7 @@ Complex::Complex(Complex&& other)
     , sex()
     , flag()
     , extra()
+    , nums(std::move(other.nums))
 {
     if (other.sex.has_value()) {
         sex.emplace(std::move(other.sex.value()));
@@ -249,6 +252,7 @@ Complex& Complex::operator=(Complex&& other)
             extra.emplace(std::move(other.extra.value()));
             other.extra.reset();
         }
+        nums = std::move(other.nums);
     }
     return *this;
 }
@@ -260,6 +264,7 @@ void Complex::swap(Complex& other) noexcept
     swap(sex, other.sex);
     swap(flag, other.flag);
     swap(extra, other.extra);
+    swap(nums, other.nums);
 }
 
 std::ostream& operator<<(std::ostream& stream, const Complex& value)
@@ -269,6 +274,16 @@ std::ostream& operator<<(std::ostream& stream, const Complex& value)
     stream << ",sex="; if (value.sex) stream << *value.sex; else stream << "null";
     stream << ",flag="; if (value.flag) stream << *value.flag; else stream << "null";
     stream << ",extra="; if (value.extra) stream << *value.extra; else stream << "null";
+    {
+        bool first = true;
+        stream << ",nums=[" << value.nums.size() << "][";
+        for (const auto& it : value.nums)
+        {
+            stream << std::string(first ? "" : ",") << it;
+            first = false;
+        }
+        stream << "]";
+    }
     stream << ")";
     return stream;
 }

@@ -1959,16 +1959,15 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     {
         for (const auto& field : s->body->fields)
         {
-            if (field->ptr) {
-                if (IsContainerType(*field))
-                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
-                else
-                    WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", nullptr))");
-            } else if (IsPrimitiveType(*field->type, field->optional)) {
-                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + "))");
-            } else if (field->optional)  {
+            if (IsContainerType(*field)) {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
+            } else if (field->ptr) {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", nullptr))");
+            } else if (field->optional) {
                 collection_of_optional_fields.push_back(field);
                 WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "()");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + "))");
             } else {
                 WriteLineIndent(std::string(first ? ": " : ", ") + *field->name + "(std::move(other." + *field->name + "))");
             }
@@ -2119,14 +2118,10 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     {
         for (const auto& field : s->body->fields)
         {
-            if (field->ptr) {
-                if (IsContainerType(*field))
-                    WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
-                else
-                    WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", nullptr);");
-            } else if (IsPrimitiveType(*field->type, field->optional)) {
-                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + ");");
-
+            if (IsContainerType(*field)) {
+                WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
+            } else if (field->ptr) {
+                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", nullptr);");
             } else if (field->optional) {
                 WriteLineIndent("if (other." + *field->name + ".has_value()) {");
                 Indent(1);
@@ -2138,6 +2133,9 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 WriteLineIndent("other." + *field->name + ".reset();");
                 Indent(-1);
                 WriteLineIndent("}");
+            } else if (IsPrimitiveType(*field->type, field->optional)) {
+                WriteLineIndent(*field->name + " = std::exchange(other." + *field->name + ", " + ConvertDefault(*p->name, *field) + ");");
+
             } else {
                 WriteLineIndent(*field->name + " = std::move(other." + *field->name + ");");
             }
