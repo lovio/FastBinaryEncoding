@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -206,7 +210,7 @@ struct hash<test::StructSimple>
     typedef test::StructSimple argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -323,7 +327,7 @@ struct hash<test::StructOptional>
     typedef test::StructOptional argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<::test::StructSimple>()(value);
@@ -386,7 +390,7 @@ struct hash<test::StructNested>
     typedef test::StructNested argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<::test::StructOptional>()(value);
@@ -440,7 +444,7 @@ struct hash<test::StructBytes>
     typedef test::StructBytes argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -500,7 +504,7 @@ struct hash<test::StructArray>
     typedef test::StructArray argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -560,7 +564,7 @@ struct hash<test::StructVector>
     typedef test::StructVector argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -620,7 +624,7 @@ struct hash<test::StructList>
     typedef test::StructList argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -674,7 +678,7 @@ struct hash<test::StructSet>
     typedef test::StructSet argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -734,7 +738,7 @@ struct hash<test::StructMap>
     typedef test::StructMap argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -794,7 +798,7 @@ struct hash<test::StructHash>
     typedef test::StructHash argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -846,7 +850,7 @@ struct hash<test::StructHashEx>
     typedef test::StructHashEx argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -894,7 +898,7 @@ struct hash<test::StructEmpty>
     typedef test::StructEmpty argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -15,12 +19,15 @@
 
 #include "fbe_models.h"
 
+#include "fbe_ptr.h"
+
 namespace FBE {
 
 // base class for struct field
 class BaseFieldModel
 {
 public:
+    virtual ~BaseFieldModel() = default;
     // Get the field offset
     virtual size_t fbe_offset() const noexcept = 0;
     // Get the field size
@@ -233,6 +240,58 @@ public:
 private:
     FBEBuffer& _buffer;
     size_t _offset;
+};
+
+template <typename T, typename TStruct>
+class FieldModelStructOptional
+{
+public:
+    FieldModelStructOptional(FBEBuffer& buffer, size_t offset) noexcept: _buffer(buffer), _offset(offset), value(buffer, 0) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 1 + 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    //! Is the value present?
+    explicit operator bool() const noexcept { return has_value(); }
+
+    // Checks if the object contains a value
+    bool has_value() const noexcept;
+
+    // Check if the optional value is valid
+    bool verify() const noexcept;
+
+    // Get the optional value (being phase)
+    size_t get_begin() const noexcept;
+    // Get the optional value (end phase)
+    void get_end(size_t fbe_begin) const noexcept;
+
+    // Get the optional value
+    void get(std::optional<TStruct>& opt) noexcept;
+
+    // Set the optional value (begin phase)
+    size_t set_begin(bool has_value);
+    // Set the optional value (end phase)
+    void set_end(size_t fbe_begin);
+
+    // Set the optional value
+    void set(const std::optional<TStruct>& opt);
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+
+public:
+    // Base field model value
+    T value;
 };
 
 } // namespace FBE

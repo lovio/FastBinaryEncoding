@@ -811,4 +811,129 @@ inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const
     }
 }
 
+template <typename T, typename TStruct>
+inline size_t FieldModelStructOptional<T, TStruct>::fbe_extra() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_optional_offset);
+    size_t fbe_result = value.fbe_size() + value.fbe_extra();
+    _buffer.unshift(fbe_optional_offset);
+    return fbe_result;
+}
+
+template <typename T, typename TStruct>
+inline bool FieldModelStructOptional<T, TStruct>::has_value() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return false;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    return (fbe_has_value != 0);
+}
+
+template <typename T, typename TStruct>
+inline bool FieldModelStructOptional<T, TStruct>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if (fbe_has_value == 0)
+        return true;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    if (fbe_optional_offset == 0)
+        return false;
+
+    _buffer.shift(fbe_optional_offset);
+    bool fbe_result = value.verify();
+    _buffer.unshift(fbe_optional_offset);
+    return fbe_result;
+}
+
+template <typename T, typename TStruct>
+inline size_t FieldModelStructOptional<T, TStruct>::get_begin() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    assert((fbe_optional_offset > 0) && "Model is broken!");
+    if (fbe_optional_offset == 0)
+        return 0;
+
+    _buffer.shift(fbe_optional_offset);
+    return fbe_optional_offset;
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelStructOptional<T, TStruct>::get_end(size_t fbe_begin) const noexcept
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelStructOptional<T, TStruct>::get(std::optional<TStruct>& opt) noexcept
+{
+
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    TStruct temp = TStruct();
+    value.get(temp);
+    opt.emplace(std::move(temp));
+
+    get_end(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline size_t FieldModelStructOptional<T, TStruct>::set_begin(bool has_value)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint8_t fbe_has_value = has_value ? 1 : 0;
+    *((uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
+    if (fbe_has_value == 0)
+        return 0;
+
+    uint32_t fbe_optional_size = (uint32_t)value.fbe_size();
+    uint32_t fbe_optional_offset = (uint32_t)(_buffer.allocate(fbe_optional_size) - _buffer.offset());
+    assert(((fbe_optional_offset > 0) && ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) > _buffer.size()))
+        return 0;
+
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_optional_offset;
+
+    _buffer.shift(fbe_optional_offset);
+    return fbe_optional_offset;
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelStructOptional<T, TStruct>::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+template <typename T, typename TStruct>
+inline void FieldModelStructOptional<T, TStruct>::set(const std::optional<TStruct>& opt)
+{
+    size_t fbe_begin = set_begin(opt.has_value());
+    if (fbe_begin == 0)
+        return;
+
+    if (opt)
+        value.set(opt.value());
+
+    set_end(fbe_begin);
+}
+
 } // namespace FBE

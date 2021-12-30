@@ -81,14 +81,14 @@ Order::Order(int32_t arg_id, const std::string& arg_symbol, const ::proto::Order
     , volume(arg_volume)
 {}
 
-bool Order::operator==(const Order& other) const noexcept
+bool Order::operator==([[maybe_unused]] const Order& other) const noexcept
 {
     return (
         (id == other.id)
         );
 }
 
-bool Order::operator<(const Order& other) const noexcept
+bool Order::operator<([[maybe_unused]] const Order& other) const noexcept
 {
     if (id < other.id)
         return true;
@@ -131,14 +131,14 @@ Balance::Balance(const std::string& arg_currency, double arg_amount)
     , amount(arg_amount)
 {}
 
-bool Balance::operator==(const Balance& other) const noexcept
+bool Balance::operator==([[maybe_unused]] const Balance& other) const noexcept
 {
     return (
         (currency == other.currency)
         );
 }
 
-bool Balance::operator<(const Balance& other) const noexcept
+bool Balance::operator<([[maybe_unused]] const Balance& other) const noexcept
 {
     if (currency < other.currency)
         return true;
@@ -181,14 +181,14 @@ Account::Account(int32_t arg_id, const std::string& arg_name, const ::proto::Sta
     , orders(arg_orders)
 {}
 
-bool Account::operator==(const Account& other) const noexcept
+bool Account::operator==([[maybe_unused]] const Account& other) const noexcept
 {
     return (
         (id == other.id)
         );
 }
 
-bool Account::operator<(const Account& other) const noexcept
+bool Account::operator<([[maybe_unused]] const Account& other) const noexcept
 {
     if (id < other.id)
         return true;
@@ -238,14 +238,14 @@ OrderMessage::OrderMessage(const ::proto::Order& arg_body)
     : body(arg_body)
 {}
 
-bool OrderMessage::operator==(const OrderMessage& other) const noexcept
+bool OrderMessage::operator==([[maybe_unused]] const OrderMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool OrderMessage::operator<(const OrderMessage& other) const noexcept
+bool OrderMessage::operator<([[maybe_unused]] const OrderMessage& other) const noexcept
 {
     return false;
 }
@@ -272,14 +272,14 @@ BalanceMessage::BalanceMessage(const ::proto::Balance& arg_body)
     : body(arg_body)
 {}
 
-bool BalanceMessage::operator==(const BalanceMessage& other) const noexcept
+bool BalanceMessage::operator==([[maybe_unused]] const BalanceMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool BalanceMessage::operator<(const BalanceMessage& other) const noexcept
+bool BalanceMessage::operator<([[maybe_unused]] const BalanceMessage& other) const noexcept
 {
     return false;
 }
@@ -306,14 +306,14 @@ AccountMessage::AccountMessage(const ::proto::Account& arg_body)
     : body(arg_body)
 {}
 
-bool AccountMessage::operator==(const AccountMessage& other) const noexcept
+bool AccountMessage::operator==([[maybe_unused]] const AccountMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool AccountMessage::operator<(const AccountMessage& other) const noexcept
+bool AccountMessage::operator<([[maybe_unused]] const AccountMessage& other) const noexcept
 {
     return false;
 }

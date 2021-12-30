@@ -227,14 +227,14 @@ StructSimple::StructSimple(int32_t arg_id, bool arg_f1, bool arg_f2, uint8_t arg
     , f44(arg_f44)
 {}
 
-bool StructSimple::operator==(const StructSimple& other) const noexcept
+bool StructSimple::operator==([[maybe_unused]] const StructSimple& other) const noexcept
 {
     return (
         (id == other.id)
         );
 }
 
-bool StructSimple::operator<(const StructSimple& other) const noexcept
+bool StructSimple::operator<([[maybe_unused]] const StructSimple& other) const noexcept
 {
     if (id < other.id)
         return true;
@@ -303,8 +303,8 @@ std::ostream& operator<<(std::ostream& stream, const StructSimple& value)
     stream << ",f4="; stream << (int)value.f4;
     stream << ",f5="; stream << "'" << value.f5 << "'";
     stream << ",f6="; stream << "'" << value.f6 << "'";
-    stream << ",f7="; stream << "'" << value.f7 << "'";
-    stream << ",f8="; stream << "'" << value.f8 << "'";
+    stream << ",f7="; stream << "'" << static_cast<uint32_t>(value.f7) << "'";
+    stream << ",f8="; stream << "'" << static_cast<uint32_t>(value.f8) << "'";
     stream << ",f9="; stream << (int)value.f9;
     stream << ",f10="; stream << (int)value.f10;
     stream << ",f11="; stream << (int)value.f11;
@@ -485,7 +485,7 @@ StructOptional::StructOptional(const ::test::StructSimple& base, const std::opti
     , f165(arg_f165)
 {}
 
-bool StructOptional::operator==(const StructOptional& other) const noexcept
+bool StructOptional::operator==([[maybe_unused]] const StructOptional& other) const noexcept
 {
     return (
         ::test::StructSimple::operator==(other)
@@ -493,7 +493,7 @@ bool StructOptional::operator==(const StructOptional& other) const noexcept
         );
 }
 
-bool StructOptional::operator<(const StructOptional& other) const noexcept
+bool StructOptional::operator<([[maybe_unused]] const StructOptional& other) const noexcept
 {
     if (::test::StructSimple::operator<(other))
         return true;
@@ -587,9 +587,9 @@ std::ostream& operator<<(std::ostream& stream, const StructOptional& value)
     stream << ",f106="; if (value.f106) stream << "'" << *value.f106 << "'"; else stream << "null";
     stream << ",f107="; if (value.f107) stream << "'" << *value.f107 << "'"; else stream << "null";
     stream << ",f108="; if (value.f108) stream << "'" << *value.f108 << "'"; else stream << "null";
-    stream << ",f109="; if (value.f109) stream << "'" << *value.f109 << "'"; else stream << "null";
-    stream << ",f110="; if (value.f110) stream << "'" << *value.f110 << "'"; else stream << "null";
-    stream << ",f111="; if (value.f111) stream << "'" << *value.f111 << "'"; else stream << "null";
+    stream << ",f109="; if (value.f109) stream << "'" << static_cast<uint32_t>(*value.f109) << "'"; else stream << "null";
+    stream << ",f110="; if (value.f110) stream << "'" << static_cast<uint32_t>(*value.f110) << "'"; else stream << "null";
+    stream << ",f111="; if (value.f111) stream << "'" << static_cast<uint32_t>(*value.f111) << "'"; else stream << "null";
     stream << ",f112="; if (value.f112) stream << (int)*value.f112; else stream << "null";
     stream << ",f113="; if (value.f113) stream << (int)*value.f113; else stream << "null";
     stream << ",f114="; if (value.f114) stream << (int)*value.f114; else stream << "null";
@@ -680,7 +680,7 @@ StructNested::StructNested(const ::test::StructOptional& base, const ::test::Enu
     , f1011(arg_f1011)
 {}
 
-bool StructNested::operator==(const StructNested& other) const noexcept
+bool StructNested::operator==([[maybe_unused]] const StructNested& other) const noexcept
 {
     return (
         ::test::StructOptional::operator==(other)
@@ -688,7 +688,7 @@ bool StructNested::operator==(const StructNested& other) const noexcept
         );
 }
 
-bool StructNested::operator<(const StructNested& other) const noexcept
+bool StructNested::operator<([[maybe_unused]] const StructNested& other) const noexcept
 {
     if (::test::StructOptional::operator<(other))
         return true;
@@ -747,14 +747,14 @@ StructBytes::StructBytes(const FBE::buffer_t& arg_f1, const std::optional<FBE::b
     , f3(arg_f3)
 {}
 
-bool StructBytes::operator==(const StructBytes& other) const noexcept
+bool StructBytes::operator==([[maybe_unused]] const StructBytes& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructBytes::operator<(const StructBytes& other) const noexcept
+bool StructBytes::operator<([[maybe_unused]] const StructBytes& other) const noexcept
 {
     return false;
 }
@@ -803,14 +803,14 @@ StructArray::StructArray(const std::array<uint8_t, 2>& arg_f1, const std::array<
     , f10(arg_f10)
 {}
 
-bool StructArray::operator==(const StructArray& other) const noexcept
+bool StructArray::operator==([[maybe_unused]] const StructArray& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructArray::operator<(const StructArray& other) const noexcept
+bool StructArray::operator<([[maybe_unused]] const StructArray& other) const noexcept
 {
     return false;
 }
@@ -963,14 +963,14 @@ StructVector::StructVector(const std::vector<uint8_t>& arg_f1, const std::vector
     , f10(arg_f10)
 {}
 
-bool StructVector::operator==(const StructVector& other) const noexcept
+bool StructVector::operator==([[maybe_unused]] const StructVector& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructVector::operator<(const StructVector& other) const noexcept
+bool StructVector::operator<([[maybe_unused]] const StructVector& other) const noexcept
 {
     return false;
 }
@@ -1123,14 +1123,14 @@ StructList::StructList(const std::list<uint8_t>& arg_f1, const std::list<std::op
     , f10(arg_f10)
 {}
 
-bool StructList::operator==(const StructList& other) const noexcept
+bool StructList::operator==([[maybe_unused]] const StructList& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructList::operator<(const StructList& other) const noexcept
+bool StructList::operator<([[maybe_unused]] const StructList& other) const noexcept
 {
     return false;
 }
@@ -1271,14 +1271,14 @@ StructSet::StructSet(const std::set<uint8_t>& arg_f1, const std::set<::test::Enu
     , f4(arg_f4)
 {}
 
-bool StructSet::operator==(const StructSet& other) const noexcept
+bool StructSet::operator==([[maybe_unused]] const StructSet& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructSet::operator<(const StructSet& other) const noexcept
+bool StructSet::operator<([[maybe_unused]] const StructSet& other) const noexcept
 {
     return false;
 }
@@ -1365,14 +1365,14 @@ StructMap::StructMap(const std::map<int32_t, uint8_t>& arg_f1, const std::map<in
     , f10(arg_f10)
 {}
 
-bool StructMap::operator==(const StructMap& other) const noexcept
+bool StructMap::operator==([[maybe_unused]] const StructMap& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructMap::operator<(const StructMap& other) const noexcept
+bool StructMap::operator<([[maybe_unused]] const StructMap& other) const noexcept
 {
     return false;
 }
@@ -1545,14 +1545,14 @@ StructHash::StructHash(const std::unordered_map<std::string, uint8_t>& arg_f1, c
     , f10(arg_f10)
 {}
 
-bool StructHash::operator==(const StructHash& other) const noexcept
+bool StructHash::operator==([[maybe_unused]] const StructHash& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructHash::operator<(const StructHash& other) const noexcept
+bool StructHash::operator<([[maybe_unused]] const StructHash& other) const noexcept
 {
     return false;
 }
@@ -1709,14 +1709,14 @@ StructHashEx::StructHashEx(const std::unordered_map<::test::StructSimple, ::test
     , f2(arg_f2)
 {}
 
-bool StructHashEx::operator==(const StructHashEx& other) const noexcept
+bool StructHashEx::operator==([[maybe_unused]] const StructHashEx& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructHashEx::operator<(const StructHashEx& other) const noexcept
+bool StructHashEx::operator<([[maybe_unused]] const StructHashEx& other) const noexcept
 {
     return false;
 }
@@ -1762,14 +1762,14 @@ std::ostream& operator<<(std::ostream& stream, const StructHashEx& value)
 StructEmpty::StructEmpty()
 {}
 
-bool StructEmpty::operator==(const StructEmpty& other) const noexcept
+bool StructEmpty::operator==([[maybe_unused]] const StructEmpty& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool StructEmpty::operator<(const StructEmpty& other) const noexcept
+bool StructEmpty::operator<([[maybe_unused]] const StructEmpty& other) const noexcept
 {
     return false;
 }

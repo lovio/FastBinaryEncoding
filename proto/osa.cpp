@@ -36,14 +36,14 @@ Extra::Extra(const std::string& arg_name, const std::string& arg_detail, const :
     , flag(arg_flag)
 {}
 
-bool Extra::operator==(const Extra& other) const noexcept
+bool Extra::operator==([[maybe_unused]] const Extra& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Extra::operator<(const Extra& other) const noexcept
+bool Extra::operator<([[maybe_unused]] const Extra& other) const noexcept
 {
     return false;
 }
@@ -82,14 +82,14 @@ Simple::Simple(const std::string& arg_name, int32_t arg_depth, const std::array<
     , sex(arg_sex)
 {}
 
-bool Simple::operator==(const Simple& other) const noexcept
+bool Simple::operator==([[maybe_unused]] const Simple& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool Simple::operator<(const Simple& other) const noexcept
+bool Simple::operator<([[maybe_unused]] const Simple& other) const noexcept
 {
     return false;
 }

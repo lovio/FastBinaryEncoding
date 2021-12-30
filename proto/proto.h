@@ -5,6 +5,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -114,7 +118,7 @@ struct hash<proto::Order>
     typedef proto::Order argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -167,7 +171,7 @@ struct hash<proto::Balance>
     typedef proto::Balance argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.currency)>()(value.currency);
@@ -224,7 +228,7 @@ struct hash<proto::Account>
     typedef proto::Account argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -276,7 +280,7 @@ struct hash<proto::OrderMessage>
     typedef proto::OrderMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -327,7 +331,7 @@ struct hash<proto::BalanceMessage>
     typedef proto::BalanceMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -378,7 +382,7 @@ struct hash<proto::AccountMessage>
     typedef proto::AccountMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
