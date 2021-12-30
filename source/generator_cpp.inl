@@ -1930,8 +1930,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 for (const auto&field : collection_of_optional_fields) {
                     WriteLineIndent("if (arg_" + *field->name + ".has_value()) {");
                     Indent(1);
-                    WriteLineIndent("auto&& _v = arg_" + *field->name + ".value();");
-                    WriteLineIndent(*field->name + ".emplace(std::move(_v));");
+                    WriteLineIndent(*field->name + ".emplace(std::move(arg_" + *field->name + ".value()));");
                     WriteLineIndent("arg_" + *field->name + ".reset();");
                     Indent(-1);
                     WriteLineIndent("}");
@@ -1988,8 +1987,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
             if (IsPrimitiveType(*field->type, false)) {
                 WriteLineIndent(*field->name + ".emplace(other." + *field->name + ".value());");
             } else {
-                WriteLineIndent("auto&& _v = other." + *field->name + ".value();");
-                WriteLineIndent(*field->name + ".emplace(std::move(_v));");
+                WriteLineIndent(*field->name + ".emplace(std::move(other." + *field->name + ".value()));");
             }
             WriteLineIndent("other." + *field->name + ".reset();");
             Indent(-1);
@@ -2135,8 +2133,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 if (IsPrimitiveType(*field->type, false)) {
                     WriteLineIndent(*field->name + ".emplace(other." + *field->name + ".value());");
                 } else {
-                    WriteLineIndent("auto&& _v = other." + *field->name + ".value();");
-                    WriteLineIndent(*field->name + ".emplace(std::move(_v));");
+                    WriteLineIndent(*field->name + ".emplace(std::move(other." + *field->name + ".value()));");
                 }
                 WriteLineIndent("other." + *field->name + ".reset();");
                 Indent(-1);
