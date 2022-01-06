@@ -1319,8 +1319,11 @@ size_t FBEBuffer::allocate(size_t size)
 
     _capacity = std::max(total, 2 * _capacity);
     uint8_t* data = (uint8_t*)std::malloc(_capacity);
-    std::memcpy(data, _data, _size);
-    std::free(_data);
+    if (_data != nullptr)
+    {
+        std::memcpy(data, _data, _size);
+        std::free(_data);
+    }
     _data = data;
     _size = total;
     return offset;
