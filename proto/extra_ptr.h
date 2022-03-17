@@ -68,10 +68,8 @@ struct Info : FBE::Base
 
 } // namespace extra
 
-namespace std {
-
 template<>
-struct hash<extra::Info>
+struct std::hash<extra::Info>
 {
     typedef extra::Info argument_type;
     typedef size_t result_type;
@@ -82,8 +80,6 @@ struct hash<extra::Info>
         return result;
     }
 };
-
-} // namespace std
 
 namespace extra {
 
@@ -129,10 +125,8 @@ struct Extra : FBE::Base
 
 } // namespace extra
 
-namespace std {
-
 template<>
-struct hash<extra::Extra>
+struct std::hash<extra::Extra>
 {
     typedef extra::Extra argument_type;
     typedef size_t result_type;
@@ -143,8 +137,6 @@ struct hash<extra::Extra>
         return result;
     }
 };
-
-} // namespace std
 
 namespace extra {
 

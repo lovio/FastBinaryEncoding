@@ -69,10 +69,8 @@ struct Simple : FBE::Base
 
 } // namespace simple
 
-namespace std {
-
 template<>
-struct hash<simple::Simple>
+struct std::hash<simple::Simple>
 {
     typedef simple::Simple argument_type;
     typedef size_t result_type;
@@ -83,8 +81,6 @@ struct hash<simple::Simple>
         return result;
     }
 };
-
-} // namespace std
 
 namespace simple {
 
