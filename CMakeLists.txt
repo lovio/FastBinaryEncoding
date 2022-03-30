@@ -180,12 +180,6 @@ if(NOT FBEC_MODULE)
   enable_testing()
   add_test(fbe-tests fbe-tests --durations yes --order lex)
 
-  # Install
-  install(TARGETS ${INSTALL_TARGETS}
-    RUNTIME DESTINATION "${PROJECT_SOURCE_DIR}/bin"
-    LIBRARY DESTINATION "${PROJECT_SOURCE_DIR}/bin"
-    ARCHIVE DESTINATION "${PROJECT_SOURCE_DIR}/bin")
-
   # Install *.pdb files
   if(MSVC)
     foreach(INSTALL_TARGET_PDB ${INSTALL_TARGETS_PDB})
@@ -194,3 +188,9 @@ if(NOT FBEC_MODULE)
   endif()
 
 endif()
+
+# Install
+install(TARGETS ${INSTALL_TARGETS}
+  RUNTIME DESTINATION "${PROJECT_SOURCE_DIR}/bin"
+  LIBRARY DESTINATION "${PROJECT_SOURCE_DIR}/bin"
+  ARCHIVE DESTINATION "${PROJECT_SOURCE_DIR}/bin")
