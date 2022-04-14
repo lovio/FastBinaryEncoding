@@ -243,6 +243,9 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     // Generate common imports
     WriteLine();
     WriteLineIndent("#include \"fbe.h\"");
+    if (Arena()) {
+        WriteLineIndent("#include \"" + ArenaHeader() + "\"");
+    }
 
     // Generate packages import
     if (p->import)
