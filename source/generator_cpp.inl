@@ -6,6 +6,7 @@
     \copyright MIT License
 */
 
+#include <regex>
 namespace FBE {
 
 void GeneratorCpp::GenerateFBEPtr_Header(const CppCommon::Path& path)
@@ -374,6 +375,12 @@ private:
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
+    // TODO(liuqi): 考虑采用同时支持pmr和non-pmr的方式
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
+        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
+    }
+
     Write(code);
 }
 
@@ -605,6 +612,11 @@ inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct*
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
+        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
+    }
+
     Write(code);
 }
 
@@ -670,6 +682,12 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
+        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
+        code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
+    }
 
     Write(code);
 }
@@ -994,6 +1012,12 @@ inline void FieldModelCustomVector<T, TStruct>::set(const std::set<TStruct*>& va
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
+        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
+        code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
+    }
+
     Write(code);
 }
 
@@ -1054,6 +1078,11 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::map"), "std::pmr::map");
+        code = std::regex_replace(code, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+    }
 
     Write(code);
 }
@@ -1336,7 +1365,10 @@ inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
+    if (Arena()) {
+        code = std::regex_replace(code, std::regex("std::map"), "std::pmr::map");
+        code = std::regex_replace(code, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+    }
     Write(code);
 }
 
@@ -3188,20 +3220,24 @@ std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const s
 std::string
 GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &field, bool as_argument)
 {
+    std::string prefix = "std";
+    if (Arena()) {
+        prefix += "::pmr";
+    }
     // bool typeptr = withptr ? field.ptr : false;
     bool typeptr = field.ptr;
     if (field.array)
-        return "std::array<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
+        return prefix + "::array<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
     else if (field.optional)
         return "std::optional<" + ConvertPtrTypeName(package, *field.type) + ">";
     else if (field.vector)
-        return "std::vector<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
+        return prefix + "::vector<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
     else if (field.list)
-        return "std::list<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
+        return prefix + "::list<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ">";
     else if (field.set)
-        return "std::set<" + ConvertPtrTypeName(package, *field.key, false, typeptr, as_argument) + ">";
+        return prefix + "::set<" + ConvertPtrTypeName(package, *field.key, false, typeptr, as_argument) + ">";
     else if (field.map)
-        return "std::map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
+        return prefix + "::map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
     else if (field.hash)
         return "std::unordered_map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
     auto s = ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument);
