@@ -1710,6 +1710,13 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
             WriteLine();
     }
 
+    if (Arena())
+    {
+        WriteLineIndent("ACstrTag;");
+        WriteLineIndent("ADstrSkipTag;");
+        WriteLine();
+    }
+
 
     // Generate struct body
     if (s->body)
