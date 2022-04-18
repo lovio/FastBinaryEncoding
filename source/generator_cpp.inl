@@ -6,7 +6,6 @@
     \copyright MIT License
 */
 
-#include <regex>
 namespace FBE {
 
 void GeneratorCpp::GenerateFBEPtr_Header(const CppCommon::Path& path)
@@ -1742,15 +1741,17 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
             WriteLine();
     }
 
+    // Generate struct body
     if (Arena())
     {
         WriteLineIndent("ACstrTag;");
         WriteLineIndent("ADstrSkipTag;");
         WriteLine();
+        WriteLineIndent("Arena* _arena{nullptr};"); // TODO(liuqi): containers or ptrs data members need arena
     }
 
 
-    // Generate struct body
+    // Generate data member
     if (s->body)
     {
         for (const auto& field : s->body->fields)
@@ -1774,6 +1775,11 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
     bool first = true;
     WriteLine();
     WriteLineIndent(*s->name + "();");
+
+    // Generate cstr with Arena
+    if (Arena()) {
+        WriteLineIndent("explicit " + *s->name + "(Arena& arena);");
+    }
 
     // Generate struct initialization constructor
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -1802,11 +1808,11 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
     }
 
     WriteLineIndent(*s->name + "(const " + *s->name + "& other) = delete;");
-    WriteLineIndent(*s->name + "(" + *s->name + "&& other);");
-    WriteLineIndent("~" + *s->name + "();");
+    WriteLineIndent(*s->name + "(" + *s->name + "&& other) noexcept;");
+    WriteLineIndent("~" + *s->name + "() override;");
     WriteLine();
     WriteLineIndent(*s->name + "& operator=(const " + *s->name + "& other) = delete;");
-    WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other);");
+    WriteLineIndent(*s->name + "& operator=(" + *s->name + "&& other) noexcept;");
 
     // Generate struct compare operators
     WriteLine();
@@ -1886,6 +1892,45 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     }
     Indent(-1);
     WriteLineIndent("{}");
+
+    // Generate struct constructor with arena
+    if (Arena()) {
+        first = true;
+        WriteLineIndent(*s->name + "::" + *s->name + "(Arena& arena)");
+        Indent(1);
+        if (s->base && !s->base->empty())
+        {
+            WriteLineIndent(": " + ConvertPtrTypeName(*p->name, *s->base) + "()");
+            first = false;
+        }
+        if (s->body)
+        {
+            WriteLineIndent(std::string(first ? ": " : ", ") + "_arena(&arena)");
+            auto enums = p->body->enums;
+            for (const auto& field : s->body->fields)
+            {
+                WriteIndent();
+                Write(std::string(", ") + *field->name + "(");
+                if (field->ptr && !IsContainerType(*field)) {
+                    Write("nullptr");
+                // container and string should be initilized with memory_resource
+                } else if (*field->type == "string" || IsContainerType(*field)) {
+                    Write("_arena->get_memory_resource()");
+                } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
+                    Write(ConvertDefault(*p->name, *field));
+                // only struct(no optional or enum) should be initialized with arena
+                } else if (!field->optional && std::ranges::find_if(enums, 
+                 [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
+                     return *e->name == t; }) == enums.end()) {
+                    Write("arena");
+                }
+                Write(")");
+                WriteLine();
+            }
+        }
+        Indent(-1);
+        WriteLineIndent("{}");
+    }
 
     std::vector<std::string> unique_ptr_members;
     std::vector<std::shared_ptr<StructField>> collection_of_container_ptrs;
@@ -1976,7 +2021,6 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 }
                 Indent(-1);
                 WriteLineIndent("}");
-
         }
     }
 
@@ -1984,7 +2028,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     collection_of_optional_fields.clear();
 
     WriteLine();
-    WriteLineIndent(*s->name + "::" + *s->name + "(" + *s->name + "&& other)");
+    WriteLineIndent(*s->name + "::" + *s->name + "(" + *s->name + "&& other) noexcept");
     Indent(1);
     // generate the base move
     first = true;
@@ -2141,7 +2185,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
 
     // Generate struct move assignment operator
     WriteLine();
-    WriteLineIndent(*s->name + "& " + *s->name + "::operator=(" + *s->name + "&& other)");
+    WriteLineIndent(*s->name + "& " + *s->name + "::operator=(" + *s->name + "&& other) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("if (this != &other)");
@@ -3186,8 +3230,8 @@ std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const s
         return "double";
     else if (type == "decimal")
         return "FBE::decimal_t";
-    else if (type == "string")
-        return "std::string";
+    else if (type == "string") 
+        return Arena() ? "std::pmr::string" : "std::string";
     else if (type == "timestamp")
         return "uint64_t";
     else if (type == "uuid")

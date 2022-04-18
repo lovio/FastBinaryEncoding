@@ -260,6 +260,9 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     WriteLine();
     WriteLineIndent("namespace " + *p->name + " {");
     WriteLineIndent("using namespace FBE;");
+    if (Arena()) {
+        WriteLineIndent("using stdb::memory::Arena;");
+    }
     if (p->import)
     {
         for (const auto& import : p->import->imports)
@@ -271,6 +274,9 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     WriteLine();
     WriteLineIndent("namespace FBE {");
     WriteLineIndent("using namespace ::" + *p->name + ";");
+    if (Arena()) {
+        WriteLineIndent("using stdb::memory::Arena;");
+    }
     WriteLineIndent("} // namespace FBE");
 }
 
