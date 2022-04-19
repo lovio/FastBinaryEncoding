@@ -204,7 +204,7 @@ int main(int argc, char** argv)
     parser.add_option("--proto").dest("proto").action("store_true").set_default(0).help("Generate Sender/Receiver protocol code");
     parser.add_option("--ptr").dest("ptr").action("store_true").set_default(0).help("Generate pointer-based serialization code, conflicts with --final");
     parser.add_option("--arena").dest("arena").action("store_true").set_default(0).help("Generate arena-based serialization code, only work with --ptr");
-    parser.add_option("--arena-header").dest("arena-header").action("store").type("string").set_default("memory/arena/arena.hpp").help("Arena Header Path, work with --arena");
+    parser.add_option("--arena-header").dest("arena-header").action("store").type("string").set_default("memory/arena/arena.hpp").help("Arena Header Path, work with --arena. Default: memory/arena/arena.hpp");
 
     optparse::Values options = parser.parse_args(argc, argv);
 
