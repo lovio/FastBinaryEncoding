@@ -518,7 +518,6 @@ buffer_t buffer_t::base64decode(const std::string& str)
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -2776,12 +2775,6 @@ private:
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
-    // if (Arena()) {
-    //     code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-    //     code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    //     code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
-    // }
-
     Write(code);
 }
 
@@ -3104,11 +3097,6 @@ inline void FieldModelVector<T>::set(const std::pmr::set<T>& values) noexcept
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-    // if (Arena()) {
-    //     code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-    //     code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    //     code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
-    // }
     Write(code);
 }
 
@@ -3176,10 +3164,6 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-    // if (Arena()) {
-    //     code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-    //     code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    // }
     Write(code);
 }
 
@@ -3460,10 +3444,6 @@ inline void FieldModelMap<TKey, TValue>::set(const std::pmr::unordered_map<TKey,
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-    // if (Arena()) {
-    //     code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-    //     code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    // }
     Write(code);
 }
 
