@@ -2040,6 +2040,10 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // generate the field move
     if (s->body)
     {
+        if (Arena()) {
+            WriteLineIndent(std::string(first ? ": " : ", ") + "_arena(std::exchange(other._arena, nullptr))");
+            first = false;
+        }
         for (const auto& field : s->body->fields)
         {
             if (IsContainerType(*field)) {
@@ -2199,6 +2203,9 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // generate the field move
     if (s->body)
     {
+        if (Arena()) {
+            WriteLineIndent("_arena = std::exchange(other._arena, nullptr);");
+        }
         for (const auto& field : s->body->fields)
         {
             if (IsContainerType(*field)) {
