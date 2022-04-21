@@ -1747,7 +1747,6 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
         WriteLineIndent("ACstrTag;");
         WriteLineIndent("ADstrSkipTag;");
         WriteLine();
-        WriteLineIndent("Arena* _arena{nullptr};"); // TODO(liuqi): containers or ptrs data members need arena
     }
 
 
@@ -1896,7 +1895,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // Generate struct constructor with arena
     if (Arena()) {
         first = true;
-        WriteLineIndent(*s->name + "::" + *s->name + "(Arena& arena)");
+        WriteLineIndent(*s->name + "::" + *s->name + "([[maybe_unused]] Arena& arena)");
         Indent(1);
         if (s->base && !s->base->empty())
         {
@@ -1905,17 +1904,16 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
         }
         if (s->body)
         {
-            WriteLineIndent(std::string(first ? ": " : ", ") + "_arena(&arena)");
             auto enums = p->body->enums;
             for (const auto& field : s->body->fields)
             {
                 WriteIndent();
-                Write(std::string(", ") + *field->name + "(");
+                Write(std::string(first ? ": " : ", ") + *field->name + "(");
                 if (field->ptr && !IsContainerType(*field)) {
                     Write("nullptr");
-                // container and string should be initilized with memory_resource
+                // container and string should be initialized with memory_resource
                 } else if (*field->type == "string" || IsContainerType(*field)) {
-                    Write("_arena->get_memory_resource()");
+                    Write("arena.get_memory_resource()");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
                 // only struct(no optional or enum) should be initialized with arena
@@ -1926,6 +1924,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 }
                 Write(")");
                 WriteLine();
+                first = false;
             }
         }
         Indent(-1);
@@ -2040,10 +2039,6 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // generate the field move
     if (s->body)
     {
-        if (Arena()) {
-            WriteLineIndent(std::string(first ? ": " : ", ") + "_arena(std::exchange(other._arena, nullptr))");
-            first = false;
-        }
         for (const auto& field : s->body->fields)
         {
             if (IsContainerType(*field)) {
@@ -2203,9 +2198,6 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // generate the field move
     if (s->body)
     {
-        if (Arena()) {
-            WriteLineIndent("_arena = std::exchange(other._arena, nullptr);");
-        }
         for (const auto& field : s->body->fields)
         {
             if (IsContainerType(*field)) {
