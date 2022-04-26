@@ -346,24 +346,39 @@ public:
     void get(std::array<TStruct, S>& values) const noexcept;
     template <size_t S>
     void get(std::array<TStruct*, S>& values) const noexcept;
-    // Get the array as std::vector
-    void get(std::vector<TStruct>& values) const noexcept;
-    void get(std::vector<TStruct*>& values) const noexcept;
 
     // Set the array as C-array
     template <size_t S>
     void set(const TStruct (&values)[S]) noexcept;
     template <size_t S>
     void set(const TStruct* (&values)[S]) noexcept;
+    
     // Set the array as std::array
     template <size_t S>
     void set(const std::array<TStruct, S>& values) noexcept;
     template <size_t S>
     void set(const std::array<TStruct*, S>& values) noexcept;
+)CODE";
+
+    std::string code_extra = R"CODE(
+    // Get the array as std::vector
+    void get(std::vector<TStruct>& values) const noexcept;
+    void get(std::vector<TStruct*>& values) const noexcept;
+
     // Set the array as std::vector
     void set(const std::vector<TStruct>& values) noexcept;
     void set(const std::vector<TStruct*>& values) noexcept;
+)CODE";
 
+    code += code_extra;
+
+    if (Arena()) {
+        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+        code += code_extra;
+    }
+
+    code += R"CODE(
 private:
     FBEBuffer& _buffer;
     size_t _offset;
@@ -373,12 +388,6 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
-    // TODO(liuqi): 考虑采用同时支持pmr和non-pmr的方式
-    if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    }
 
     Write(code);
 }
@@ -482,38 +491,6 @@ inline void FieldModelCustomArray<T, TStruct, N>::get(std::array<TStruct*, S>& v
 }
 
 template <typename T, typename TStruct, size_t N>
-inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct>& values) const noexcept
-{
-    values.clear();
-    values.reserve(N);
-
-    auto fbe_model = (*this)[0];
-    for (size_t i = N; i-- > 0;)
-    {
-        TStruct value;
-        fbe_model.get(value);
-        values.emplace_back(std::move(value));
-        fbe_model.fbe_shift(fbe_model.fbe_size());
-    }
-}
-
-template <typename T, typename TStruct, size_t N>
-inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct*>& values) const noexcept
-{
-    values.clear();
-    values.reserve(N);
-
-    auto fbe_model = (*this)[0];
-    for (size_t i = N; i-- > 0;)
-    {
-        TStruct* value = new TStruct();
-        fbe_model.get(&value);
-        values.emplace_back(std::move(value));
-        fbe_model.fbe_shift(fbe_model.fbe_size());
-    }
-}
-
-template <typename T, typename TStruct, size_t N>
 template <size_t S>
 inline void FieldModelCustomArray<T, TStruct, N>::set(const TStruct (&values)[S]) noexcept
 {
@@ -576,6 +553,40 @@ inline void FieldModelCustomArray<T, TStruct, N>::set(const std::array<TStruct*,
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
+)CODE";
+
+std::string code_extra = R"CODE(
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct>& values) const noexcept
+{
+    values.clear();
+    values.reserve(N);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = N; i-- > 0;)
+    {
+        TStruct value;
+        fbe_model.get(value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T, typename TStruct, size_t N>
+inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct*>& values) const noexcept
+{
+    values.clear();
+    values.reserve(N);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = N; i-- > 0;)
+    {
+        TStruct* value = new TStruct();
+        fbe_model.get(&value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
 
 template <typename T, typename TStruct, size_t N>
 inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct>& values) noexcept
@@ -607,14 +618,17 @@ inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct*
     }
 }
 )CODE";
+    code += code_extra;
+
+    if (Arena()) {
+        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+        code += code_extra;
+    }
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
-    if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-    }
 
     Write(code);
 }
@@ -652,7 +666,9 @@ public:
 
     // Check if the vector is valid
     bool verify() const noexcept;
+)CODE";
 
+    std::string code_extra = R"CODE(
     // Get the vector as std::vector
     void get(std::vector<TStruct>& values) const noexcept;
     void get(std::vector<TStruct*>& values) const noexcept;
@@ -672,7 +688,17 @@ public:
     // Set the vector as std::set
     void set(const std::set<TStruct>& values) noexcept;
     void set(const std::set<TStruct*>& values) noexcept;
+)CODE";
 
+    code += code_extra;
+    if (Arena()) {
+        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+        code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
+        code += code_extra;
+    }
+
+code += R"CODE(
 private:
     FBEBuffer& _buffer;
     size_t _offset;
@@ -681,12 +707,6 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
-    if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-        code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
-    }
 
     Write(code);
 }
@@ -798,7 +818,9 @@ inline bool FieldModelCustomVector<T, TStruct>::verify() const noexcept
 
     return true;
 }
+)CODE";
 
+std::string code_extra = R"CODE(
 template <typename T, typename TStruct>
 inline void FieldModelCustomVector<T, TStruct>::get(std::vector<TStruct>& values) const noexcept
 {
@@ -1008,14 +1030,17 @@ inline void FieldModelCustomVector<T, TStruct>::set(const std::set<TStruct*>& va
 }
 )CODE";
 
-    // Prepare code template
-    code = std::regex_replace(code, std::regex("\n"), EndLine());
+    code += code_extra;
 
     if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::vector"), "std::pmr::vector");
-        code = std::regex_replace(code, std::regex("std::list"), "std::pmr::list");
-        code = std::regex_replace(code, std::regex("std::set"), "std::pmr::set");
+        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+        code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
+        code += code_extra;
     }
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
 
     Write(code);
 }
@@ -1054,7 +1079,9 @@ public:
 
     // Check if the map is valid
     bool verify() const noexcept;
+)CODE";
 
+    std::string code_extra = R"CODE(
     // Get the map as std::map
     void get(std::map<TKStruct, TValueStruct>& values) const noexcept;
     void get(std::map<TKStruct, TValueStruct*>& values) const noexcept;
@@ -1068,7 +1095,17 @@ public:
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKStruct, TValueStruct>& values) noexcept;
     void set(const std::unordered_map<TKStruct, TValueStruct*>& values) noexcept;
+)CODE";
 
+    code += code_extra;
+
+    if (Arena()) {
+        code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
+        code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+        code += code_extra;
+    }
+
+    code += R"CODE(
 private:
     FBEBuffer& _buffer;
     size_t _offset;
@@ -1078,10 +1115,6 @@ private:
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
-    if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::map"), "std::pmr::map");
-        code = std::regex_replace(code, std::regex("std::unordered_map"), "std::pmr::unordered_map");
-    }
 
     Write(code);
 }
@@ -1203,7 +1236,9 @@ inline bool FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::verify() 
 
     return true;
 }
+)CODE";
 
+std::string code_extra = R"CODE(
 template <typename TKey, typename TValue, typename TKStruct, typename TValueStruct>
 inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::map<TKStruct, TValueStruct>& values) const noexcept
 {
@@ -1362,12 +1397,17 @@ inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const
 }
 )CODE";
 
+    code += code_extra;
+
+    if (Arena()) {
+        code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
+        code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+        code += code_extra;
+    }
+
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-    if (Arena()) {
-        code = std::regex_replace(code, std::regex("std::map"), "std::pmr::map");
-        code = std::regex_replace(code, std::regex("std::unordered_map"), "std::pmr::unordered_map");
-    }
+
     Write(code);
 }
 
@@ -1917,7 +1957,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
                 // only struct(no optional or enum) should be initialized with arena
-                } else if (!field->optional && std::find_if(enums.begin(), enums.end(),
+                } else if (!field->optional && *field->type != "bytes" && !field && std::find_if(enums.begin(), enums.end(),
                  [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
                      return *e->name == t; }) == enums.end()) {
                     Write("arena");
@@ -3282,7 +3322,7 @@ GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &
     else if (field.map)
         return prefix + "::map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
     else if (field.hash)
-        return "std::unordered_map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
+        return prefix + "::unordered_map<" + ConvertPtrTypeName(package, *field.key, false, false, as_argument) + ", " + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) +">";
     auto s = ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument);
     if (Ptr() && !IsKnownType(*field.type) && !field.ptr && as_argument)
         s += "&&";
