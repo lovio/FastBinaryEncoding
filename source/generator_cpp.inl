@@ -1784,8 +1784,9 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
     // Generate struct body
     if (Arena())
     {
-        WriteLineIndent("ACstrTag;");
-        WriteLineIndent("ADstrSkipTag;");
+        for(auto &tag: ArenaTags()){
+            WriteLineIndent(tag + ";");
+        }
         WriteLine();
     }
 
@@ -1957,7 +1958,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
                 // only struct(no optional or enum) should be initialized with arena
-                } else if (!field->optional && *field->type != "bytes" && !field && std::find_if(enums.begin(), enums.end(),
+                } else if (!field->optional && *field->type != "bytes" && std::find_if(enums.begin(), enums.end(),
                  [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
                      return *e->name == t; }) == enums.end()) {
                     Write("arena");
