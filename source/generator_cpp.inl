@@ -1818,7 +1818,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
 
     // Generate cstr with Arena
     if (Arena()) {
-        WriteLineIndent("explicit " + *s->name + "(Arena& arena);");
+        WriteLineIndent("explicit " + *s->name + "(allocator_type alloc);");
     }
 
     // Generate struct initialization constructor
@@ -1936,7 +1936,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     // Generate struct constructor with arena
     if (Arena()) {
         first = true;
-        WriteLineIndent(*s->name + "::" + *s->name + "([[maybe_unused]] Arena& arena)");
+        WriteLineIndent(*s->name + "::" + *s->name + "([[maybe_unused]] allocator_type alloc)");
         Indent(1);
         if (s->base && !s->base->empty())
         {
@@ -1954,14 +1954,14 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                     Write("nullptr");
                 // container and string should be initialized with memory_resource
                 } else if (*field->type == "string" || IsContainerType(*field)) {
-                    Write("arena.get_memory_resource()");
+                    Write("alloc");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
                 // only struct(no optional or enum) should be initialized with arena
                 } else if (!field->optional && *field->type != "bytes" && std::find_if(enums.begin(), enums.end(),
                  [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
                      return *e->name == t; }) == enums.end()) {
-                    Write("arena");
+                    Write("alloc");
                 }
                 Write(")");
                 WriteLine();
