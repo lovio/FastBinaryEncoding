@@ -502,7 +502,7 @@ inline void FieldModelCustomArray<T, TStruct, N>::get(std::vector<TStruct*>& val
     {
         TStruct* value = new TStruct();
         fbe_model.get(&value);
-        values.emplace_back(std::move(value));
+        values.emplace_back(value);
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -819,7 +819,7 @@ inline void FieldModelCustomVector<T, TStruct>::get(std::vector<TStruct*>& value
     {
         TStruct* value = new TStruct();
         fbe_model.get(&value);
-        values.emplace_back(std::move(value));
+        values.emplace_back(value);
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -876,7 +876,7 @@ inline void FieldModelCustomVector<T, TStruct>::get(std::set<TStruct>& values) c
     {
         TStruct value = TStruct();
         fbe_model.get(value);
-        values.emplace(std::move(value));
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -895,7 +895,7 @@ inline void FieldModelCustomVector<T, TStruct>::get(std::set<TStruct*>& values) 
     {
         TStruct* value = new TStruct();
         fbe_model.get(&value);
-        values.emplace(std::move(value));
+        values.emplace_back(value);
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -1214,7 +1214,6 @@ inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::get(std::
         TValueStruct* value = new TValueStruct();
         fbe_model.first.get(key);
         fbe_model.second.get(&value);
-        values.emplace(key, value);
         values.emplace(std::move(key), value);
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
