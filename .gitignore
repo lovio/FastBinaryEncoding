@@ -20,4 +20,5 @@ modules/*
 .cache
 temp
 compile_commands.json
-build-*/
+build*/
+.vscode

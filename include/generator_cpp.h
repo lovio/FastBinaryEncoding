@@ -9,6 +9,8 @@
 #ifndef GENERATOR_CPP_H
 #define GENERATOR_CPP_H
 
+#include <list>
+
 #include "generator.h"
 
 namespace FBE {
@@ -38,6 +40,16 @@ public:
     bool Logging() const noexcept { return _logging; }
     GeneratorCpp& Logging(bool logging) noexcept { _logging = logging; return *this; }
 
+    // Arena code generation
+    bool Arena() const noexcept { return _arena; }
+    GeneratorCpp& Arena(bool arena) noexcept { _arena = arena; return *this; }
+
+    std::string ArenaHeader() const noexcept { return _arena_header; }
+    GeneratorCpp& ArenaHeader(const std::string& arena_header) noexcept { _arena_header = arena_header; return *this; }
+
+    std::list<std::string> ArenaTags() const noexcept { return _arena_tags; }
+    GeneratorCpp& ArenaTags(const std::list<std::string>& arena_tags) noexcept { _arena_tags = arena_tags; return *this; }
+
     void Generate(const std::shared_ptr<Package>& package) override;
 
 private:
@@ -46,6 +58,9 @@ private:
     bool _json{false};
     bool _proto{false};
     bool _logging{false};
+    bool _arena{false};
+    std::string _arena_header;
+    std::list<std::string> _arena_tags;
 
     void GenerateHeader(const std::string& source);
     void GenerateInline(const std::string& source);

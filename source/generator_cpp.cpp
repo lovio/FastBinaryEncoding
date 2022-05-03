@@ -201,6 +201,7 @@ void GeneratorCpp::GenerateImports()
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include <memory_resource>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
@@ -243,6 +244,9 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     // Generate common imports
     WriteLine();
     WriteLineIndent("#include \"fbe.h\"");
+    if (Arena()) {
+        WriteLineIndent("#include \"" + ArenaHeader() + "\"");
+    }
 
     // Generate packages import
     if (p->import)
@@ -256,6 +260,9 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     WriteLine();
     WriteLineIndent("namespace " + *p->name + " {");
     WriteLineIndent("using namespace FBE;");
+    if (Arena()) {
+        WriteLineIndent("using allocator_type = std::pmr::polymorphic_allocator<char>;");
+    }
     if (p->import)
     {
         for (const auto& import : p->import->imports)
@@ -508,7 +515,6 @@ buffer_t buffer_t::base64decode(const std::string& str)
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -2736,12 +2742,26 @@ public:
     // Get the vector as std::set
     void get(std::set<T>& values) const noexcept;
 
+    // Get the vector as std::pmr::vector
+    void get(std::pmr::vector<T>& values) const noexcept;
+    // Get the vector as std::pmr::list
+    void get(std::pmr::list<T>& values) const noexcept;
+    // Get the vector as std::pmr::set
+    void get(std::pmr::set<T>& values) const noexcept;
+
     // Set the vector as std::vector
     void set(const std::vector<T>& values) noexcept;
     // Set the vector as std::list
     void set(const std::list<T>& values) noexcept;
     // Set the vector as std::set
     void set(const std::set<T>& values) noexcept;
+
+    // Set the vector as std::pmr::vector
+    void set(const std::pmr::vector<T>& values) noexcept;
+    // Set the vector as std::pmr::list
+    void set(const std::pmr::list<T>& values) noexcept;
+    // Set the vector as std::pmr::set
+    void set(const std::pmr::set<T>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -2923,6 +2943,65 @@ inline void FieldModelVector<T>::get(std::set<T>& values) const noexcept
 }
 
 template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::vector<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    values.reserve(fbe_vector_size);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace_back(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::list<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace_back(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::set<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
 inline void FieldModelVector<T>::set(const std::vector<T>& values) noexcept
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
@@ -2966,11 +3045,55 @@ inline void FieldModelVector<T>::set(const std::set<T>& values) noexcept
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::vector<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::list<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::set<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
 )CODE";
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -3015,10 +3138,20 @@ public:
     // Get the map as std::unordered_map
     void get(std::unordered_map<TKey, TValue>& values) const noexcept;
 
+    // Get the map as std::pmr::map
+    void get(std::pmr::map<TKey, TValue>& values) const noexcept;
+    // Get the map as std::pmr::unordered_map
+    void get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept;
+
     // Set the map as std::map
     void set(const std::map<TKey, TValue>& values) noexcept;
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKey, TValue>& values) noexcept;
+
+    // Set the map as std::pmr::map
+    void set(const std::pmr::map<TKey, TValue>& values) noexcept;
+    // Set the map as std::pmr::unordered_map
+    void set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -3028,7 +3161,6 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -3195,6 +3327,50 @@ inline void FieldModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>& v
 }
 
 template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::get(std::pmr::map<TKey, TValue>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKey key;
+        TValue value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(key, value);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKey key;
+        TValue value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(key, value);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
 inline void FieldModelMap<TKey, TValue>::set(const std::map<TKey, TValue>& values) noexcept
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
@@ -3227,11 +3403,44 @@ inline void FieldModelMap<TKey, TValue>::set(const std::unordered_map<TKey, TVal
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
 }
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::set(const std::pmr::map<TKey, TValue>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
 )CODE";
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
