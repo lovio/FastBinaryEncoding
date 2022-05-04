@@ -327,6 +327,24 @@ void GeneratorCpp::GenerateImportsJson(const std::shared_ptr<Package>& p)
     }
 }
 
+void GeneratorCpp::GenerateAlignUpTo_Header() {
+    std::string code = R"CODE(
+inline constexpr uint64_t kAlignSize = 4;
+
+template <uint64_t N>
+[[gnu::always_inline]] constexpr auto AlignUpTo(uint64_t n) noexcept -> uint64_t {
+    // Align n to next multiple of N
+    // (from <Hacker's Delight 2rd edition>,Chapter 3.)
+    return (n + N - 1) & static_cast<uint64_t>(-N);
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateBufferWrapper_Header()
 {
     std::string code = R"CODE(
@@ -1309,7 +1327,7 @@ size_t FBEBuffer::allocate(size_t size)
     size_t offset = _size;
 
     // Calculate a new buffer size
-    size_t total = _size + size;
+    size_t total = AlignUpTo<kAlignSize>(_size + size);
 
     if (total <= _capacity)
     {
@@ -6296,6 +6314,7 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     WriteLine();
     WriteLineIndent("namespace FBE {");
 
+    GenerateAlignUpTo_Header();
     // Generate common body
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();

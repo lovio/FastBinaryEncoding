@@ -2183,7 +2183,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Header(const std::shared_ptr<Pack
     WriteLineIndent("// Get the field offset");
     WriteLineIndent("size_t fbe_offset() const noexcept { return _offset; }");
     WriteLineIndent("// Get the field size");
-    WriteLineIndent("size_t fbe_size() const noexcept { return 5; }");
+    WriteLineIndent("size_t fbe_size() const noexcept { return 8; }");
     WriteLineIndent("// Get the field extra size");
     WriteLineIndent("size_t fbe_extra() const noexcept;");
     WriteLineIndent("// Get the field type");
@@ -2764,7 +2764,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));");
     WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
@@ -2790,13 +2790,13 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_has_value = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
     WriteLineIndent("if (fbe_has_value == 0)");
     Indent(1);
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_optional_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_optional_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));");
     WriteLineIndent("if (fbe_optional_offset == 0)");
     Indent(1);
     WriteLineIndent("return false;");
@@ -2819,7 +2819,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_has_value = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));");
     WriteLineIndent("return (fbe_has_value != 0);");
     Indent(-1);
     WriteLineIndent("}");
@@ -2834,7 +2834,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));");
     WriteLineIndent("assert((fbe_ptr_offset > 0) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_ptr_offset == 0)");
     Indent(1);
@@ -2887,8 +2887,8 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint8_t fbe_has_value = has_value ? 1 : 0;");
-    WriteLineIndent("*((uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;");
+    WriteLineIndent("uint32_t fbe_has_value = has_value ? 1 : 0;");
+    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;");
     WriteLineIndent("if (fbe_has_value == 0)");
     Indent(1);
     WriteLineIndent("return 0;");
@@ -2902,7 +2902,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;");
+    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 4)) = fbe_ptr_offset;");
     WriteLine();
     WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
     WriteLineIndent("return fbe_ptr_offset;");
