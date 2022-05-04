@@ -334,6 +334,23 @@ void GeneratorCpp::GenerateImportsJson(const std::shared_ptr<Package>& p)
     }
 }
 
+void GeneratorCpp::GenerateAlignUpTo_Header() {
+    std::string code = R"CODE(
+inline constexpr uint64_t kAlignSize = 8;
+template <uint64_t N>
+[[gnu::always_inline]] constexpr auto AlignUpTo(uint64_t n) noexcept -> uint64_t {
+    // Align n to next multiple of N
+    // (from <Hacker's Delight 2rd edition>,Chapter 3.)
+    return (n + N - 1) & static_cast<uint64_t>(-N);
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateBufferWrapper_Header()
 {
     std::string code = R"CODE(
@@ -1315,7 +1332,7 @@ size_t FBEBuffer::allocate(size_t size)
     size_t offset = _size;
 
     // Calculate a new buffer size
-    size_t total = _size + size;
+    size_t total = AlignUpTo<kAlignSize>(_size + size);
 
     if (total <= _capacity)
     {
@@ -2306,7 +2323,7 @@ public:
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
     // Get the field size
-    size_t fbe_size() const noexcept { return 1 + 4; }
+    size_t fbe_size() const noexcept { return 4 + 4; }
     // Get the field extra size
     size_t fbe_extra() const noexcept;
 
@@ -2365,7 +2382,7 @@ inline size_t FieldModel<std::optional<T>>::fbe_extra() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + 4) > _buffer.size()))
         return 0;
 
@@ -2381,7 +2398,7 @@ inline bool FieldModel<std::optional<T>>::has_value() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return false;
 
-    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_has_value = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
     return (fbe_has_value != 0);
 }
 
@@ -2391,11 +2408,11 @@ inline bool FieldModel<std::optional<T>>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint8_t fbe_has_value = *((const uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_has_value = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
     if (fbe_has_value == 0)
         return true;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));
     if (fbe_optional_offset == 0)
         return false;
 
@@ -2411,7 +2428,7 @@ inline size_t FieldModel<std::optional<T>>::get_begin() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 4));
     assert((fbe_optional_offset > 0) && "Model is broken!");
     if (fbe_optional_offset == 0)
         return 0;
@@ -2449,8 +2466,8 @@ inline size_t FieldModel<std::optional<T>>::set_begin(bool has_value)
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint8_t fbe_has_value = has_value ? 1 : 0;
-    *((uint8_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
+    uint32_t fbe_has_value = has_value ? 1 : 0;
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
     if (fbe_has_value == 0)
         return 0;
 
@@ -2460,7 +2477,7 @@ inline size_t FieldModel<std::optional<T>>::set_begin(bool has_value)
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_optional_offset;
+    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 4)) = fbe_optional_offset;
 
     _buffer.shift(fbe_optional_offset);
     return fbe_optional_offset;
@@ -6506,6 +6523,7 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     WriteLineIndent("namespace FBE {");
 
     // Generate common body
+    GenerateAlignUpTo_Header();
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
