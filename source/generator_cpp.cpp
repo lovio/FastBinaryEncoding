@@ -2729,7 +2729,7 @@ public:
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
     // Get the field size
-    size_t fbe_size() const noexcept { return 4; }
+    size_t fbe_size() const noexcept { return 8; }
     // Get the field extra size
     size_t fbe_extra() const noexcept;
 
@@ -2802,13 +2802,13 @@ inline size_t FieldModelVector<T>::fbe_extra() const noexcept
         return 0;
 
     uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
+    if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 8) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint64_t fbe_vector_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
 
-    size_t fbe_result = 4;
-    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
+    size_t fbe_result = 8;
+    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 8);
     for (size_t i = fbe_vector_size; i-- > 0;)
     {
         fbe_result += fbe_model.fbe_size() + fbe_model.fbe_extra();
@@ -2834,10 +2834,10 @@ inline size_t FieldModelVector<T>::size() const noexcept
         return 0;
 
     uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
+    if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 8) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint64_t fbe_vector_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
     return fbe_vector_size;
 }
 
@@ -2847,12 +2847,12 @@ inline FieldModel<T> FieldModelVector<T>::operator[](size_t index) const noexcep
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
     uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
+    assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 8) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    [[maybe_unused]] uint64_t fbe_vector_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
     assert((index < fbe_vector_size) && "Index is out of bounds!");
 
-    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
+    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 8);
     fbe_model.fbe_shift(index * fbe_model.fbe_size());
     return fbe_model;
 }
@@ -2862,16 +2862,16 @@ inline FieldModel<T> FieldModelVector<T>::resize(size_t size)
 {
     FieldModel<T> fbe_model(_buffer, fbe_offset());
 
-    uint32_t fbe_vector_size = (uint32_t)(size * fbe_model.fbe_size());
-    uint32_t fbe_vector_offset = (uint32_t)(_buffer.allocate(4 + fbe_vector_size) - _buffer.offset());
-    assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
+    uint64_t fbe_vector_size = (uint64_t)(size * fbe_model.fbe_size());
+    uint32_t fbe_vector_offset = (uint32_t)(_buffer.allocate(8 + fbe_vector_size) - _buffer.offset());
+    assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 8) <= _buffer.size())) && "Model is broken!");
 
     *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_vector_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset)) = (uint32_t)size;
+    *((uint64_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset)) = (uint64_t)size;
 
-    memset((char*)(_buffer.data() + _buffer.offset() + fbe_vector_offset + 4), 0, fbe_vector_size);
+    memset((char*)(_buffer.data() + _buffer.offset() + fbe_vector_offset + 8), 0, fbe_vector_size);
 
-    return FieldModel<T>(_buffer, fbe_vector_offset + 4);
+    return FieldModel<T>(_buffer, fbe_vector_offset + 8);
 }
 
 template <typename T>
@@ -2884,12 +2884,12 @@ inline bool FieldModelVector<T>::verify() const noexcept
     if (fbe_vector_offset == 0)
         return true;
 
-    if ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size())
+    if ((_buffer.offset() + fbe_vector_offset + 8) > _buffer.size())
         return false;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint64_t fbe_vector_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
 
-    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
+    FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 8);
     for (size_t i = fbe_vector_size; i-- > 0;)
     {
         if (!fbe_model.verify())
@@ -3127,7 +3127,7 @@ public:
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
     // Get the field size
-    size_t fbe_size() const noexcept { return 4; }
+    size_t fbe_size() const noexcept { return 8; }
     // Get the field extra size
     size_t fbe_extra() const noexcept;
 
@@ -3191,14 +3191,14 @@ inline size_t FieldModelMap<TKey, TValue>::fbe_extra() const noexcept
         return 0;
 
     uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
+    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 8) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint64_t fbe_map_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
 
-    size_t fbe_result = 4;
-    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
-    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    size_t fbe_result = 8;
+    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 8);
+    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 8 + fbe_model_key.fbe_size());
     for (size_t i = fbe_map_size; i-- > 0;)
     {
         fbe_result += fbe_model_key.fbe_size() + fbe_model_key.fbe_extra();
@@ -3226,10 +3226,10 @@ inline size_t FieldModelMap<TKey, TValue>::size() const noexcept
         return 0;
 
     uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
+    if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 8) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint64_t fbe_map_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
     return fbe_map_size;
 }
 
@@ -3239,13 +3239,13 @@ inline std::pair<FieldModel<TKey>, FieldModel<TValue>> FieldModelMap<TKey, TValu
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
     uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4) <= _buffer.size())) && "Model is broken!");
+    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 8) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    [[maybe_unused]] uint64_t fbe_map_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
     assert((index < fbe_map_size) && "Index is out of bounds!");
 
-    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
-    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 8);
+    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 8 + fbe_model_key.fbe_size());
     fbe_model_key.fbe_shift(index * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
     fbe_model_value.fbe_shift(index * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
     return std::make_pair(fbe_model_key, fbe_model_value);
@@ -3257,16 +3257,16 @@ inline std::pair<FieldModel<TKey>, FieldModel<TValue>> FieldModelMap<TKey, TValu
     FieldModel<TKey> fbe_model_key(_buffer, fbe_offset());
     FieldModel<TValue> fbe_model_value(_buffer, fbe_offset() + fbe_model_key.fbe_size());
 
-    uint32_t fbe_map_size = (uint32_t)(size * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
-    uint32_t fbe_map_offset = (uint32_t)(_buffer.allocate(4 + fbe_map_size) - _buffer.offset());
-    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4 + fbe_map_size) <= _buffer.size())) && "Model is broken!");
+    uint64_t fbe_map_size = (uint64_t)(size * (fbe_model_key.fbe_size() + fbe_model_value.fbe_size()));
+    uint32_t fbe_map_offset = (uint32_t)(_buffer.allocate(8 + fbe_map_size) - _buffer.offset());
+    assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 8 + fbe_map_size) <= _buffer.size())) && "Model is broken!");
 
     *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_map_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset)) = (uint32_t)size;
+    *((uint64_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset)) = (uint64_t)size;
 
-    memset((char*)(_buffer.data() + _buffer.offset() + fbe_map_offset + 4), 0, fbe_map_size);
+    memset((char*)(_buffer.data() + _buffer.offset() + fbe_map_offset + 8), 0, fbe_map_size);
 
-    return std::make_pair(FieldModel<TKey>(_buffer, fbe_map_offset + 4), FieldModel<TValue>(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size()));
+    return std::make_pair(FieldModel<TKey>(_buffer, fbe_map_offset + 8), FieldModel<TValue>(_buffer, fbe_map_offset + 8 + fbe_model_key.fbe_size()));
 }
 
 template <typename TKey, typename TValue>
@@ -3279,13 +3279,13 @@ inline bool FieldModelMap<TKey, TValue>::verify() const noexcept
     if (fbe_map_offset == 0)
         return true;
 
-    if ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size())
+    if ((_buffer.offset() + fbe_map_offset + 8) > _buffer.size())
         return false;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint64_t fbe_map_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
 
-    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
-    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
+    FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 8);
+    FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 8 + fbe_model_key.fbe_size());
     for (size_t i = fbe_map_size; i-- > 0;)
     {
         if (!fbe_model_key.verify())
@@ -4737,7 +4737,7 @@ inline size_t FinalModelVector<T>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint64_t fbe_vector_size = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
 
     size_t size = 4;
     FinalModel<T> fbe_model(_buffer, fbe_offset() + 4);
