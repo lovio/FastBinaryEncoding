@@ -173,7 +173,7 @@ inline size_t FieldModelStructOptional<T, TStruct>::fbe_extra() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + 4) > _buffer.size()))
         return 0;
 
@@ -203,7 +203,7 @@ inline bool FieldModelStructOptional<T, TStruct>::verify() const noexcept
     if (fbe_has_value == 0)
         return true;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     if (fbe_optional_offset == 0)
         return false;
 
@@ -219,7 +219,7 @@ inline size_t FieldModelStructOptional<T, TStruct>::get_begin() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     assert((fbe_optional_offset > 0) && "Model is broken!");
     if (fbe_optional_offset == 0)
         return 0;
@@ -267,7 +267,7 @@ inline size_t FieldModelStructOptional<T, TStruct>::set_begin(bool has_value)
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_optional_offset;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1, fbe_optional_offset);
 
     _buffer.shift(fbe_optional_offset);
     return fbe_optional_offset;
@@ -720,11 +720,11 @@ size_t FieldModelCustomVector<T, TStruct>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
 
     size_t fbe_result = 4;
     T fbe_model(_buffer, fbe_vector_offset + 4);
@@ -742,7 +742,7 @@ size_t FieldModelCustomVector<T, TStruct>::offset() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     return fbe_vector_offset;
 }
 
@@ -752,11 +752,11 @@ size_t FieldModelCustomVector<T, TStruct>::size() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
     return fbe_vector_size;
 }
 
@@ -765,10 +765,10 @@ inline T FieldModelCustomVector<T, TStruct>::operator[](size_t index) const noex
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    [[maybe_unused]] uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
     assert((index < fbe_vector_size) && "Index is out of bounds!");
 
     T fbe_model(_buffer, fbe_vector_offset + 4);
@@ -785,8 +785,8 @@ inline T FieldModelCustomVector<T, TStruct>::resize(size_t size)
     uint32_t fbe_vector_offset = (uint32_t)(_buffer.allocate(4 + fbe_vector_size) - _buffer.offset());
     assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_vector_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset)) = (uint32_t)size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_vector_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset, size);
 
     memset((char*)(_buffer.data() + _buffer.offset() + fbe_vector_offset + 4), 0, fbe_vector_size);
 
@@ -799,14 +799,14 @@ inline bool FieldModelCustomVector<T, TStruct>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_vector_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
 
     T fbe_model(_buffer, fbe_vector_offset + 4);
     for (size_t i = fbe_vector_size; i-- > 0;)
@@ -1128,11 +1128,11 @@ inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::fbe_ext
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
 
     size_t fbe_result = 4;
     TKey fbe_model_key(_buffer, fbe_map_offset + 4);
@@ -1153,7 +1153,7 @@ inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::offset(
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     return fbe_map_offset;
 }
 
@@ -1163,11 +1163,11 @@ inline size_t FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::size() 
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
     return fbe_map_size;
 }
 
@@ -1176,10 +1176,10 @@ inline std::pair<TKey, TValue> FieldModelCustomMap<TKey, TValue, TKStruct, TValu
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    [[maybe_unused]] uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
     assert((index < fbe_map_size) && "Index is out of bounds!");
 
     TKey fbe_model_key(_buffer, fbe_map_offset + 4);
@@ -1199,8 +1199,8 @@ inline std::pair<TKey, TValue> FieldModelCustomMap<TKey, TValue, TKStruct, TValu
     uint32_t fbe_map_offset = (uint32_t)(_buffer.allocate(4 + fbe_map_size) - _buffer.offset());
     assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4 + fbe_map_size) <= _buffer.size())) && "Model is broken!");
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_map_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset)) = (uint32_t)size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_map_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset, size);
 
     memset((char*)(_buffer.data() + _buffer.offset() + fbe_map_offset + 4), 0, fbe_map_size);
 
@@ -1213,14 +1213,14 @@ inline bool FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::verify() 
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_map_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
 
     TKey fbe_model_key(_buffer, fbe_map_offset + 4);
     TValue fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
@@ -2565,7 +2565,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
@@ -2599,19 +2599,19 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);");
     WriteLineIndent("if (fbe_struct_size < (4 + 4))");
     Indent(1);
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));");
+    WriteLineIndent("uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);");
     WriteLineIndent("if (fbe_verify_type && (fbe_struct_type != fbe_type()))");
     Indent(1);
     WriteLineIndent("return false;");
@@ -2677,14 +2677,14 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && \"Model is broken!\");");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);");
     WriteLineIndent("assert((fbe_struct_size >= (4 + 4)) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_struct_size < (4 + 4))");
     Indent(1);
@@ -2716,7 +2716,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());");
     WriteLineIndent("get_fields(fbe_value, fbe_struct_size);");
     WriteLineIndent("get_end(fbe_begin);");
     Indent(-1);
@@ -2800,9 +2800,9 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;");
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;");
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, fbe_type());");
     WriteLine();
     WriteLineIndent("_buffer.shift(fbe_struct_offset);");
     WriteLineIndent("return fbe_struct_offset;");
@@ -2887,7 +2887,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_ptr_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);");
     WriteLineIndent("if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
@@ -2919,7 +2919,8 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_optional_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);");
+
     WriteLineIndent("if (fbe_optional_offset == 0)");
     Indent(1);
     WriteLineIndent("return false;");
@@ -2957,7 +2958,7 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_ptr_offset = *((const uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));");
+    WriteLineIndent("uint32_t fbe_ptr_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);");
     WriteLineIndent("assert((fbe_ptr_offset > 0) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_ptr_offset == 0)");
     Indent(1);
@@ -3025,7 +3026,8 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("*((uint32_t *)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_ptr_offset;");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1, fbe_ptr_offset);");
+
     WriteLine();
     WriteLineIndent("_buffer.shift(fbe_ptr_offset);");
     WriteLineIndent("return fbe_ptr_offset;");
@@ -3152,7 +3154,7 @@ void GeneratorCpp::GeneratePtrStructModel_Source(const std::shared_ptr<Package>&
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);");
     WriteLineIndent("if (fbe_full_size < model.fbe_size())");
     Indent(1);
     WriteLineIndent("return false;");
@@ -3206,7 +3208,7 @@ void GeneratorCpp::GeneratePtrStructModel_Source(const std::shared_ptr<Package>&
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);");
     WriteLineIndent("assert((fbe_full_size >= model.fbe_size()) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_full_size < model.fbe_size())");
     Indent(1);

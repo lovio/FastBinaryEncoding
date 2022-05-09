@@ -75,6 +75,7 @@ private:
     void GenerateImportsProtocol(const std::shared_ptr<Package>& p, bool final);
     void GenerateImportsJson();
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
+    void GenerateUnalignedAccessor_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();
