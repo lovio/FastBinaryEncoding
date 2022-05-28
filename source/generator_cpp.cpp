@@ -6491,7 +6491,7 @@ struct ChildNodeReader
             return false;
 
         // Deserialize the child object
-        return FBE::JSON::from_json(member->value.GetObj(), value);
+        return FBE::JSON::from_json(member->value.GetObject(), value);
     }
 };
 
