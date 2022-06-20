@@ -202,6 +202,7 @@ void GeneratorCpp::GenerateImports()
 #include <unordered_map>
 #include <vector>
 #include <memory_resource>
+#include <utility>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
