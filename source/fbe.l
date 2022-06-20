@@ -203,7 +203,7 @@ int main(int argc, char** argv)
     parser.add_option("--json").dest("json").action("store_true").set_default(0).help("Generate JSON serialization code");
     parser.add_option("--proto").dest("proto").action("store_true").set_default(0).help("Generate Sender/Receiver protocol code");
     parser.add_option("--ptr").dest("ptr").action("store_true").set_default(0).help("Generate pointer-based serialization code, conflicts with --final");
-    parser.add_option("--arena").dest("arena").action("store_true").set_default(0).help("Generate arena-based serialization code, only work with --ptr");
+    parser.add_option("--arena").dest("arena").action("store_true").set_default(0).help("Generate arena-based serialization code");
     parser.add_option("--arena-header").dest("arena-header").action("store").type("string").help("Arena header path, work with --arena");
     parser.add_option("--arena-tag").dest("arena-tag").action("append").type("string").help("Add arena tag, work with --arena");
 
