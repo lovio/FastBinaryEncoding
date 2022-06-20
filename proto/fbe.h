@@ -39,6 +39,8 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include <memory_resource>
+#include <utility>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
@@ -56,6 +58,18 @@
 #endif
 
 namespace FBE {
+
+template <typename T>
+inline auto unaligned_load(void const* ptr) noexcept -> T {
+    // using memcpy so we don't get into unaligned load problems.
+    // compiler should optimize this very well anyways.
+    T t;
+    std::memcpy(&t, ptr, sizeof(T));
+    return t;
+};
+
+template <typename T>
+inline void unaligned_store(void *p, T v) { memcpy(p, &v, sizeof(T)); }
 
 //! Bytes buffer type
 /*!

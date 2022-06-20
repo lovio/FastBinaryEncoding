@@ -408,12 +408,26 @@ public:
     // Get the vector as std::set
     void get(std::set<T>& values) const noexcept;
 
+    // Get the vector as std::pmr::vector
+    void get(std::pmr::vector<T>& values) const noexcept;
+    // Get the vector as std::pmr::list
+    void get(std::pmr::list<T>& values) const noexcept;
+    // Get the vector as std::pmr::set
+    void get(std::pmr::set<T>& values) const noexcept;
+
     // Set the vector as std::vector
     void set(const std::vector<T>& values) noexcept;
     // Set the vector as std::list
     void set(const std::list<T>& values) noexcept;
     // Set the vector as std::set
     void set(const std::set<T>& values) noexcept;
+
+    // Set the vector as std::pmr::vector
+    void set(const std::pmr::vector<T>& values) noexcept;
+    // Set the vector as std::pmr::list
+    void set(const std::pmr::list<T>& values) noexcept;
+    // Set the vector as std::pmr::set
+    void set(const std::pmr::set<T>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -458,10 +472,20 @@ public:
     // Get the map as std::unordered_map
     void get(std::unordered_map<TKey, TValue>& values) const noexcept;
 
+    // Get the map as std::pmr::map
+    void get(std::pmr::map<TKey, TValue>& values) const noexcept;
+    // Get the map as std::pmr::unordered_map
+    void get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept;
+
     // Set the map as std::map
     void set(const std::map<TKey, TValue>& values) noexcept;
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKey, TValue>& values) noexcept;
+
+    // Set the map as std::pmr::map
+    void set(const std::pmr::map<TKey, TValue>& values) noexcept;
+    // Set the map as std::pmr::unordered_map
+    void set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
