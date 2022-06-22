@@ -1948,21 +1948,16 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
             WriteLineIndent(": " + ConvertPtrTypeName(*p->name, *s->base) + "()");
             first = false;
         }
-        // Since lack of context, we have no idea of whether other pkg's
-        // field is struct or not. So we have to handle it in body
-        std::vector<std::shared_ptr<StructField>> collection_of_import_pkg_field;
         if (s->body)
         {
             auto enums = p->body->enums;
             for (const auto& field : s->body->fields)
             {
-                if (!is_current_package_type(*field->type)) {
-                    collection_of_import_pkg_field.push_back(field);
-                    continue;
-                }
                 WriteIndent();
                 Write(std::string(first ? ": " : ", ") + *field->name + "(");
-                if (field->ptr && !IsContainerType(*field)) {
+                if (!is_current_package_type(*field->type)) {
+                    Write(std::string("assign_member<") + ConvertTypeName(*p->name, *field) + ">(alloc)");
+                } else if (field->ptr && !IsContainerType(*field)) {
                     Write("nullptr");
                 // container and string should be initialized with memory_resource
                 } else if (*field->type == "string" || IsContainerType(*field)) {
@@ -1981,18 +1976,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
             }
         }
         Indent(-1);
-        if (collection_of_import_pkg_field.size() == 0) {
-            WriteLineIndent("{}");
-        } else {
-            WriteLineIndent("{");
-            Indent(1);
-            for (const auto& field: collection_of_import_pkg_field) {
-                WriteLineIndent(*field->name + " = assign_member<" + ConvertTypeName(*p->name, *field) + ">(alloc);");
-            }
-            Indent(-1);
-            WriteLineIndent("}");
-
-        }
+        WriteLineIndent("{}");
     }
 
     std::vector<std::string> unique_ptr_members;
