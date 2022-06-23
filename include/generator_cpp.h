@@ -77,6 +77,7 @@ private:
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
     void GenerateUnalignedAccessor_Header();
     void GenerateImportHelper_Header();
+    void GenerateVariantVisitHelper_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();
@@ -180,6 +181,9 @@ private:
     void GenerateFlagsJson(const std::shared_ptr<Package>& p, const std::shared_ptr<FlagsType>& f);
     void GenerateFlagsFieldModel(const std::shared_ptr<Package>& p, const std::shared_ptr<FlagsType>& f);
     void GenerateFlagsFinalModel(const std::shared_ptr<Package>& p, const std::shared_ptr<FlagsType>& f);
+    void GeneratorStructForwardDeclaration(const std::vector<std::shared_ptr<StructType>>& structs);
+    void GenerateVariantAlias(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v);
+    void GenerateVariantOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v);
     void GenerateStruct_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStruct_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
@@ -216,6 +220,7 @@ private:
     bool IsPrimitiveType(const std::string& type, bool optional);
     bool IsContainerType(const StructField &field);
     bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
+    bool IsVariantType(const std::shared_ptr<Package>& p, const std::string& type);
 
     std::string ConvertEnumType(const std::string& type);
     std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional);
