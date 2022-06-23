@@ -45,6 +45,7 @@ int yyerror(const std::string& msg);
 "version"               { yycount(); return yytoken(VERSION); }
 "enum"                  { yycount(); return yytoken(ENUM); }
 "flags"                 { yycount(); return yytoken(FLAGS); }
+"variant"               { yycount(); return yytoken(VARIANT); }
 "struct"                { yycount(); return yytoken(STRUCT); }
 "message"               { yycount(); return yytoken(MESSAGE); }
 "base"                  { yycount(); return yytoken(BASE); }
@@ -262,6 +263,8 @@ int main(int argc, char** argv)
 
     // Open the input file
     if (!quiet) std::cout << "Open input file - " + input + "...";
+
+    // TODO(liuqi)： handle multiple input files here
 
     CppCommon::File file(input);
 
