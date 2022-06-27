@@ -219,9 +219,10 @@ private:
     bool IsKnownType(const std::string& type);
     bool IsPrimitiveType(const std::string& type, bool optional);
     bool IsContainerType(const StructField &field);
-    bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
+    bool IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type);
     bool IsVariantType(const std::shared_ptr<Package>& p, const std::string& type);
 
+    std::string ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field);
     std::string ConvertEnumType(const std::string& type);
     std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional);
     std::string ConvertTypeName(const std::string& package, const StructField& field);
