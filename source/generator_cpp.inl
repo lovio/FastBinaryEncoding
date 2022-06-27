@@ -2488,44 +2488,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     {
         for (const auto& field : s->body->fields)
         {
-            // Struct
-            if (IsStructType(p, field) && !IsKnownType(*field->type)) {
-                std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
-                if (IsContainerType(*field) || field->optional) {
-                    WriteIndent("FieldModel");
-                    if (field->array) {
-                        Write("CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
-                    }
-                    else if (field->vector || field->list || field->set)
-                        Write("CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
-                    else if (field->map || field->hash){
-                        // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
-                        std::string kType = "FieldModel";
-                        if (IsKnownType(*field->key)) {
-                            kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
-                        } else {
-                            kType +=  "_" + *p->name + "_" + *field->type;
-                        }
-                        auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
-                        auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
-                        Write("CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
-                    }
-                    else if (field->optional) {
-                        Write("StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
-                    }
-                    Write(" " +  *field->name + ";");
-                    WriteLine();
-                } else {
-                    WriteLineIndent(model_name + " " + *field->name + ";");
-                }
-            } else if (field->array)
-                WriteLineIndent("FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
-            else if (field->vector || field->list || field->set)
-                WriteLineIndent("FieldModelVector<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
-            else if (field->map || field->hash)
-                WriteLineIndent("FieldModelMap<" + ConvertPtrTypeName(*p->name, *field->key) + ", " + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
-            else
-                WriteLineIndent("FieldModel<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+            WriteLineIndent(ConvertPtrFieldModelType(p, field) + " " + *field->name + ";");
         }
     }
 
@@ -2871,7 +2834,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field) && !field->optional)
+                if (IsStructType(p, *field->type) && !field->ptr && !IsContainerType(*field) && !field->optional)
                     WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
@@ -3253,9 +3216,9 @@ bool GeneratorCpp::IsContainerType(const StructField &field) {
     return (field.array || field.vector || field.list || field.set || field.map || field.hash);
 }
 
-bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
+bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type) {
     for (const auto &s:  p->body->structs) {
-        if (*s->name == *field->type) {
+        if (*s->name == field_type) {
             return true;
         }
     }
@@ -3368,5 +3331,50 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
         return "const " + ConvertPtrTypeName(package, field, true) + "&";
 
     return ConvertPtrTypeName(package, field, true);
+}
+
+std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
+    std::string field_model_type;
+    // Struct
+    if (IsVariantType(p, *field->type)) {
+        // TODO(liuqi): check ptr
+        field_model_type = "FieldModelVariant_" + *p->name + "_" + *field->type;
+    }
+    else if (IsStructType(p, *field->type) && !IsKnownType(*field->type)) {
+        std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
+        if (IsContainerType(*field) || field->optional) {
+            field_model_type = "FieldModel";
+            if (field->array) {
+                field_model_type += "CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">";
+            }
+            else if (field->vector || field->list || field->set)
+                field_model_type += "CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
+            else if (field->map || field->hash){
+                // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
+                std::string kType = "FieldModel";
+                if (IsKnownType(*field->key)) {
+                    kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
+                } else {
+                    kType +=  "_" + *p->name + "_" + *field->type;
+                }
+                auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
+                auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
+                field_model_type += "CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">";
+            }
+            else if (field->optional) {
+                field_model_type += "StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
+            }
+        } else {
+            field_model_type += model_name;
+        }
+    } else if (field->array)
+        field_model_type = "FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + ">";
+    else if (field->vector || field->list || field->set)
+        field_model_type = "FieldModelVector<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    else if (field->map || field->hash)
+        field_model_type = "FieldModelMap<" + ConvertPtrTypeName(*p->name, *field->key) + ", " + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    else
+        field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    return field_model_type;
 }
 } // namespace FBE
