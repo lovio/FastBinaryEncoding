@@ -2359,7 +2359,13 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
     // Generate variant field model get(), get_fields() methods
     WriteLine();
     WriteLineIndent("// Get the variant value");
-    WriteLineIndent("void get(" + variant_name + "& fbe_value) noexcept;");
+    WriteLineIndent("void get(" + variant_name + "& fbe_value) const noexcept;");
+
+    WriteLine();
+    WriteLineIndent("// Set the variant value (begin phase)");
+    WriteLineIndent("size_t set_begin(size_t variant_type_fbe_size, size_t variant_type_index);");
+    WriteLineIndent("// Set the variant value (end phase)");
+    WriteLineIndent("void set_end(size_t fbe_begin);");
 
     // Generate variant field model set(), set_fields() methods
     WriteLine();
@@ -2373,15 +2379,6 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
     Indent(1);
     WriteLineIndent("FBEBuffer& _buffer;");
     WriteLineIndent("size_t _offset;");
-
-    // Generate variant field model accessors
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("public:");
-    Indent(1);
-    // WriteLineIndent("BaseFieldModel* ptr{nullptr};");
-
-    // Generate variant field model end
     Indent(-1);
     WriteLineIndent("};");
 }
@@ -2406,7 +2403,8 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLineIndent("{");
     Indent(1);
     // check fbe_body
-    WriteLineIndent("size_t fbe_result = 4;"); // 这里只考虑type只用的4个byte
+    WriteLineIndent("// variant type's fbe_size not included");
+    WriteLineIndent("size_t fbe_result = 4;");
     WriteLineIndent("return fbe_result;");
     Indent(-1);
     WriteLineIndent("}");
@@ -2462,23 +2460,33 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_variant_type_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset + 4);");
-    WriteLineIndent("if ((fbe_variant_type_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4 + 4 + fbe_variant_type_offset) > _buffer.size()))");
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLineIndent("switch(fbe_variant_type) {");
     Indent(1);
-    WriteLineIndent("return false;");
+    for(auto index = 0; index < v->body->values.size(); index ++) {
+        WriteLineIndent("case " + std::to_string(index) + ": {");
+        Indent(1);
+        auto& value = v->body->values[index];
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        WriteLineIndent("if (!fbe_model.verify())");
+        Indent(1);
+        WriteLineIndent("return false;");
+        Indent(-1);
+        WriteLineIndent("break;");
+        Indent(-1);
+        WriteLineIndent("}");
+    }
     Indent(-1);
+    WriteLineIndent("}");
     WriteLine();
-    // WriteLineIndent("_buffer.shift(fbe_variant_offset);");
-    // TODO(liuqi)：这里如何verify fields呢？ like FieldModelVector,create a FieldModel and verify
-    // 这里的shift也要注意有两次。
-    // WriteLineIndent("bool fbe_result = verify_fields(fbe_variant_size);");
+    WriteLineIndent("_buffer.unshift(fbe_variant_offset);");
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLineIndent("}");
     WriteLine();
 
     // Generate struct field model get() method
-    WriteLineIndent("void " + class_name + "::get(" + variant_name + "& fbe_value) noexcept");
+    WriteLineIndent("void " + class_name + "::get(" + variant_name + "& fbe_value) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
@@ -2494,15 +2502,20 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     Indent(-1);
     WriteLineIndent("uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);");
     WriteLineIndent("assert(vairant_type_index >= 0 && vairant_type_index < " + std::to_string(v->body->values.size()) + " && \"Model is broken!\");"); 
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLine();
     WriteLineIndent("switch(vairant_type_index) {");
     Indent(1);
     for(auto index = 0; index < v->body->values.size(); index ++) {
         WriteLineIndent("case " + std::to_string(index) + ": {");
         Indent(1);
         auto& value = v->body->values[index];
-        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, fbe_variant_offset + 4);");
-        // 初始化variant
-        WriteLineIndent("auto& value = std::get<" + ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*": "") + ">(fbe_value);");
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        // initialize variant
+        auto variant_type = ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*": "");
+        WriteLineIndent("fbe_value.emplace<" + variant_type + ">();");
+        WriteLineIndent("auto& value = std::get<" +  variant_type + ">(fbe_value);");
         WriteLineIndent(std::string("fbe_model.get(") + (value->ptr ? "&" : "") + "value);");
         WriteLineIndent("break;");
         Indent(-1);
@@ -2512,7 +2525,43 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLineIndent("}");
     WriteLine();
     WriteLineIndent("_buffer.unshift(fbe_variant_offset);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
 
+    // Generate variant field model set_begin() method
+    WriteLineIndent("size_t " + class_name + "::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_variant_size = (uint32_t)(fbe_body() + variant_type_fbe_size);");
+    WriteLineIndent("uint32_t fbe_variant_offset = (uint32_t)(_buffer.allocate(fbe_variant_size) - _buffer.offset());");
+    WriteLineIndent("assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_variant_offset);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset, variant_type_index);");
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLineIndent("return fbe_variant_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate variant field model set_end() method
+    WriteLineIndent("void " + class_name + "::set_end(size_t fbe_begin)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
     WriteLineIndent("}");
     WriteLine();
 
@@ -2527,23 +2576,6 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLineIndent("return;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_variant_size = (uint32_t)fbe_body();");
-    WriteLineIndent("uint32_t fbe_variant_offset = (uint32_t)(_buffer.allocate(fbe_variant_size) - _buffer.offset());");
-    WriteLineIndent("assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) <= _buffer.size())) && \"Model is broken!\");");
-    WriteLineIndent("if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) > _buffer.size()))");
-    Indent(1);
-    WriteLineIndent("return;");
-    Indent(-1);
-    WriteLine();
-    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_variant_offset);");
-    WriteLine();
-    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
-    WriteLine();
-    // fill type
-    WriteLine();
-    WriteLineIndent("uint32_t fbe_variant_type = fbe_value.index();");
-    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset, fbe_variant_type);");
-
     WriteLineIndent("std::visit(");
     Indent(1);
     WriteLineIndent("overloaded");
@@ -2553,7 +2585,7 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     for(auto index = 0; index < v->body->values.size(); index ++) {
         WriteIndent(first ? "" : ", ");
         auto& value = v->body->values[index];
-        Write("[this, fbe_variant_offset](");
+        Write("[this, &fbe_value](");
         auto type_name = ConvertTypeName(*p->name, *value->type, false);
         if (IsPrimitiveType(*value->type, false))
             Write(type_name);
@@ -2563,18 +2595,23 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
             Write("const " + type_name + "&");
         WriteLine(" v) {");
         Indent(1);
-        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, fbe_variant_offset + 4);");
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        WriteLineIndent("size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_value.index());");
+        WriteLineIndent("if (fbe_begin == 0)");
+        Indent(1);
+        WriteLineIndent("return;");
+        Indent(-1);
         WriteLineIndent("fbe_model.set(v);");
+        WriteLineIndent("set_end(fbe_begin);");
         Indent(-1);
         WriteLineIndent("}");
         first = false;
     }
     Indent(-1);
     WriteLineIndent("},");
-    WriteLineIndent("fbe_value);");
+    WriteLineIndent("fbe_value");
     Indent(-1);
-    WriteLine();
-    WriteLineIndent("_buffer.unshift(fbe_variant_offset);");
+    WriteLineIndent(");");
     Indent(-1);
     WriteLineIndent("}");
     WriteLine();
@@ -3652,7 +3689,7 @@ std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package
 
 std::string GeneratorCpp::ConvertPtrVariantFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantValue>& variant) {
     std::string variant_field_model_type;
-     if (IsStructType(p, *variant->type) && !IsKnownType(*variant->type)) {
+     if (Ptr() && IsStructType(p, *variant->type) && !IsKnownType(*variant->type)) {
         variant_field_model_type = std::string("FieldModel") + (variant->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *variant->type;
      } else
         variant_field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";

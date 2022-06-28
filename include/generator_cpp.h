@@ -77,7 +77,7 @@ private:
     void GenerateImportsJson(const std::shared_ptr<Package>& p);
     void GenerateUnalignedAccessor_Header();
     void GenerateImportHelper_Header();
-    void GenerateVariantHelper_Header();
+    void GenerateVariantVisitHelper_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();

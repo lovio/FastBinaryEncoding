@@ -6,8 +6,6 @@
     \copyright MIT License
 */
 #include "generator_cpp.h"
-#include <algorithm>
-#include <iostream>
 
 namespace FBE {
 
@@ -380,7 +378,7 @@ auto assign_member([[maybe_unused]] Alloc alloc) -> T {
     Write(code);
 }
 
-void GeneratorCpp::GenerateVariantHelper_Header()
+void GeneratorCpp::GenerateVariantVisitHelper_Header()
 {
     std::string code = R"CODE(
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -6789,7 +6787,7 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     // Generate common body
     GenerateUnalignedAccessor_Header();
     GenerateImportHelper_Header();
-    GenerateVariantHelper_Header();
+    GenerateVariantVisitHelper_Header();
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
@@ -7425,6 +7423,11 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             GenerateFlagsFieldModel(p, f);
         }
 
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Header(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -7470,6 +7473,11 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     // Generate namespace body
     if (p->body)
     {
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Source(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -8957,7 +8965,10 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     {
         for (const auto& field : s->body->fields)
         {
-            if (field->array)
+            if (IsVariantType(p, *field->type)) {
+                WriteLine("FieldModelVariant_" + *p->name + "_" + *field->type + " " + *field->name + ";");
+            }
+            else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional) + "> " + *field->name + ";");

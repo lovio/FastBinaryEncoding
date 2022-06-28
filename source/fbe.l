@@ -264,8 +264,6 @@ int main(int argc, char** argv)
     // Open the input file
     if (!quiet) std::cout << "Open input file - " + input + "...";
 
-    // TODO(liuqi)： handle multiple input files here
-
     CppCommon::File file(input);
 
     // Check if the input file exist
