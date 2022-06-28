@@ -2394,15 +2394,9 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLineIndent("{}");
     WriteLine();
 
-    // fbe_body要根据类型，然后visit，计算出type + data的大小
-    // fbe_body用来生成第一个offset的。非常重要
-    // fbe_size是给外部使用的，计算fbe大小的。是一个外部接口，可用可不用。但是我们可以用来保证正确性
-    // fbe_size的计算用到了fbe_extra()
-
     WriteLineIndent("size_t " + class_name + "::fbe_body() const noexcept");
     WriteLineIndent("{");
     Indent(1);
-    // check fbe_body
     WriteLineIndent("// variant type's fbe_size not included");
     WriteLineIndent("size_t fbe_result = 4;");
     WriteLineIndent("return fbe_result;");
@@ -2530,6 +2524,7 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     WriteLine();
 
     // Generate variant field model set_begin() method
+    // We don't know the type of the variant in advance. So we need to pass variant_type_fbe_size to set_begin to alloc.
     WriteLineIndent("size_t " + class_name + "::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)");
     WriteLineIndent("{");
     Indent(1);
