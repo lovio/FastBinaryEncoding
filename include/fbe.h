@@ -98,8 +98,13 @@ struct FlagsType
 
 struct VariantValue
 {
+    std::shared_ptr<std::string> key;
     std::shared_ptr<std::string> type;
     bool ptr{false};
+    bool vector{false};
+    bool list{false};
+    bool map{false};
+    bool hash{false};
 };
 
 struct VariantBody
