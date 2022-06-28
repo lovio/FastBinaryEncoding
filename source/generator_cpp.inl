@@ -1519,6 +1519,15 @@ void GeneratorCpp::GeneratePtrPackage_Header(const std::shared_ptr<Package>& p)
         for (const auto& f : p->body->flags)
             GenerateFlags(p, f);
 
+        if (!p->body->variants.empty()) {
+            // forward declarations
+            GeneratorStructForwardDeclaration(p->body->structs);
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantAlias(p, v);
+            }
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
             GeneratePtrStruct_Header(p, s);
@@ -1580,6 +1589,13 @@ void GeneratorCpp::GeneratePtrPackage_Source(const std::shared_ptr<Package>& p)
             // Generate flags logging stream
             if (Logging())
                 GenerateFlagsLoggingStream(f);
+        }
+
+        if (!p->body->variants.empty()) {
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantOutputStream(p, v);
+            }
         }
 
         // Generate child structs
