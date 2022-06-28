@@ -96,6 +96,27 @@ struct FlagsType
     std::shared_ptr<FlagsBody> body;
 };
 
+struct VariantValue
+{
+    std::shared_ptr<std::string> type;
+    bool ptr{false};
+};
+
+struct VariantBody
+{
+    std::vector<std::shared_ptr<VariantValue>> values;
+
+    void AddValue(VariantValue* v);
+};
+
+
+struct VariantType
+{
+    std::shared_ptr<Attributes> attributes;
+    std::shared_ptr<std::string> name;
+    std::shared_ptr<VariantBody> body;
+};
+
 struct StructField
 {
     std::shared_ptr<Attributes> attributes;
@@ -114,6 +135,7 @@ struct StructField
     bool map{false};
     bool hash{false};
     bool ptr{false};
+    bool variant{false};
     int N{0};
 
     void SetArraySize(int size);
@@ -172,6 +194,7 @@ struct Statement
 {
     std::shared_ptr<EnumType> e;
     std::shared_ptr<FlagsType> f;
+    std::shared_ptr<VariantType> v;
     std::shared_ptr<StructType> s;
 };
 
@@ -179,6 +202,7 @@ struct Statements
 {
     std::vector<std::shared_ptr<EnumType>> enums;
     std::vector<std::shared_ptr<FlagsType>> flags;
+    std::vector<std::shared_ptr<VariantType>> variants;
     std::vector<std::shared_ptr<StructType>> structs;
 
     void AddStatement(Statement* st);
@@ -186,6 +210,7 @@ struct Statements
     void AddEnum(std::shared_ptr<EnumType>& e);
     void AddFlags(std::shared_ptr<FlagsType>& f);
     void AddStruct(std::shared_ptr<StructType>& s);
+    void AddVariant(std::shared_ptr<VariantType>& v);
 };
 
 struct Import
