@@ -3600,7 +3600,6 @@ GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &
     if (Arena()) {
         prefix += "::pmr";
     }
-    // bool typeptr = withptr ? field.ptr : false;
     bool typeptr = field.ptr;
     if (field.array)
         return "std::array<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
@@ -3620,6 +3619,23 @@ GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &
     if (Ptr() && !IsKnownType(*field.type) && !field.ptr && as_argument)
         s += "&&";
     return s;
+}
+
+std::string GeneratorCpp::ConvertVariantTypeName(const std::string& package, const VariantValue& variant)
+{
+    std::string prefix = "std";
+    if (Arena()) {
+        prefix += "::pmr";
+    }
+    if (variant.vector)
+        return prefix + "::vector<" + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) + ">";
+    else if (variant.list)
+        return prefix + "::list<" + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) + ">";
+    else if (variant.map)
+        return prefix + "::map<" + ConvertPtrTypeName(package, *variant.key, false, false, false) + ", " + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) +">";
+    else if (variant.hash)
+        return prefix + "::unordered_map<" + ConvertPtrTypeName(package, *variant.key, false, false, false) + ", " + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) +">";
+    return ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false);
 }
 
 // two cases:

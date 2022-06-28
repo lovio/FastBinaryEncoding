@@ -8093,8 +8093,8 @@ void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const
     WriteLine();
     std::string code = "using " + *v->name + " = std::variant<";
     bool first = true;
-    for (auto& value : v->body->values) {
-        code += (!first ? ", " : "") + ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*" : "");
+    for (auto value : v->body->values) {
+        code += (!first ? ", " : "") + ConvertVariantTypeName(*p->name, *value);
         first = false;
     }
     code += ">;";

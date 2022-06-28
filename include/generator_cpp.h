@@ -224,6 +224,7 @@ private:
     bool IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type);
     bool IsVariantType(const std::shared_ptr<Package>& p, const std::string& type);
 
+    std::string ConvertVariantTypeName(const std::string& package, const VariantValue& variant);
     std::string ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field);
     std::string ConvertPtrVariantFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantValue>& variant);
     std::string ConvertEnumType(const std::string& type);
