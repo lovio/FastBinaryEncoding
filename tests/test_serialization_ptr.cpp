@@ -454,7 +454,8 @@ TEST_CASE("Serialization (ptr-based import templated-based fbe)", "[Ptr-based FB
 
 TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
     SECTION ("string") {
-        ::variants_ptr::Value value{"variant v"};
+        ::variants_ptr::Value value;
+        value.v.emplace<std::string>("variant v");
 
         FBE::variants_ptr::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -474,7 +475,8 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
     }
 
     SECTION ("primitive type") {
-        ::variants_ptr::Value value{42};
+        ::variants_ptr::Value value;
+        value.v.emplace<int32_t>(42);
 
         FBE::variants_ptr::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -494,8 +496,8 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
     }
 
     SECTION ("struct") {
-        ::variants_ptr::Simple simple{"simple"};
-        ::variants_ptr::Value value(std::move(simple));
+        ::variants_ptr::Value value;
+        value.v.emplace<::variants_ptr::Simple>(::variants_ptr::Simple{"simple"});
 
         FBE::variants_ptr::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -516,7 +518,8 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
 
     SECTION ("pointer") {
         auto simple = std::make_unique<::variants_ptr::Simple>("simple");
-        ::variants_ptr::Value value(simple.get());
+        ::variants_ptr::Value value;
+        value.v.emplace<::variants_ptr::Simple*>(simple.get());
 
         FBE::variants_ptr::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -534,4 +537,38 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(value_copy.v.index() == 4);
         REQUIRE(std::get<::variants_ptr::Simple*>(value_copy.v)->name == "simple");
     }
+
+    // SECTION ("vector of struct") {
+    //     std::vector<::variants_ptr::Simple> v;
+    //     v.emplace_back(::variants_ptr::Simple{"simple1"});
+    //     v.emplace_back(::variants_ptr::Simple{"simple2"});
+
+    //     // ::variants_ptr::Value value;
+    //     // value.v = std::move(v);
+
+    //     // FBE::variants_ptr::ValueModel writer;
+    //     // size_t serialized = writer.serialize(value);
+    //     // std::cout << "serialized: " << serialized << std::endl;
+    //     // REQUIRE(serialized == writer.buffer().size());
+    //     // REQUIRE(writer.verify());
+
+    //     // FBE::variants_ptr::ValueModel reader;
+    //     // reader.attach(writer.buffer());
+    //     // REQUIRE(reader.verify());
+
+    //     // std::cout << "start deserialize: " << std::endl;
+
+    //     // ::variants_ptr::Value value_copy;
+    //     // size_t deserialized = reader.deserialize(value_copy);
+    //     // std::cout << "deserialized: " << deserialized << std::endl;
+    //     // REQUIRE(deserialized == reader.buffer().size());
+
+    //     // REQUIRE(value_copy.v.index() == 5);
+    //     // auto& v_copy = std::get<std::vector<::variants_ptr::Simple>>(value_copy.v);
+    //     // REQUIRE(v_copy.size() == 2);
+    //     // REQUIRE(v_copy.at(0).name == "simple1");
+    //     // REQUIRE(v_copy.at(1).name == "simple2");
+
+    //     std::cout << "done" << std::endl;
+    // }
 }
