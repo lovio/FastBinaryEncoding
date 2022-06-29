@@ -6,6 +6,7 @@
 
 #include "../proto/proto_models.h"
 #include "../proto/test_models.h"
+#include "../proto/variants_models.h"
 
 TEST_CASE("Serialization: domain", "[FBE]")
 {
@@ -1323,4 +1324,69 @@ TEST_CASE("Serialization: struct hash extended", "[FBE]")
     REQUIRE(struct2.f2.size() == 2);
     REQUIRE(struct2.f2.find(s1)->second.value().f1002 == test::EnumTyped::ENUM_VALUE_2);
     REQUIRE(struct2.f2.find(s2)->second == std::nullopt);
+}
+
+
+TEST_CASE("Serialization: variant", "[FBE]") {
+    SECTION ("string") {
+        ::variants::Value value{"variant v"};
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 0);
+        REQUIRE(std::get<std::string>(value_copy.v) == "variant v");
+    }
+
+    SECTION ("primitive type") {
+        ::variants::Value value;
+        value.v.emplace<int32_t>(42);
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 1);
+        REQUIRE(std::get<int32_t>(value_copy.v) == 42);
+    }
+
+    SECTION ("struct") {
+        ::variants::Simple simple{"simple"};
+        ::variants::Value value(simple);
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 3);
+        REQUIRE(std::get<::variants::Simple>(value_copy.v).name == "simple");
+    }
 }

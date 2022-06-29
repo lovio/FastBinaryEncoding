@@ -41,6 +41,7 @@
 #include <vector>
 #include <memory_resource>
 #include <utility>
+#include <variant>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
@@ -81,6 +82,8 @@ requires std::is_enum_v<T>
 auto assign_member([[maybe_unused]] Alloc alloc) -> T {
     return T();
 }
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
 //! Bytes buffer type
 /*!

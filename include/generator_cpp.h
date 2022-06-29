@@ -192,6 +192,8 @@ private:
     void GenerateStructLoggingStream(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructHash(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructJson(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v);
+    void GenerateVariantFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v);
     void GenerateStructFieldPtrModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
@@ -219,9 +221,11 @@ private:
     bool IsKnownType(const std::string& type);
     bool IsPrimitiveType(const std::string& type, bool optional);
     bool IsContainerType(const StructField &field);
-    bool IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field);
+    bool IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type);
     bool IsVariantType(const std::shared_ptr<Package>& p, const std::string& type);
 
+    std::string ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field);
+    std::string ConvertPtrVariantFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantValue>& variant);
     std::string ConvertEnumType(const std::string& type);
     std::string ConvertTypeName(const std::string& package, const std::string& type, bool optional);
     std::string ConvertTypeName(const std::string& package, const StructField& field);

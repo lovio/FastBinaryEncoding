@@ -1664,6 +1664,11 @@ void GeneratorCpp::GeneratePtrPackageModels_Header(const std::shared_ptr<Package
             GenerateFlagsFieldModel(p, f);
         }
 
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Header(p, v);
+        }
+
         // Generate child ptr structs
         for (const auto& s : p->body->structs)
         {
@@ -1715,6 +1720,11 @@ void GeneratorCpp::GeneratePtrPackageModels_Source(const std::shared_ptr<Package
     // Generate namespace body
     if (p->body)
     {
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Source(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -2309,6 +2319,300 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     WriteLineIndent("}");
 }
 
+void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    std::string variant_name = "::" + *p->name + "::" + *v->name;
+    std::string class_name = "FieldModelVariant_" + *p->name + "_" + *v->name;
+
+    // Generate variant field model begin
+    WriteLine();
+    WriteLineIndent("class " + class_name);
+    WriteLineIndent("{");
+    WriteLineIndent("public:");
+    Indent(1);
+
+    // Generate variant field model constructor
+    WriteLineIndent(class_name + "(FBEBuffer& buffer, size_t offset) noexcept;");
+    WriteLineIndent("~" + class_name + "() = default;");
+
+    // Generate variant field model FBE methods
+    WriteLine();
+    WriteLineIndent("// Get the field offset");
+    WriteLineIndent("size_t fbe_offset() const noexcept { return _offset; }");
+    WriteLineIndent("// Get the field size");
+    WriteLineIndent("size_t fbe_size() const noexcept { return 4; }");
+    WriteLineIndent("// Get the field body size");
+    WriteLineIndent("size_t fbe_body() const noexcept;");
+    WriteLineIndent("// Get the field extra size");
+    WriteLineIndent("size_t fbe_extra() const noexcept;");
+    WriteLine();
+    WriteLineIndent("// Shift the current field offset");
+    WriteLineIndent("void fbe_shift(size_t size) noexcept { _offset += size; }");
+    WriteLineIndent("// Unshift the current field offset");
+    WriteLineIndent("void fbe_unshift(size_t size) noexcept { _offset -= size; }");
+
+    // Generate variant field model verify(), verify_fields() methods
+    WriteLine();
+    WriteLineIndent("// Check if the variant value is valid");
+    WriteLineIndent("bool verify() const noexcept;");
+
+    // Generate variant field model get(), get_fields() methods
+    WriteLine();
+    WriteLineIndent("// Get the variant value");
+    WriteLineIndent("void get(" + variant_name + "& fbe_value) const noexcept;");
+
+    WriteLine();
+    WriteLineIndent("// Set the variant value (begin phase)");
+    WriteLineIndent("size_t set_begin(size_t variant_type_fbe_size, size_t variant_type_index);");
+    WriteLineIndent("// Set the variant value (end phase)");
+    WriteLineIndent("void set_end(size_t fbe_begin);");
+
+    // Generate variant field model set(), set_fields() methods
+    WriteLine();
+    WriteLineIndent("// Set the variant value");
+    WriteLineIndent("void set(const " + variant_name + "& fbe_value) noexcept;");
+
+    // Generate variant field model buffer & offset
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("private:");
+    Indent(1);
+    WriteLineIndent("FBEBuffer& _buffer;");
+    WriteLineIndent("size_t _offset;");
+    Indent(-1);
+    WriteLineIndent("};");
+}
+
+void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    std::string variant_name = "::" + *p->name + "::" + *v->name;
+    std::string class_name = "FieldModelVariant_" + *p->name + "_" + *v->name;
+
+    // Generate variant field model begin
+    WriteLine();
+    WriteLineIndent(class_name + "::" + class_name + "(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    WriteLineIndent("{}");
+    WriteLine();
+
+    WriteLineIndent("size_t " + class_name + "::fbe_body() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("// variant type's fbe_size not included");
+    WriteLineIndent("size_t fbe_result = 4;");
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    WriteLineIndent("size_t " + class_name + "::fbe_extra() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
+    WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_struct_offset);");
+    WriteLine();
+    WriteLineIndent("size_t fbe_result = fbe_body();");
+    Indent(1);
+    // TODO(liuqi): calculate contained type's fbe_extra()
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.unshift(fbe_struct_offset);");
+    WriteLine();
+    WriteLineIndent("return fbe_result;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate variant field model verify(), verify_fields() methods
+    WriteLineIndent("bool " + class_name + "::verify() const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
+    WriteLineIndent("if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    // type
+    WriteLineIndent("uint32_t fbe_variant_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);");
+    WriteLineIndent("if (fbe_variant_type < 0 || fbe_variant_type >= " + std::to_string(v->body->values.size()) + ")"); 
+    Indent(1);
+    WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLineIndent("switch(fbe_variant_type) {");
+    Indent(1);
+    for(auto index = 0; index < v->body->values.size(); index ++) {
+        WriteLineIndent("case " + std::to_string(index) + ": {");
+        Indent(1);
+        auto& value = v->body->values[index];
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        WriteLineIndent("if (!fbe_model.verify())");
+        Indent(1);
+        WriteLineIndent("return false;");
+        Indent(-1);
+        WriteLineIndent("break;");
+        Indent(-1);
+        WriteLineIndent("}");
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+    WriteLineIndent("_buffer.unshift(fbe_variant_offset);");
+    WriteLineIndent("return true;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate struct field model get() method
+    WriteLineIndent("void " + class_name + "::get(" + variant_name + "& fbe_value) const noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
+    WriteLineIndent("assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + 4) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLineIndent("uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);");
+    WriteLineIndent("assert(vairant_type_index >= 0 && vairant_type_index < " + std::to_string(v->body->values.size()) + " && \"Model is broken!\");"); 
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLine();
+    WriteLineIndent("switch(vairant_type_index) {");
+    Indent(1);
+    for(auto index = 0; index < v->body->values.size(); index ++) {
+        WriteLineIndent("case " + std::to_string(index) + ": {");
+        Indent(1);
+        auto& value = v->body->values[index];
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        // initialize variant
+        auto variant_type = ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*": "");
+        WriteLineIndent("fbe_value.emplace<" + variant_type + ">();");
+        WriteLineIndent("auto& value = std::get<" +  variant_type + ">(fbe_value);");
+        WriteLineIndent(std::string("fbe_model.get(") + (value->ptr ? "&" : "") + "value);");
+        WriteLineIndent("break;");
+        Indent(-1);
+        WriteLineIndent("}");
+    }
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+    WriteLineIndent("_buffer.unshift(fbe_variant_offset);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate variant field model set_begin() method
+    // We don't know the type of the variant in advance. So we need to pass variant_type_fbe_size to set_begin to alloc.
+    WriteLineIndent("size_t " + class_name + "::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("uint32_t fbe_variant_size = (uint32_t)(fbe_body() + variant_type_fbe_size);");
+    WriteLineIndent("uint32_t fbe_variant_offset = (uint32_t)(_buffer.allocate(fbe_variant_size) - _buffer.offset());");
+    WriteLineIndent("assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) <= _buffer.size())) && \"Model is broken!\");");
+    WriteLineIndent("if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) > _buffer.size()))");
+    Indent(1);
+    WriteLineIndent("return 0;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_variant_offset);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset, variant_type_index);");
+    WriteLine();
+    WriteLineIndent("_buffer.shift(fbe_variant_offset);");
+    WriteLineIndent("return fbe_variant_offset;");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate variant field model set_end() method
+    WriteLineIndent("void " + class_name + "::set_end(size_t fbe_begin)");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("_buffer.unshift(fbe_begin);");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+
+    // Generate variant field model set() method
+    WriteLineIndent("// Set the variant value");
+    WriteLineIndent("void " + class_name + "::set(const " + variant_name + "& fbe_value) noexcept");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && \"Model is broken!\");");
+    WriteLineIndent("if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())");
+    Indent(1);
+    WriteLineIndent("return;");
+    Indent(-1);
+    WriteLine();
+    WriteLineIndent("std::visit(");
+    Indent(1);
+    WriteLineIndent("overloaded");
+    WriteLineIndent("{");
+    Indent(1);
+    bool first = true;
+    for(auto index = 0; index < v->body->values.size(); index ++) {
+        WriteIndent(first ? "" : ", ");
+        auto& value = v->body->values[index];
+        Write("[this, &fbe_value](");
+        auto type_name = ConvertTypeName(*p->name, *value->type, false);
+        if (IsPrimitiveType(*value->type, false))
+            Write(type_name);
+        else if (value->ptr)
+            Write(type_name + "*");
+        else 
+            Write("const " + type_name + "&");
+        WriteLine(" v) {");
+        Indent(1);
+        WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
+        WriteLineIndent("size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_value.index());");
+        WriteLineIndent("if (fbe_begin == 0)");
+        Indent(1);
+        WriteLineIndent("return;");
+        Indent(-1);
+        WriteLineIndent("fbe_model.set(v);");
+        WriteLineIndent("set_end(fbe_begin);");
+        Indent(-1);
+        WriteLineIndent("}");
+        first = false;
+    }
+    Indent(-1);
+    WriteLineIndent("},");
+    WriteLineIndent("fbe_value");
+    Indent(-1);
+    WriteLineIndent(");");
+    Indent(-1);
+    WriteLineIndent("}");
+    WriteLine();
+}
+
+
 void GeneratorCpp::GenerateStructFieldPtrModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
 {
     std::string struct_name = "::" + *p->name + "::" + *s->name;
@@ -2488,44 +2792,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     {
         for (const auto& field : s->body->fields)
         {
-            // Struct
-            if (IsStructType(p, field) && !IsKnownType(*field->type)) {
-                std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
-                if (IsContainerType(*field) || field->optional) {
-                    WriteIndent("FieldModel");
-                    if (field->array) {
-                        Write("CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">");
-                    }
-                    else if (field->vector || field->list || field->set)
-                        Write("CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
-                    else if (field->map || field->hash){
-                        // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
-                        std::string kType = "FieldModel";
-                        if (IsKnownType(*field->key)) {
-                            kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
-                        } else {
-                            kType +=  "_" + *p->name + "_" + *field->type;
-                        }
-                        auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
-                        auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
-                        Write("CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">");
-                    }
-                    else if (field->optional) {
-                        Write("StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">");
-                    }
-                    Write(" " +  *field->name + ";");
-                    WriteLine();
-                } else {
-                    WriteLineIndent(model_name + " " + *field->name + ";");
-                }
-            } else if (field->array)
-                WriteLineIndent("FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
-            else if (field->vector || field->list || field->set)
-                WriteLineIndent("FieldModelVector<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
-            else if (field->map || field->hash)
-                WriteLineIndent("FieldModelMap<" + ConvertPtrTypeName(*p->name, *field->key) + ", " + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
-            else
-                WriteLineIndent("FieldModel<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + "> " + *field->name + ";");
+            WriteLineIndent(ConvertPtrFieldModelType(p, field) + " " + *field->name + ";");
         }
     }
 
@@ -2871,7 +3138,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
         if (s->body)
             for (const auto& field : s->body->fields)
             {
-                if (IsStructType(p, field) && !field->ptr && !IsContainerType(*field) && !field->optional)
+                if (IsStructType(p, *field->type) && !field->ptr && !IsContainerType(*field) && !field->optional)
                     WriteLineIndent(*field->name + ".set(static_cast<const ::" + *p->name + "::" + *field->type + "&>(" + "fbe_value." + *field->name + "));");
                 else
                     WriteLineIndent(*field->name + ".set(fbe_value." + *field->name + ");");
@@ -3253,9 +3520,9 @@ bool GeneratorCpp::IsContainerType(const StructField &field) {
     return (field.array || field.vector || field.list || field.set || field.map || field.hash);
 }
 
-bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField> &field) {
+bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type) {
     for (const auto &s:  p->body->structs) {
-        if (*s->name == *field->type) {
+        if (*s->name == field_type) {
             return true;
         }
     }
@@ -3369,4 +3636,59 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
 
     return ConvertPtrTypeName(package, field, true);
 }
+
+std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
+    std::string field_model_type;
+    // Struct
+    if (IsVariantType(p, *field->type)) {
+        // TODO(liuqi): check ptr
+        field_model_type = "FieldModelVariant_" + *p->name + "_" + *field->type;
+    }
+    else if (IsStructType(p, *field->type) && !IsKnownType(*field->type)) {
+        std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
+        if (IsContainerType(*field) || field->optional) {
+            field_model_type = "FieldModel";
+            if (field->array) {
+                field_model_type += "CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">";
+            }
+            else if (field->vector || field->list || field->set)
+                field_model_type += "CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
+            else if (field->map || field->hash){
+                // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
+                std::string kType = "FieldModel";
+                if (IsKnownType(*field->key)) {
+                    kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
+                } else {
+                    kType +=  "_" + *p->name + "_" + *field->type;
+                }
+                auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
+                auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
+                field_model_type += "CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">";
+            }
+            else if (field->optional) {
+                field_model_type += "StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
+            }
+        } else {
+            field_model_type += model_name;
+        }
+    } else if (field->array)
+        field_model_type = "FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + ">";
+    else if (field->vector || field->list || field->set)
+        field_model_type = "FieldModelVector<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    else if (field->map || field->hash)
+        field_model_type = "FieldModelMap<" + ConvertPtrTypeName(*p->name, *field->key) + ", " + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    else
+        field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ">";
+    return field_model_type;
+}
+
+std::string GeneratorCpp::ConvertPtrVariantFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantValue>& variant) {
+    std::string variant_field_model_type;
+     if (Ptr() && IsStructType(p, *variant->type) && !IsKnownType(*variant->type)) {
+        variant_field_model_type = std::string("FieldModel") + (variant->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *variant->type;
+     } else
+        variant_field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";
+    return variant_field_model_type;
+}
+
 } // namespace FBE

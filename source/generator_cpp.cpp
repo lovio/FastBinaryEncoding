@@ -7422,6 +7422,11 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             GenerateFlagsFieldModel(p, f);
         }
 
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Header(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -7467,6 +7472,11 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     // Generate namespace body
     if (p->body)
     {
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Source(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -8954,7 +8964,10 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     {
         for (const auto& field : s->body->fields)
         {
-            if (field->array)
+            if (IsVariantType(p, *field->type)) {
+                WriteLine("FieldModelVariant_" + *p->name + "_" + *field->type + " " + *field->name + ";");
+            }
+            else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional) + "> " + *field->name + ";");

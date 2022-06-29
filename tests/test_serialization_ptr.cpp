@@ -7,6 +7,7 @@
 #include "osa.h"
 #include "pkg_ptr.h"
 #include "sa_ptr.h"
+#include "variants_ptr_ptr.h"
 #include "test.h"
 
 #include "../proto/simple_ptr_models.h"
@@ -14,8 +15,11 @@
 #include "../proto/sa_ptr_models.h"
 #include "../proto/osa_models.h"
 #include "../proto/pkg_ptr_models.h"
+#include "../proto/variants_ptr_ptr_models.h"
 #include <memory>
 #include <utility>
+#include <variant>
+#include <iostream>
 
 TEST_CASE("Serialization (simple self-reference)", "[Ptr-based FBE]")
 {
@@ -327,8 +331,6 @@ TEST_CASE("Serilization (identical with templated-based code without ptr)", "[Pt
     REQUIRE(osa_copy.sex == osa::Sex::male);
 
 }
-
-
 TEST_CASE("Serialization (optional)", "[Ptr-based FBE]") {
     ::sa::Complex c1 = {
         "test optional",
@@ -390,8 +392,6 @@ TEST_CASE("Serialization (optional)", "[Ptr-based FBE]") {
     REQUIRE(c1_copy.nums.size() == 1);
     REQUIRE(c1_copy.nums[0] == 123);
 }
-
-
 TEST_CASE("Serialization (ptr-based import templated-based fbe)", "[Ptr-based FBE]") {
     ::osa::Extra extra(std::string("extra"), "detail", ::osa::Sex::male, ::osa::MyFLags::flag1);
 
@@ -450,4 +450,88 @@ TEST_CASE("Serialization (ptr-based import templated-based fbe)", "[Ptr-based FB
     REQUIRE(detail_copy.extrav.at(0).detail == "detail");
     REQUIRE(detail_copy.extrav.at(0).sex == ::osa::Sex::male);
     REQUIRE(detail_copy.extrav.at(0).flag == ::osa::MyFLags::flag1);
+}
+
+TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
+    SECTION ("string") {
+        ::variants_ptr::Value value{"variant v"};
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 0);
+        REQUIRE(std::get<std::string>(value_copy.v) == "variant v");
+    }
+
+    SECTION ("primitive type") {
+        ::variants_ptr::Value value{42};
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 1);
+        REQUIRE(std::get<int32_t>(value_copy.v) == 42);
+    }
+
+    SECTION ("struct") {
+        ::variants_ptr::Simple simple{"simple"};
+        ::variants_ptr::Value value(std::move(simple));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 3);
+        REQUIRE(std::get<::variants_ptr::Simple>(value_copy.v).name == "simple");
+    }
+
+    SECTION ("pointer") {
+        auto simple = std::make_unique<::variants_ptr::Simple>("simple");
+        ::variants_ptr::Value value(simple.get());
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 4);
+        REQUIRE(std::get<::variants_ptr::Simple*>(value_copy.v)->name == "simple");
+    }
 }
