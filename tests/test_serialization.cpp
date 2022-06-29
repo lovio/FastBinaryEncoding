@@ -1389,4 +1389,90 @@ TEST_CASE("Serialization: variant", "[FBE]") {
         REQUIRE(value_copy.v.index() == 3);
         REQUIRE(std::get<::variants::Simple>(value_copy.v).name == "simple");
     }
+
+    SECTION ("vector of struct") {
+        std::vector<::variants::Simple> v;
+        v.emplace_back(::variants::Simple{"simple1"});
+        v.emplace_back(::variants::Simple{"simple2"});
+
+        ::variants::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<4>(std::move(v));
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 4);
+        auto& v_copy = std::get<4>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(0).name == "simple1");
+        REQUIRE(v_copy.at(1).name == "simple2");
+    }
+
+    SECTION ("vector of primitive type") {
+        std::vector<int32_t> v {1,2,3};
+
+        ::variants::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<5>(std::move(v));
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 5);
+        auto& v_copy = std::get<5>(value_copy.v);
+        REQUIRE(v_copy.size() ==3);
+        REQUIRE(v_copy.at(0) == 1);
+        REQUIRE(v_copy.at(1) == 2);
+        REQUIRE(v_copy.at(2) == 3);
+    }
+
+    SECTION ("hash with primitive and struct") {
+        std::unordered_map<int32_t, ::variants::Simple> m;
+        m.emplace(1, ::variants::Simple{"simple1"});
+        m.emplace(2, ::variants::Simple{"simple2"});
+
+        ::variants::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<6>(std::move(m));
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 6);
+        auto& v_copy = std::get<6>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(1).name == "simple1");
+        REQUIRE(v_copy.at(2).name == "simple2");
+    }
 }

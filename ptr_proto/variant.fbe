@@ -11,6 +11,9 @@ variant V {
   double;
   Simple;
   Simple*;
+  Simple[];
+  int32[];
+  Simple{int32};
 }
 
 variant Expr {

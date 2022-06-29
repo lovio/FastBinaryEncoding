@@ -10,6 +10,9 @@ variant V {
   int32;
   double;
   Simple;
+  Simple[];
+  int32[];
+  Simple{int32};
 }
 
 variant Expr {

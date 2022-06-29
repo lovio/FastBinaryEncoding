@@ -17,9 +17,11 @@
 #include "../proto/pkg_ptr_models.h"
 #include "../proto/variants_ptr_ptr_models.h"
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <iostream>
+#include <vector>
 
 TEST_CASE("Serialization (simple self-reference)", "[Ptr-based FBE]")
 {
@@ -538,37 +540,89 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(std::get<::variants_ptr::Simple*>(value_copy.v)->name == "simple");
     }
 
-    // SECTION ("vector of struct") {
-    //     std::vector<::variants_ptr::Simple> v;
-    //     v.emplace_back(::variants_ptr::Simple{"simple1"});
-    //     v.emplace_back(::variants_ptr::Simple{"simple2"});
+    SECTION ("vector of struct") {
+        std::vector<::variants_ptr::Simple> v;
+        v.emplace_back(::variants_ptr::Simple{"simple1"});
+        v.emplace_back(::variants_ptr::Simple{"simple2"});
 
-    //     // ::variants_ptr::Value value;
-    //     // value.v = std::move(v);
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<5>(std::move(v));
 
-    //     // FBE::variants_ptr::ValueModel writer;
-    //     // size_t serialized = writer.serialize(value);
-    //     // std::cout << "serialized: " << serialized << std::endl;
-    //     // REQUIRE(serialized == writer.buffer().size());
-    //     // REQUIRE(writer.verify());
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
 
-    //     // FBE::variants_ptr::ValueModel reader;
-    //     // reader.attach(writer.buffer());
-    //     // REQUIRE(reader.verify());
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
 
-    //     // std::cout << "start deserialize: " << std::endl;
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
 
-    //     // ::variants_ptr::Value value_copy;
-    //     // size_t deserialized = reader.deserialize(value_copy);
-    //     // std::cout << "deserialized: " << deserialized << std::endl;
-    //     // REQUIRE(deserialized == reader.buffer().size());
+        REQUIRE(value_copy.v.index() == 5);
+        auto& v_copy = std::get<5>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(0).name == "simple1");
+        REQUIRE(v_copy.at(1).name == "simple2");
+    }
 
-    //     // REQUIRE(value_copy.v.index() == 5);
-    //     // auto& v_copy = std::get<std::vector<::variants_ptr::Simple>>(value_copy.v);
-    //     // REQUIRE(v_copy.size() == 2);
-    //     // REQUIRE(v_copy.at(0).name == "simple1");
-    //     // REQUIRE(v_copy.at(1).name == "simple2");
+    SECTION ("vector of primitive type") {
+        std::vector<int32_t> v {1,2,3};
 
-    //     std::cout << "done" << std::endl;
-    // }
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<6>(std::move(v));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 6);
+        auto& v_copy = std::get<6>(value_copy.v);
+        REQUIRE(v_copy.size() ==3);
+        REQUIRE(v_copy.at(0) == 1);
+        REQUIRE(v_copy.at(1) == 2);
+        REQUIRE(v_copy.at(2) == 3);
+    }
+
+    SECTION ("hash with primitive and struct") {
+        std::unordered_map<int32_t, ::variants_ptr::Simple> m;
+        m.emplace(1, ::variants_ptr::Simple{"simple1"});
+        m.emplace(2, ::variants_ptr::Simple{"simple2"});
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<7>(std::move(m));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 7);
+        auto& v_copy = std::get<7>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(1).name == "simple1");
+        REQUIRE(v_copy.at(2).name == "simple2");
+    }
 }
