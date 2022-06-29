@@ -56,7 +56,7 @@ void VariantBody::AddValue(VariantValue* v)
         yyerror("Variant type is invalid!");
 
     // Check for duplicates
-    auto it = std::find_if(values.begin(), values.end(), [v](auto item)->bool { return *item->type.get() == *v->type.get() && item->ptr == v->ptr; });
+    auto it = std::find_if(values.begin(), values.end(), [v](auto item)->bool { return *item == *v; });
     if (it != values.end())
         yyerror("Duplicate Variant type " + *v->type.get());
 
