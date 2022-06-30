@@ -23,11 +23,11 @@
 
 namespace FBE {
 
-class FieldModelVariant_variants_ptr_V
+class FieldModel_variants_ptr_V
 {
 public:
-    FieldModelVariant_variants_ptr_V(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModelVariant_variants_ptr_V() = default;
+    FieldModel_variants_ptr_V(FBEBuffer& buffer, size_t offset) noexcept;
+    ~FieldModel_variants_ptr_V() = default;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -62,11 +62,11 @@ private:
     size_t _offset;
 };
 
-class FieldModelVariant_variants_ptr_Expr
+class FieldModel_variants_ptr_Expr
 {
 public:
-    FieldModelVariant_variants_ptr_Expr(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModelVariant_variants_ptr_Expr() = default;
+    FieldModel_variants_ptr_Expr(FBEBuffer& buffer, size_t offset) noexcept;
+    ~FieldModel_variants_ptr_Expr() = default;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -350,7 +350,7 @@ private:
     size_t _offset;
 
 public:
-    FieldModelVariant_variants_ptr_V v;
+    FieldModel_variants_ptr_V v;
 };
 
 namespace variants_ptr {

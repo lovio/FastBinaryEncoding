@@ -8963,7 +8963,7 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
         for (const auto& field : s->body->fields)
         {
             if (IsVariantType(p, *field->type)) {
-                WriteLine("FieldModelVariant_" + *p->name + "_" + *field->type + " " + *field->name + ";");
+                WriteLine("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
             }
             else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");

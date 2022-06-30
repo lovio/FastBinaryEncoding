@@ -2322,7 +2322,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
 void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModelVariant_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
 
     // Generate variant field model begin
     WriteLine();
@@ -2386,7 +2386,7 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
 void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModelVariant_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
 
     // Generate variant field model begin
     WriteLine();
@@ -3664,12 +3664,7 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
 
 std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
     std::string field_model_type;
-    // Struct
-    if (IsVariantType(p, *field->type)) {
-        // TODO(liuqi): check ptr
-        field_model_type = "FieldModelVariant_" + *p->name + "_" + *field->type;
-    }
-    else if (IsStructType(p, *field->type) && !IsKnownType(*field->type)) {
+    if ((IsStructType(p, *field->type) || IsVariantType(p, *field->type)) && !IsKnownType(*field->type)) {
         std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
         if (IsContainerType(*field) || field->optional) {
             field_model_type = "FieldModel";
