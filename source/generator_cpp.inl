@@ -1769,7 +1769,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
         {
             if (field->ptr)
             {
-                if (IsKnownType(*field->type) || *field->type == *s->name) {
+                if (!IsCurrentPackageType(*field->type) || IsKnownType(*field->type) || *field->type == *s->name) {
                     continue;
                 }
                 if (unique_type_set.find(*field->type) != unique_type_set.end()) {
@@ -1926,7 +1926,7 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
     WriteLineIndent("namespace " + *p->name + " {");
 }
 
-auto is_current_package_type(const std::string& field_type, const std::string& delimiter = ".") -> bool {
+bool GeneratorCpp::IsCurrentPackageType(const std::string& field_type, const std::string& delimiter) {
     auto found_delimiter = field_type.find(delimiter);
     return found_delimiter == std::string::npos;
 }
@@ -1981,7 +1981,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
             {
                 WriteIndent();
                 Write(std::string(first ? ": " : ", ") + *field->name + "(");
-                if (!is_current_package_type(*field->type)) {
+                if (!IsCurrentPackageType(*field->type)) {
                     Write(std::string("assign_member<") + ConvertTypeName(*p->name, *field) + ">(alloc)");
                 } else if (field->ptr && !IsContainerType(*field)) {
                     Write("nullptr");
@@ -3664,8 +3664,10 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
 
 std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
     std::string field_model_type;
-    if ((IsStructType(p, *field->type) || IsVariantType(p, *field->type)) && !IsKnownType(*field->type)) {
-        std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *field->type;
+    if ((IsStructType(p, *field->type) || IsVariantType(p, *field->type) || ImportPtr()) && !IsKnownType(*field->type)) {
+        // remove . to ::
+        std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" +  (IsCurrentPackageType(*field->type) ? (*p->name + "_") : "") + *field->type;
+        CppCommon::StringUtils::ReplaceAll(model_name, ".", "_");
         if (IsContainerType(*field) || field->optional) {
             field_model_type = "FieldModel";
             if (field->array) {

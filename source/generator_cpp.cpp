@@ -254,7 +254,7 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + ".h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + ".h\"");
     }
 
     // Generate domain namespace using
@@ -289,7 +289,7 @@ void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + (final ? "_final" : "") + "_models.h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + (final ? "_final" : "") + "_models.h\"");
     }
 }
 
