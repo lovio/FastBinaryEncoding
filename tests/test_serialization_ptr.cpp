@@ -625,4 +625,115 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(v_copy.at(1).name == "simple1");
         REQUIRE(v_copy.at(2).name == "simple2");
     }
+    
+    SECTION ("container of bytes") {
+        std::vector<uint8_t> v {65, 66, 67, 68, 69};
+        std::vector<FBE::buffer_t> bytes_v;
+        bytes_v.emplace_back(FBE::buffer_t(v));
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<8>(std::move(bytes_v));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 8);
+        auto& v_copy = std::get<8>(value_copy.v);
+        REQUIRE(v_copy.size() == 1);
+        REQUIRE(v_copy.at(0).string() == "ABCDE");
+    }
+    
+    SECTION ("vector of string") {
+        std::vector<std::string> string_v {"hello", "world"};
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<9>(std::move(string_v));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 9);
+        auto& v_copy = std::get<9>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(0) == "hello");
+        REQUIRE(v_copy.at(1) == "world");
+    }
+
+    SECTION ("hash with primitive and bytes") {
+        std::unordered_map<int32_t, FBE::buffer_t> m;
+        std::vector<uint8_t> v {65, 66, 67, 68, 69};
+        m.emplace(42, FBE::buffer_t(v));
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<10>(std::move(m));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 10);
+        auto& v_copy = std::get<10>(value_copy.v);
+        REQUIRE(v_copy.size() == 1);
+        REQUIRE(v_copy.at(42).string() == "ABCDE");
+    }
+
+    SECTION ("hash with string and bytes") {
+        std::unordered_map<std::string, FBE::buffer_t> m;
+        std::vector<uint8_t> v {65, 66, 67, 68, 69};
+        m.emplace("hello world", FBE::buffer_t(v));
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<11>(std::move(m));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 11);
+        auto& v_copy = std::get<11>(value_copy.v);
+        REQUIRE(v_copy.size() == 1);
+        REQUIRE(v_copy.at("hello world").string() == "ABCDE");
+    }
 }

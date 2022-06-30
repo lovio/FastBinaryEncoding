@@ -14,6 +14,10 @@ variant V {
   Simple[];
   int32[];
   Simple{int32};
+  bytes[];
+  string[];
+  bytes{int32};
+  bytes{string};
 }
 
 variant Expr {
