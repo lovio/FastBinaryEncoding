@@ -736,4 +736,39 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(v_copy.size() == 1);
         REQUIRE(v_copy.at("hello world").string() == "ABCDE");
     }
+
+    SECTION ("vector of pointer") {
+        std::vector<::variants_ptr::Simple*> v;
+        auto simple1 = std::make_unique<::variants_ptr::Simple>("simple1");
+        auto simple2 = std::make_unique<::variants_ptr::Simple>("simple2");
+        v.emplace_back(simple1.get());
+        v.emplace_back(simple2.get());
+
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<12>(std::move(v));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 12);
+        auto& v_copy = std::get<12>(value_copy.v);
+        REQUIRE(v_copy.size() == 2);
+        REQUIRE(v_copy.at(0)->name == "simple1");
+        REQUIRE(v_copy.at(1)->name == "simple2");
+
+        for (auto& s : v_copy) {
+            delete s;
+        }
+    }
 }

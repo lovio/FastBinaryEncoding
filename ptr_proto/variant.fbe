@@ -18,6 +18,7 @@ variant V {
   string[];
   bytes{int32};
   bytes{string};
+  Simple*[];
 }
 
 variant Expr {
