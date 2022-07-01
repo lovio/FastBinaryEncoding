@@ -1,0 +1,9 @@
+package ptrpkg
+
+import variants_ptr
+
+struct Line {
+  variants_ptr.V v;
+  variants_ptr.Value value;
+  variants_ptr.Value* value_ptr;
+}

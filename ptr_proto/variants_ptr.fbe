@@ -1,0 +1,31 @@
+package variants_ptr
+
+struct Simple {
+  string name;
+}
+
+// container type not supported yet
+variant V {
+  string;
+  int32;
+  double;
+  Simple;
+  Simple*;
+  Simple[];
+  int32[];
+  Simple{int32};
+  bytes[];
+  string[];
+  bytes{int32};
+  bytes{string};
+  Simple*[];
+}
+
+variant Expr {
+  bool;
+  int32;
+}
+
+struct Value {
+  V v;
+}

@@ -202,6 +202,7 @@ void GeneratorCpp::GenerateImports()
 #include <vector>
 #include <memory_resource>
 #include <utility>
+#include <variant>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
@@ -253,7 +254,7 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + ".h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + ".h\"");
     }
 
     // Generate domain namespace using
@@ -288,7 +289,7 @@ void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + (final ? "_final" : "") + "_models.h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + (final ? "_final" : "") + "_models.h\"");
     }
 }
 
@@ -359,16 +360,36 @@ inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
 void GeneratorCpp::GenerateImportHelper_Header()
 {
     std::string code = R"CODE(
+template<typename T> struct is_variant : std::false_type {};
+
+template<typename ...Args>
+struct is_variant<std::variant<Args...>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_variant_v=is_variant<T>::value;
+
 template<typename T, typename Alloc>
 auto assign_member(Alloc alloc) -> T {
     return T(alloc);
 }
 
 template<typename T, typename Alloc>
-requires std::is_enum_v<T>
+requires std::is_enum_v<T> || is_variant_v<T>
 auto assign_member([[maybe_unused]] Alloc alloc) -> T {
     return T();
 }
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateVariantVisitHelper_Header()
+{
+    std::string code = R"CODE(
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 )CODE";
 
     // Prepare code template
@@ -6773,6 +6794,7 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     // Generate common body
     GenerateUnalignedAccessor_Header();
     GenerateImportHelper_Header();
+    GenerateVariantVisitHelper_Header();
     GenerateBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
@@ -7203,6 +7225,15 @@ void GeneratorCpp::GeneratePackage_Header(const std::shared_ptr<Package>& p)
         for (const auto& f : p->body->flags)
             GenerateFlags(p, f);
 
+        if (!p->body->variants.empty()) {
+            // forward declarations
+            GeneratorStructForwardDeclaration(p->body->structs);
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantAlias(p, v);
+            }
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
             GenerateStruct_Header(p, s);
@@ -7218,6 +7249,13 @@ void GeneratorCpp::GeneratePackage_Header(const std::shared_ptr<Package>& p)
     // Store the output file
     WriteEnd();
     Store(output);
+}
+
+void GeneratorCpp::GeneratorStructForwardDeclaration(const std::vector<std::shared_ptr<StructType>>& structs) {
+    WriteLineIndent("// forward declaration");
+    for (auto& s: structs){
+        WriteLine(std::string("struct ") + *s->name + ";");
+    }
 }
 
 void GeneratorCpp::GeneratePackage_Source(const std::shared_ptr<Package>& p)
@@ -7264,6 +7302,14 @@ void GeneratorCpp::GeneratePackage_Source(const std::shared_ptr<Package>& p)
             // Generate flags logging stream
             if (Logging())
                 GenerateFlagsLoggingStream(f);
+        }
+
+        if (!p->body->variants.empty()) {
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantOutputStream(p, v);
+            }
+            WriteLine();
         }
 
         // Generate child structs
@@ -7384,6 +7430,11 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
             GenerateFlagsFieldModel(p, f);
         }
 
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Header(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -7429,6 +7480,11 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     // Generate namespace body
     if (p->body)
     {
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Source(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -8038,6 +8094,53 @@ public:
 
     // Generate flags final model
     Write(code);
+}
+
+void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    WriteLine();
+    std::string code = "using " + *v->name + " = std::variant<";
+    bool first = true;
+    for (auto value : v->body->values) {
+        code += (!first ? ", " : "") + ConvertVariantTypeName(*p->name, *value);
+        first = false;
+    }
+    code += ">;";
+    WriteLineIndent(code);
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value);");
+}
+
+void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    WriteLine();
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value)");
+    WriteLineIndent("{");
+    Indent(1);
+
+    WriteLineIndent("std::visit(");
+    Indent(1);
+    WriteLineIndent("overloaded");
+    WriteLineIndent("{");
+    Indent(1);
+    bool first = true;
+    for (auto& value : v->body->values) {
+        if (IsContainerType(*value) || value->ptr)
+            // TODO: Generate container output stream
+            continue;
+        WriteIndent(first ? "" : ", ");
+        Write("[&stream](");
+        Write(ConvertVariantTypeNameAsArgument(*p->name, *value));
+        WriteLine(std::string(" v) { stream << ") + (value->ptr ? "*" : "") + "v; }");
+        first = false;
+    }
+    WriteLineIndent(", [&stream](auto&) { stream << \"unknown type\"; },");
+    Indent(-1);
+    WriteLineIndent("},");
+    WriteLineIndent("value);");
+    Indent(-1);
+    WriteLineIndent("return stream;");
+    Indent(-1);
+    WriteLineIndent("}");
 }
 
 void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
@@ -8867,7 +8970,10 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     {
         for (const auto& field : s->body->fields)
         {
-            if (field->array)
+            if (IsVariantType(p, *field->type)) {
+                WriteLine("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
+            }
+            else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional) + "> " + *field->name + ";");
@@ -11180,6 +11286,13 @@ std::string GeneratorCpp::ConvertLoggingStreamValue(const std::string& type, con
         return "if (" + name + ") record." + comma + ConvertLoggingStreamType(type, name, true) + "; else record." + comma + "StoreList(\"null\");";
     else
         return "record." + comma + ConvertLoggingStreamType(type, name, false) + ";";
+}
+
+bool GeneratorCpp::IsVariantType(const std::shared_ptr<Package>& p, const std::string& type) {
+    auto& variants = p->body->variants;
+    return std::find_if(variants.begin(), variants.end(), [&type](const auto& v) -> bool {
+        return *v->name == type;
+    }) != variants.end();
 }
 
 } // namespace FBE

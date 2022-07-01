@@ -45,6 +45,7 @@ int yyerror(const std::string& msg);
 "version"               { yycount(); return yytoken(VERSION); }
 "enum"                  { yycount(); return yytoken(ENUM); }
 "flags"                 { yycount(); return yytoken(FLAGS); }
+"variant"               { yycount(); return yytoken(VARIANT); }
 "struct"                { yycount(); return yytoken(STRUCT); }
 "message"               { yycount(); return yytoken(MESSAGE); }
 "base"                  { yycount(); return yytoken(BASE); }
@@ -206,6 +207,7 @@ int main(int argc, char** argv)
     parser.add_option("--arena").dest("arena").action("store_true").set_default(0).help("Generate arena-based serialization code");
     parser.add_option("--arena-header").dest("arena-header").action("store").type("string").help("Arena header path, work with --arena");
     parser.add_option("--arena-tag").dest("arena-tag").action("append").type("string").help("Add arena tag, work with --arena");
+    parser.add_option("--import-ptr").dest("import-ptr").action("store_true").set_default(0).help("import ptr-based FBE package");
 
     optparse::Values options = parser.parse_args(argc, argv);
 
@@ -242,6 +244,7 @@ int main(int argc, char** argv)
     bool proto = options.get("proto");
     bool ptr = options.get("ptr");
     bool arena = options.get("arena");
+    bool import_ptr = options.get("import-ptr");
     char space = tabs ? '\t' : ' ';
 
     // Check for the input path
@@ -307,6 +310,7 @@ int main(int argc, char** argv)
             .Arena(arena)
             .ArenaHeader(arena_header)
             .ArenaTags(arena_tags)
+            .ImportPtr(import_ptr)
             .Generate(FBE::Package::root);
         if (!quiet) std::cout << "Done!" << std::endl;
     }
