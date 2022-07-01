@@ -93,6 +93,8 @@ auto assign_member([[maybe_unused]] Alloc alloc) -> T {
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;  // deduction guide
+
 //! Bytes buffer type
 /*!
     Represents bytes buffer which is a lightweight wrapper around std::vector<uint8_t>
