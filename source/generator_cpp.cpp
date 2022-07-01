@@ -254,7 +254,7 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + ".h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + ".h\"");
     }
 
     // Generate domain namespace using
@@ -289,7 +289,7 @@ void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + (final ? "_final" : "") + "_models.h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + (final ? "_final" : "") + "_models.h\"");
     }
 }
 
@@ -360,13 +360,21 @@ inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
 void GeneratorCpp::GenerateImportHelper_Header()
 {
     std::string code = R"CODE(
+template<typename T> struct is_variant : std::false_type {};
+
+template<typename ...Args>
+struct is_variant<std::variant<Args...>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_variant_v=is_variant<T>::value;
+
 template<typename T, typename Alloc>
 auto assign_member(Alloc alloc) -> T {
     return T(alloc);
 }
 
 template<typename T, typename Alloc>
-requires std::is_enum_v<T>
+requires std::is_enum_v<T> || is_variant_v<T>
 auto assign_member([[maybe_unused]] Alloc alloc) -> T {
     return T();
 }
@@ -8963,7 +8971,7 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
         for (const auto& field : s->body->fields)
         {
             if (IsVariantType(p, *field->type)) {
-                WriteLine("FieldModelVariant_" + *p->name + "_" + *field->type + " " + *field->name + ";");
+                WriteLine("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
             }
             else if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");

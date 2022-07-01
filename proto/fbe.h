@@ -72,13 +72,21 @@ inline auto unaligned_load(void const* ptr) noexcept -> T {
 template <typename T>
 inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
 
+template<typename T> struct is_variant : std::false_type {};
+
+template<typename ...Args>
+struct is_variant<std::variant<Args...>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_variant_v=is_variant<T>::value;
+
 template<typename T, typename Alloc>
 auto assign_member(Alloc alloc) -> T {
     return T(alloc);
 }
 
 template<typename T, typename Alloc>
-requires std::is_enum_v<T>
+requires std::is_enum_v<T> || is_variant_v<T>
 auto assign_member([[maybe_unused]] Alloc alloc) -> T {
     return T();
 }

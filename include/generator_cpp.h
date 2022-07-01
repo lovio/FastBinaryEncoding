@@ -50,6 +50,9 @@ public:
     std::list<std::string> ArenaTags() const noexcept { return _arena_tags; }
     GeneratorCpp& ArenaTags(const std::list<std::string>& arena_tags) noexcept { _arena_tags = arena_tags; return *this; }
 
+    bool ImportPtr() const noexcept { return _import_ptr; }
+    GeneratorCpp& ImportPtr(bool import_ptr) noexcept { _import_ptr = import_ptr; return *this; }
+
     void Generate(const std::shared_ptr<Package>& package) override;
 
 private:
@@ -59,6 +62,7 @@ private:
     bool _proto{false};
     bool _logging{false};
     bool _arena{false};
+    bool _import_ptr{false};
     std::string _arena_header;
     std::list<std::string> _arena_tags;
 
@@ -224,6 +228,7 @@ private:
     bool IsContainerType(const VariantValue& variant);
     bool IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type);
     bool IsVariantType(const std::shared_ptr<Package>& p, const std::string& type);
+    bool IsCurrentPackageType(const std::string& field_type, const std::string& delimiter = ".");
 
     std::string ConvertVariantTypeName(const std::string& package, const VariantValue& variant);
     std::string ConvertVariantTypeNameAsArgument(const std::string& package, const VariantValue& variant);
