@@ -73,6 +73,10 @@ int yyerror(const std::string& msg);
 %type <variant_body> variant_body
 %type <variant_value> variant_value
 %type <variant_value> variant_value_base
+%type <variant_value> variant_value_vector
+%type <variant_value> variant_value_list
+%type <variant_value> variant_value_map
+%type <variant_value> variant_value_hash
 %type <variant_value> variant_value_base_ptr
 %type <struct_type> struct
 %type <boolean> struct_type
@@ -201,6 +205,10 @@ variant_body
 
 variant_value
     : variant_value_base ';'
+    | variant_value_vector ';'
+    | variant_value_list ';'
+    | variant_value_map ';'
+    | variant_value_hash ';'
     | variant_value_base_ptr ';'
     ;
 
@@ -225,6 +233,26 @@ variant_value_base
     | TIMESTAMP                                                                             { $$ = new FBE::VariantValue(); $$->type.reset($1); }
     | UUID                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
     | type_name                                                                             { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    ;
+
+variant_value_vector
+    : variant_value_base '[' ']'                                                             { $$ = $1; $$->vector = true; }
+    | variant_value_base_ptr '[' ']'                                                         { $$ = $1; $$->vector = true; }
+    ;
+
+variant_value_list
+    : variant_value_base '(' ')'                                                             { $$ = $1; $$->list = true; }
+    | variant_value_base_ptr '(' ')'                                                         { $$ = $1; $$->list = true; }
+    ;
+
+variant_value_map
+    : variant_value_base '<' variant_value_base '>'                                           { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    | variant_value_base_ptr '<' variant_value_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    ;
+
+variant_value_hash
+    : variant_value_base '{' variant_value_base '}'                                           { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    | variant_value_base_ptr '{' variant_value_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
     ;
 
 variant_value_base_ptr                                                                       
@@ -350,7 +378,7 @@ struct_field_base
     ;
 
 struct_field_base_ptr                                                                       
-    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->ptr = true ;}
+    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->ptr = true; }
     ;
 
 struct_field_optional

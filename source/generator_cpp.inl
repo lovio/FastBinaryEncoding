@@ -2507,10 +2507,10 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
         auto& value = v->body->values[index];
         WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
         // initialize variant
-        auto variant_type = ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*": "");
+        auto variant_type = ConvertVariantTypeName(*p->name, *value);
         WriteLineIndent("fbe_value.emplace<" + variant_type + ">();");
-        WriteLineIndent("auto& value = std::get<" +  variant_type + ">(fbe_value);");
-        WriteLineIndent(std::string("fbe_model.get(") + (value->ptr ? "&" : "") + "value);");
+        WriteLineIndent("auto& value = std::get<" +  std::to_string(index) + ">(fbe_value);");
+        WriteLineIndent(std::string("fbe_model.get(") + ((!IsContainerType(*value) && value->ptr) ? "&" : "") + "value);");
         WriteLineIndent("break;");
         Indent(-1);
         WriteLineIndent("}");
@@ -2580,18 +2580,12 @@ void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Packag
     for(auto index = 0; index < v->body->values.size(); index ++) {
         WriteIndent(first ? "" : ", ");
         auto& value = v->body->values[index];
-        Write("[this, &fbe_value](");
-        auto type_name = ConvertTypeName(*p->name, *value->type, false);
-        if (IsPrimitiveType(*value->type, false))
-            Write(type_name);
-        else if (value->ptr)
-            Write(type_name + "*");
-        else 
-            Write("const " + type_name + "&");
+        Write("[this, fbe_variant_index = fbe_value.index()](");
+        Write(ConvertVariantTypeNameAsArgument(*p->name, *value));
         WriteLine(" v) {");
         Indent(1);
         WriteLineIndent(ConvertPtrVariantFieldModelType(p, value) + " fbe_model(_buffer, 4);");
-        WriteLineIndent("size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_value.index());");
+        WriteLineIndent("size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);");
         WriteLineIndent("if (fbe_begin == 0)");
         Indent(1);
         WriteLineIndent("return;");
@@ -3520,6 +3514,10 @@ bool GeneratorCpp::IsContainerType(const StructField &field) {
     return (field.array || field.vector || field.list || field.set || field.map || field.hash);
 }
 
+bool GeneratorCpp::IsContainerType(const VariantValue &variant) {
+    return (variant.vector || variant.list || variant.map || variant.hash);
+}
+
 bool GeneratorCpp::IsStructType(const std::shared_ptr<Package>& p, const std::string& field_type) {
     for (const auto &s:  p->body->structs) {
         if (*s->name == field_type) {
@@ -3600,7 +3598,6 @@ GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &
     if (Arena()) {
         prefix += "::pmr";
     }
-    // bool typeptr = withptr ? field.ptr : false;
     bool typeptr = field.ptr;
     if (field.array)
         return "std::array<" + ConvertPtrTypeName(package, *field.type, field.optional, typeptr, as_argument) + ", " + std::to_string(field.N) + ">";
@@ -3622,14 +3619,42 @@ GeneratorCpp::ConvertPtrTypeName(const std::string &package, const StructField &
     return s;
 }
 
+std::string GeneratorCpp::ConvertVariantTypeName(const std::string& package, const VariantValue& variant)
+{
+    std::string prefix = "std";
+    if (Arena()) {
+        prefix += "::pmr";
+    }
+    if (variant.vector)
+        return prefix + "::vector<" + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) + ">";
+    else if (variant.list)
+        return prefix + "::list<" + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) + ">";
+    else if (variant.map)
+        return prefix + "::map<" + ConvertPtrTypeName(package, *variant.key, false, false, false) + ", " + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) +">";
+    else if (variant.hash)
+        return prefix + "::unordered_map<" + ConvertPtrTypeName(package, *variant.key, false, false, false) + ", " + ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false) +">";
+    return ConvertPtrTypeName(package, *variant.type, false, variant.ptr, false);
+}
+
+std::string GeneratorCpp::ConvertVariantTypeNameAsArgument(const std::string& package, const VariantValue& variant)
+{
+    if (variant.ptr) {
+        return "const " + ConvertVariantTypeName(package, variant);
+    }
+    if (IsContainerType(variant))
+        return "const " + ConvertVariantTypeName(package, variant) + "&";
+    if (IsPrimitiveType(*variant.type, false)) {
+        return ConvertVariantTypeName(package, variant);
+    }
+    return "const " + ConvertVariantTypeName(package, variant) + "&";
+}
+
 // two cases:
 // 1. struct should be rvalue references, because we disable copy cstr
 // 2. for container of ptrs, use unique_ptr instead.
 std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& package, const StructField& field)
 {
-    if (field.ptr)
-        return ConvertPtrTypeName(package, field, true);
-    if (IsPrimitiveType(*field.type, false))
+    if (field.ptr || IsPrimitiveType(*field.type, false))
         return ConvertPtrTypeName(package, field, true);
     if (IsKnownType(*field.type))
         return "const " + ConvertPtrTypeName(package, field, true) + "&";
@@ -3684,10 +3709,39 @@ std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package
 
 std::string GeneratorCpp::ConvertPtrVariantFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantValue>& variant) {
     std::string variant_field_model_type;
-     if (Ptr() && IsStructType(p, *variant->type) && !IsKnownType(*variant->type)) {
-        variant_field_model_type = std::string("FieldModel") + (variant->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *variant->type;
-     } else
-        variant_field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";
+    if (Ptr()) {
+        if (IsStructType(p, *variant->type) && !IsKnownType(*variant->type)) {
+            std::string model_name = std::string("FieldModel") + (variant->ptr ? "Ptr" : "") + "_" + *p->name + "_" + *variant->type;
+            if (IsContainerType(*variant)) {
+                variant_field_model_type = "FieldModel";
+                if (variant->vector || variant->list)
+                    variant_field_model_type += "CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *variant->type) + ">";
+                else if (variant->map || variant->hash){
+                    std::string kType = "FieldModel";
+                    if (IsKnownType(*variant->key)) {
+                        kType += "<" + ConvertPtrTypeName(*p->name, *variant->key) + ">";
+                    } else {
+                        kType +=  "_" + *p->name + "_" + *variant->type;
+                    }
+                    auto kStruct = ConvertPtrTypeName(*p->name, *variant->key);
+                    auto vStruct = ConvertPtrTypeName(*p->name, *variant->type);
+                    variant_field_model_type += "CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">";
+                }
+            } else {
+                variant_field_model_type += model_name;
+            }
+        }  else if (variant->vector || variant->list)
+            variant_field_model_type = "FieldModelVector<" + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";
+        else if (variant->map || variant->hash)
+            variant_field_model_type = "FieldModelMap<" + ConvertPtrTypeName(*p->name, *variant->key) + ", " + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";
+        else
+            variant_field_model_type = "FieldModel<" + ConvertPtrTypeName(*p->name, *variant->type, false, variant->ptr, false) + ">";
+    } else if (variant->vector || variant->list) // template based
+        variant_field_model_type = "FieldModelVector<" + ConvertTypeName(*p->name, *variant->type, false) + ">";
+    else if (variant->map || variant->hash)
+        variant_field_model_type = "FieldModelMap<" + ConvertTypeName(*p->name, *variant->key, false) + ", " + ConvertTypeName(*p->name, *variant->type, false) + ">";
+    else
+        variant_field_model_type = "FieldModel<" + ConvertTypeName(*p->name, *variant->type, false) + ">";
     return variant_field_model_type;
 }
 

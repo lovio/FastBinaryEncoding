@@ -98,8 +98,26 @@ struct FlagsType
 
 struct VariantValue
 {
+    std::shared_ptr<std::string> key;
     std::shared_ptr<std::string> type;
     bool ptr{false};
+    bool vector{false};
+    bool list{false};
+    bool map{false};
+    bool hash{false};
+
+    bool operator==(const VariantValue& other) const noexcept
+    {
+        return (
+            ((key && other.key && *key == *other.key) || (key == nullptr && other.key == nullptr)) && 
+            *type == *other.type &&
+            ptr == other.ptr &&
+            vector == other.vector &&
+            list == other.list &&
+            map == other.map &&
+            hash == other.hash
+        );
+    }
 };
 
 struct VariantBody

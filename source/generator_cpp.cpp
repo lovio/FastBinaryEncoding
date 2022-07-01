@@ -8093,8 +8093,8 @@ void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const
     WriteLine();
     std::string code = "using " + *v->name + " = std::variant<";
     bool first = true;
-    for (auto& value : v->body->values) {
-        code += (!first ? ", " : "") + ConvertTypeName(*p->name, *value->type, false) + (value->ptr ? "*" : "");
+    for (auto value : v->body->values) {
+        code += (!first ? ", " : "") + ConvertVariantTypeName(*p->name, *value);
         first = false;
     }
     code += ">;";
@@ -8116,18 +8116,16 @@ void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p
     Indent(1);
     bool first = true;
     for (auto& value : v->body->values) {
+        if (IsContainerType(*value) || value->ptr)
+            // TODO: Generate container output stream
+            continue;
         WriteIndent(first ? "" : ", ");
         Write("[&stream](");
-        auto type_name = ConvertTypeName(*p->name, *value->type, false);
-        if (IsPrimitiveType(*value->type, false))
-            Write(type_name);
-        else if (value->ptr)
-            Write(type_name + "*");
-        else 
-            Write("const " + type_name + "&");
+        Write(ConvertVariantTypeNameAsArgument(*p->name, *value));
         WriteLine(std::string(" v) { stream << ") + (value->ptr ? "*" : "") + "v; }");
         first = false;
     }
+    WriteLineIndent(", [&stream](auto&) { stream << \"unknown type\"; },");
     Indent(-1);
     WriteLineIndent("},");
     WriteLineIndent("value);");

@@ -32,7 +32,7 @@ namespace variants {
 struct Simple;
 struct Value;
 
-using V = std::variant<std::string, int32_t, double, ::variants::Simple>;
+using V = std::variant<std::string, int32_t, double, ::variants::Simple, std::vector<::variants::Simple>, std::vector<int32_t>, std::unordered_map<int32_t, ::variants::Simple>, std::vector<FBE::buffer_t>, std::vector<std::string>, std::unordered_map<int32_t, FBE::buffer_t>, std::unordered_map<std::string, FBE::buffer_t>>;
 std::ostream& operator<<(std::ostream& stream, const V& value);
 
 using Expr = std::variant<bool, int32_t>;
