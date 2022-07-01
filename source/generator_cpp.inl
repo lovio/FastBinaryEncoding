@@ -3665,7 +3665,7 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
 std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
     std::string field_model_type;
     if ((IsStructType(p, *field->type) || IsVariantType(p, *field->type) || ImportPtr()) && !IsKnownType(*field->type)) {
-        // remove . to ::
+        // for imported-package, rename . to _
         std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" +  (IsCurrentPackageType(*field->type) ? (*p->name + "_") : "") + *field->type;
         CppCommon::StringUtils::ReplaceAll(model_name, ".", "_");
         if (IsContainerType(*field) || field->optional) {
