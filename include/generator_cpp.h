@@ -84,6 +84,8 @@ private:
     void GenerateVariantVisitHelper_Header();
     void GenerateBufferWrapper_Header();
     void GenerateBufferWrapper_Source();
+    void GeneratePMRBufferWrapper_Header();
+    void GeneratePMRBufferWrapper_Source();
     void GenerateDecimalWrapper_Header();
     void GenerateFlagsWrapper_Header();
     void GenerateTimeWrapper_Header();
@@ -102,6 +104,8 @@ private:
     void GenerateFBEFieldModelUUID_Source();
     void GenerateFBEFieldModelBytes_Header();
     void GenerateFBEFieldModelBytes_Source();
+    void GenerateFBEFieldModelPMRBytes_Header();
+    void GenerateFBEFieldModelPMRBytes_Source();
     void GenerateFBEFieldModelString_Header();
     void GenerateFBEFieldModelString_Source();
     void GenerateFBEFieldModelPMRString_Header();

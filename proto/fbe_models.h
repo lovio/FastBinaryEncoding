@@ -206,6 +206,53 @@ private:
     size_t _offset;
 };
 
+// Fast Binary Encoding field model bytes specialization
+template <>
+class FieldModel<pmr_buffer_t>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the bytes value is valid
+    bool verify() const noexcept;
+
+    // Get the bytes value
+    size_t get(void* data, size_t size) const noexcept;
+    // Get the bytes value
+    template <size_t N>
+    size_t get(uint8_t (&data)[N]) const noexcept { return get(data, N); }
+    // Get the bytes value
+    void get(std::pmr::vector<uint8_t>& value) const noexcept;
+    // Get the bytes value
+    void get(pmr_buffer_t& value) const noexcept { get(value.buffer()); }
+
+    // Set the bytes value
+    void set(const void* data, size_t size);
+    // Set the bytes value
+    template <size_t N>
+    void set(const uint8_t (&data)[N]) { set(data, N); }
+    // Set the bytes value
+    void set(const std::pmr::vector<uint8_t>& value) { set(value.data(), value.size()); }
+    // Set the bytes value
+    void set(const pmr_buffer_t& value) { set(value.buffer()); }
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+
 // Fast Binary Encoding field model string specialization
 template <>
 class FieldModel<std::string>

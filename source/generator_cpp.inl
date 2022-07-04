@@ -1986,7 +1986,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
                 } else if (field->ptr && !IsContainerType(*field)) {
                     Write("nullptr");
                 // container and string should be initialized with memory_resource
-                } else if (*field->type == "string" || IsContainerType(*field)) {
+                } else if (*field->type == "string" || *field->type == "bytes" || IsContainerType(*field)) {
                     Write("alloc");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
@@ -3533,7 +3533,7 @@ std::string GeneratorCpp::ConvertPtrTypeName(const std::string& package, const s
     else if (type == "byte")
         return "uint8_t";
     else if (type == "bytes")
-        return "FBE::buffer_t";
+        return Arena() ? "FBE::pmr_buffer_t" : "FBE::buffer_t";
     else if (type == "char")
         return "char";
     else if (type == "wchar")
