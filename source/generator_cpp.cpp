@@ -400,7 +400,6 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;  // deduction guid
     Write(code);
 }
 
-
 void GeneratorCpp::GenerateBufferWrapper_Header()
 {
     std::string code = R"CODE(
@@ -551,6 +550,198 @@ std::string buffer_t::base64encode() const
 }
 
 buffer_t buffer_t::base64decode(const std::string& str)
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    buffer_t result;
+
+    std::vector<int> pattern(256, -1);
+    for (int i = 0; i < 64; ++i)
+        pattern[base64[i]] = i;
+
+    int val = 0;
+    int valb = -8;
+    for (auto c : str)
+    {
+        if (pattern[c] == -1)
+            break;
+
+        val = (val << 6) + pattern[c];
+        valb += 6;
+
+        if (valb >= 0)
+        {
+            result.push_back((uint8_t)((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+
+    return result;
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+    Write(code);
+}
+
+void GeneratorCpp::GeneratePMRBufferWrapper_Header()
+{
+    std::string code = R"CODE(
+//! PMR bytes buffer type
+/*!
+    Represents pmr bytes buffer which is a lightweight wrapper around std::pmr::vector<uint8_t>
+    with similar interface.
+*/
+class pmr_buffer_t
+{
+public:
+    typedef std::pmr::vector<uint8_t>::iterator iterator;
+    typedef std::pmr::vector<uint8_t>::const_iterator const_iterator;
+    typedef std::pmr::vector<uint8_t>::reverse_iterator reverse_iterator;
+    typedef std::pmr::vector<uint8_t>::const_reverse_iterator const_reverse_iterator;
+    using allocator_type = std::pmr::polymorphic_allocator<char>;
+
+
+    pmr_buffer_t() = default;
+    explicit pmr_buffer_t(allocator_type alloc): _data(alloc) {}
+    explicit pmr_buffer_t(size_t capacity) { reserve(capacity); }
+    explicit pmr_buffer_t(const std::pmr::string& str) { assign(str); }
+    pmr_buffer_t(size_t size, uint8_t value) { assign(size, value); }
+    pmr_buffer_t(const uint8_t* data, size_t size) { assign(data, size); }
+    explicit pmr_buffer_t(const std::pmr::vector<uint8_t>& other) : _data(other) {}
+    explicit pmr_buffer_t(std::pmr::vector<uint8_t>&& other) : _data(std::move(other)) {}
+    explicit pmr_buffer_t(const pmr_buffer_t& other) = default;
+    explicit pmr_buffer_t(pmr_buffer_t&& other) = default;
+    ~pmr_buffer_t() = default;
+
+    pmr_buffer_t& operator=(const std::pmr::string& str) { assign(str); return *this; }
+    pmr_buffer_t& operator=(const std::pmr::vector<uint8_t>& other) { _data = other; return *this; }
+    pmr_buffer_t& operator=(std::pmr::vector<uint8_t>&& other) { _data = std::move(other); return *this; }
+    pmr_buffer_t& operator=(const pmr_buffer_t& other) = default;
+    pmr_buffer_t& operator=(pmr_buffer_t&& other) = default;
+
+    uint8_t& operator[](size_t index) { return _data[index]; }
+    const uint8_t& operator[](size_t index) const { return _data[index]; }
+
+    bool empty() const { return _data.empty(); }
+    size_t capacity() const { return _data.capacity(); }
+    size_t size() const { return _data.size(); }
+    size_t max_size() const { return _data.max_size(); }
+
+    std::pmr::vector<uint8_t>& buffer() noexcept { return _data; }
+    const std::pmr::vector<uint8_t>& buffer() const noexcept { return _data; }
+    uint8_t* data() noexcept { return _data.data(); }
+    const uint8_t* data() const noexcept { return _data.data(); }
+    uint8_t& at(size_t index) { return _data.at(index); }
+    const uint8_t& at(size_t index) const { return _data.at(index); }
+    uint8_t& front() { return _data.front(); }
+    const uint8_t& front() const { return _data.front(); }
+    uint8_t& back() { return _data.back(); }
+    const uint8_t& back() const { return _data.back(); }
+
+    void reserve(size_t capacity) { _data.reserve(capacity); }
+    void resize(size_t size, uint8_t value = 0) { _data.resize(size, value); }
+    void shrink_to_fit() { _data.shrink_to_fit(); }
+
+    void assign(const std::pmr::string& str) { assign((const uint8_t*)str.c_str(), str.size()); }
+    void assign(const std::pmr::vector<uint8_t>& vec) { assign(vec.begin(), vec.end()); }
+    void assign(size_t size, uint8_t value) { _data.assign(size, value); }
+    void assign(const uint8_t* data, size_t size) { _data.assign(data, data + size); }
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last) { _data.assign(first, last); }
+    iterator insert(const_iterator position, uint8_t value) { return _data.insert(position, value); }
+    iterator insert(const_iterator position, const std::pmr::string& str) { return insert(position, (const uint8_t*)str.c_str(), str.size()); }
+    iterator insert(const_iterator position, const std::pmr::vector<uint8_t>& vec) { return insert(position, vec.begin(), vec.end()); }
+    iterator insert(const_iterator position, size_t size, uint8_t value) { return _data.insert(position, size, value); }
+    iterator insert(const_iterator position, const uint8_t* data, size_t size) { return _data.insert(position, data, data + size); }
+    template <class InputIterator>
+    iterator insert(const_iterator position, InputIterator first, InputIterator last) { return _data.insert(position, first, last); }
+    iterator erase(const_iterator position) { return _data.erase(position); }
+    iterator erase(const_iterator first, const_iterator last) { return _data.erase(first, last); }
+    void clear() noexcept { _data.clear(); }
+
+    void push_back(uint8_t value) { _data.push_back(value); }
+    void pop_back() { _data.pop_back(); }
+
+    template <class... Args>
+    iterator emplace(const_iterator position, Args&&... args) { return _data.emplace(position, args...); }
+    template <class... Args>
+    void emplace_back(Args&&... args) { _data.emplace_back(args...); }
+
+    iterator begin() noexcept { return _data.begin(); }
+    const_iterator begin() const noexcept { return _data.begin(); }
+    const_iterator cbegin() const noexcept { return _data.cbegin(); }
+    reverse_iterator rbegin() noexcept { return _data.rbegin(); }
+    const_reverse_iterator rbegin() const noexcept { return _data.rbegin(); }
+    const_reverse_iterator crbegin() const noexcept { return _data.crbegin(); }
+    iterator end() noexcept { return _data.end(); }
+    const_iterator end() const noexcept { return _data.end(); }
+    const_iterator cend() const noexcept { return _data.cend(); }
+    reverse_iterator rend() noexcept { return _data.rend(); }
+    const_reverse_iterator rend() const noexcept { return _data.rend(); }
+    const_reverse_iterator crend() const noexcept { return _data.crend(); }
+
+    //! Get the string equivalent from the bytes buffer
+    std::string string() const { return std::string(_data.begin(), _data.end()); }
+
+    //! Encode the Base64 string from the bytes buffer
+    std::string base64encode() const;
+    //! Decode the bytes buffer from the Base64 string
+    static buffer_t base64decode(const std::string& str);
+
+    //! Swap two instances
+    void swap(pmr_buffer_t& value) noexcept
+    { using std::swap; swap(_data, value._data); }
+    friend void swap(pmr_buffer_t& value1, pmr_buffer_t& value2) noexcept
+    { value1.swap(value2); }
+
+    //! Output instance into the given output stream
+    friend std::ostream& operator<<(std::ostream& os, const pmr_buffer_t& value)
+    { os << value.string(); return os; }
+
+private:
+    std::pmr::vector<uint8_t> _data;
+    
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GeneratePMRBufferWrapper_Source()
+{
+    std::string code = R"CODE(
+std::string pmr_buffer_t::base64encode() const
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+
+    int val = 0;
+    int valb = -6;
+    for (auto c : _data)
+    {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0)
+        {
+            result.push_back(base64[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+
+    if (valb > -6)
+        result.push_back(base64[((val << 8) >> (valb + 8)) & 0x3F]);
+
+    while (result.size() % 4)
+        result.push_back('=');
+
+    return result;
+}
+
+buffer_t pmr_buffer_t::base64decode(const std::string& str)
 {
     const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     buffer_t result;
@@ -2116,6 +2307,179 @@ void FieldModel<buffer_t>::get(std::vector<uint8_t>& value) const noexcept
 }
 
 void FieldModel<buffer_t>::set(const void* data, size_t size)
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return;
+
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_size = (uint32_t)size;
+    uint32_t fbe_bytes_offset = (uint32_t)(_buffer.allocate(4 + fbe_bytes_size) - _buffer.offset());
+    assert(((fbe_bytes_offset > 0) && ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size()))
+        return;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_bytes_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset, fbe_bytes_size);
+
+    memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4), data, fbe_bytes_size);
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+
+void GeneratorCpp::GenerateFBEFieldModelPMRBytes_Header()
+{
+    std::string code = R"CODE(
+// Fast Binary Encoding field model bytes specialization
+template <>
+class FieldModel<pmr_buffer_t>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the bytes value is valid
+    bool verify() const noexcept;
+
+    // Get the bytes value
+    size_t get(void* data, size_t size) const noexcept;
+    // Get the bytes value
+    template <size_t N>
+    size_t get(uint8_t (&data)[N]) const noexcept { return get(data, N); }
+    // Get the bytes value
+    void get(std::pmr::vector<uint8_t>& value) const noexcept;
+    // Get the bytes value
+    void get(pmr_buffer_t& value) const noexcept { get(value.buffer()); }
+
+    // Set the bytes value
+    void set(const void* data, size_t size);
+    // Set the bytes value
+    template <size_t N>
+    void set(const uint8_t (&data)[N]) { set(data, N); }
+    // Set the bytes value
+    void set(const std::pmr::vector<uint8_t>& value) { set(value.data(), value.size()); }
+    // Set the bytes value
+    void set(const pmr_buffer_t& value) { set(value.buffer()); }
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelPMRBytes_Source()
+{
+    std::string code = R"CODE(
+size_t FieldModel<pmr_buffer_t>::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    return (size_t)(4 + fbe_bytes_size);
+}
+
+bool FieldModel<pmr_buffer_t>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return true;
+
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return false;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return false;
+
+    return true;
+}
+
+size_t FieldModel<pmr_buffer_t>::get(void* data, size_t size) const noexcept
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return 0;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return 0;
+
+    assert(((_buffer.offset() + fbe_bytes_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return 0;
+
+    size_t result = std::min(size, (size_t)fbe_bytes_size);
+    memcpy(data, (const char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4), result);
+    return result;
+}
+
+void FieldModel<pmr_buffer_t>::get(std::pmr::vector<uint8_t>& value) const noexcept
+{
+    value.clear();
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return;
+
+    assert(((_buffer.offset() + fbe_bytes_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return;
+
+    const char* fbe_bytes = (const char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4);
+    value.assign(fbe_bytes, fbe_bytes + fbe_bytes_size);
+}
+
+void FieldModel<pmr_buffer_t>::set(const void* data, size_t size)
 {
     assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
     if ((size > 0) && (data == nullptr))
@@ -6798,6 +7162,7 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     GenerateImportHelper_Header();
     GenerateVariantVisitHelper_Header();
     GenerateBufferWrapper_Header();
+    GeneratePMRBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
     GenerateTimeWrapper_Header();
@@ -6838,6 +7203,7 @@ void GeneratorCpp::GenerateFBE_Source(const CppCommon::Path& path)
 
     // Generate common body
     GenerateBufferWrapper_Source();
+    GeneratePMRBufferWrapper_Source();
     GenerateTimeWrapper_Source();
     GenerateUUIDWrapper_Source();
     GenerateFBEBuffer_Source();
@@ -6878,6 +7244,7 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelDecimal_Header();
     GenerateFBEFieldModelUUID_Header();
     GenerateFBEFieldModelBytes_Header();
+    GenerateFBEFieldModelPMRBytes_Header();
     GenerateFBEFieldModelString_Header();
     GenerateFBEFieldModelPMRString_Header();
     GenerateFBEFieldModelOptional_Header();
@@ -6958,6 +7325,7 @@ void GeneratorCpp::GenerateFBEModels_Source(const CppCommon::Path& path)
     GenerateFBEFieldModelDecimal_Source();
     GenerateFBEFieldModelUUID_Source();
     GenerateFBEFieldModelBytes_Source();
+    GenerateFBEFieldModelPMRBytes_Source();
     GenerateFBEFieldModelString_Source();
     GenerateFBEFieldModelPMRString_Source();
 
@@ -8340,7 +8708,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
             {
                 WriteIndent();
                 Write(std::string(first ? ": " : ", ") + *field->name + "(");
-                if (*field->type == "string" || IsContainerType(*field)) {
+                if (*field->type == "string" || *field->type == "bytes" || IsContainerType(*field)) {
                     Write("alloc");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
@@ -10984,7 +11352,7 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     else if (type == "byte")
         return "uint8_t";
     else if (type == "bytes")
-        return "FBE::buffer_t";
+        return Arena() ? "FBE::pmr_buffer_t" : "FBE::buffer_t";
     else if (type == "char")
         return "char";
     else if (type == "wchar")
