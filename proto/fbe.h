@@ -204,6 +204,123 @@ private:
     std::vector<uint8_t> _data;
 };
 
+//! PMR bytes buffer type
+/*!
+    Represents pmr bytes buffer which is a lightweight wrapper around std::pmr::vector<uint8_t>
+    with similar interface.
+*/
+class pmr_buffer_t
+{
+public:
+    typedef std::pmr::vector<uint8_t>::iterator iterator;
+    typedef std::pmr::vector<uint8_t>::const_iterator const_iterator;
+    typedef std::pmr::vector<uint8_t>::reverse_iterator reverse_iterator;
+    typedef std::pmr::vector<uint8_t>::const_reverse_iterator const_reverse_iterator;
+    using allocator_type = std::pmr::polymorphic_allocator<char>;
+
+
+    pmr_buffer_t() = default;
+    explicit pmr_buffer_t(allocator_type alloc): _data(alloc) {}
+    explicit pmr_buffer_t(size_t capacity) { reserve(capacity); }
+    explicit pmr_buffer_t(const std::pmr::string& str) { assign(str); }
+    pmr_buffer_t(size_t size, uint8_t value) { assign(size, value); }
+    pmr_buffer_t(const uint8_t* data, size_t size) { assign(data, size); }
+    explicit pmr_buffer_t(const std::pmr::vector<uint8_t>& other) : _data(other) {}
+    explicit pmr_buffer_t(std::pmr::vector<uint8_t>&& other) : _data(std::move(other)) {}
+    explicit pmr_buffer_t(const pmr_buffer_t& other) = default;
+    explicit pmr_buffer_t(pmr_buffer_t&& other) = default;
+    ~pmr_buffer_t() = default;
+
+    pmr_buffer_t& operator=(const std::pmr::string& str) { assign(str); return *this; }
+    pmr_buffer_t& operator=(const std::pmr::vector<uint8_t>& other) { _data = other; return *this; }
+    pmr_buffer_t& operator=(std::pmr::vector<uint8_t>&& other) { _data = std::move(other); return *this; }
+    pmr_buffer_t& operator=(const pmr_buffer_t& other) = default;
+    pmr_buffer_t& operator=(pmr_buffer_t&& other) = default;
+
+    uint8_t& operator[](size_t index) { return _data[index]; }
+    const uint8_t& operator[](size_t index) const { return _data[index]; }
+
+    bool empty() const { return _data.empty(); }
+    size_t capacity() const { return _data.capacity(); }
+    size_t size() const { return _data.size(); }
+    size_t max_size() const { return _data.max_size(); }
+
+    std::pmr::vector<uint8_t>& buffer() noexcept { return _data; }
+    const std::pmr::vector<uint8_t>& buffer() const noexcept { return _data; }
+    uint8_t* data() noexcept { return _data.data(); }
+    const uint8_t* data() const noexcept { return _data.data(); }
+    uint8_t& at(size_t index) { return _data.at(index); }
+    const uint8_t& at(size_t index) const { return _data.at(index); }
+    uint8_t& front() { return _data.front(); }
+    const uint8_t& front() const { return _data.front(); }
+    uint8_t& back() { return _data.back(); }
+    const uint8_t& back() const { return _data.back(); }
+
+    void reserve(size_t capacity) { _data.reserve(capacity); }
+    void resize(size_t size, uint8_t value = 0) { _data.resize(size, value); }
+    void shrink_to_fit() { _data.shrink_to_fit(); }
+
+    void assign(const std::pmr::string& str) { assign((const uint8_t*)str.c_str(), str.size()); }
+    void assign(const std::pmr::vector<uint8_t>& vec) { assign(vec.begin(), vec.end()); }
+    void assign(size_t size, uint8_t value) { _data.assign(size, value); }
+    void assign(const uint8_t* data, size_t size) { _data.assign(data, data + size); }
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last) { _data.assign(first, last); }
+    iterator insert(const_iterator position, uint8_t value) { return _data.insert(position, value); }
+    iterator insert(const_iterator position, const std::pmr::string& str) { return insert(position, (const uint8_t*)str.c_str(), str.size()); }
+    iterator insert(const_iterator position, const std::pmr::vector<uint8_t>& vec) { return insert(position, vec.begin(), vec.end()); }
+    iterator insert(const_iterator position, size_t size, uint8_t value) { return _data.insert(position, size, value); }
+    iterator insert(const_iterator position, const uint8_t* data, size_t size) { return _data.insert(position, data, data + size); }
+    template <class InputIterator>
+    iterator insert(const_iterator position, InputIterator first, InputIterator last) { return _data.insert(position, first, last); }
+    iterator erase(const_iterator position) { return _data.erase(position); }
+    iterator erase(const_iterator first, const_iterator last) { return _data.erase(first, last); }
+    void clear() noexcept { _data.clear(); }
+
+    void push_back(uint8_t value) { _data.push_back(value); }
+    void pop_back() { _data.pop_back(); }
+
+    template <class... Args>
+    iterator emplace(const_iterator position, Args&&... args) { return _data.emplace(position, args...); }
+    template <class... Args>
+    void emplace_back(Args&&... args) { _data.emplace_back(args...); }
+
+    iterator begin() noexcept { return _data.begin(); }
+    const_iterator begin() const noexcept { return _data.begin(); }
+    const_iterator cbegin() const noexcept { return _data.cbegin(); }
+    reverse_iterator rbegin() noexcept { return _data.rbegin(); }
+    const_reverse_iterator rbegin() const noexcept { return _data.rbegin(); }
+    const_reverse_iterator crbegin() const noexcept { return _data.crbegin(); }
+    iterator end() noexcept { return _data.end(); }
+    const_iterator end() const noexcept { return _data.end(); }
+    const_iterator cend() const noexcept { return _data.cend(); }
+    reverse_iterator rend() noexcept { return _data.rend(); }
+    const_reverse_iterator rend() const noexcept { return _data.rend(); }
+    const_reverse_iterator crend() const noexcept { return _data.crend(); }
+
+    //! Get the string equivalent from the bytes buffer
+    std::string string() const { return std::string(_data.begin(), _data.end()); }
+
+    //! Encode the Base64 string from the bytes buffer
+    std::string base64encode() const;
+    //! Decode the bytes buffer from the Base64 string
+    static buffer_t base64decode(const std::string& str);
+
+    //! Swap two instances
+    void swap(pmr_buffer_t& value) noexcept
+    { using std::swap; swap(_data, value._data); }
+    friend void swap(pmr_buffer_t& value1, pmr_buffer_t& value2) noexcept
+    { value1.swap(value2); }
+
+    //! Output instance into the given output stream
+    friend std::ostream& operator<<(std::ostream& os, const pmr_buffer_t& value)
+    { os << value.string(); return os; }
+
+private:
+    std::pmr::vector<uint8_t> _data;
+    
+};
+
 //! Decimal type
 /*!
     Represents decimal type using double and provides basic arithmetic operations.
