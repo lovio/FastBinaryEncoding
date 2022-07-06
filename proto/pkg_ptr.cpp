@@ -58,7 +58,7 @@ Info& Info::operator=(Info&& other) noexcept
 
 std::string Info::string() const
 {
-std::stringstream ss; ss << *this; return ss.str();
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Info::swap(Info& other) noexcept
@@ -124,7 +124,7 @@ Detail& Detail::operator=(Detail&& other) noexcept
 
 std::string Detail::string() const
 {
-std::stringstream ss; ss << *this; return ss.str();
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Detail::swap(Detail& other) noexcept

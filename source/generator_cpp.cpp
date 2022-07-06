@@ -8839,7 +8839,9 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     WriteLine();
     WriteLineIndent("std::string " + *s->name + "::string() const");
     WriteLineIndent("{");
+    Indent(1);
     WriteLineIndent("std::stringstream ss; ss << *this; return ss.str();");
+    Indent(-1);
     WriteLineIndent("}");
 
     // Generate struct swap method

@@ -55,7 +55,7 @@ Line& Line::operator=(Line&& other) noexcept
 
 std::string Line::string() const
 {
-std::stringstream ss; ss << *this; return ss.str();
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Line::swap(Line& other) noexcept

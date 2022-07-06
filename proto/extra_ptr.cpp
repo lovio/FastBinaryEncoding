@@ -68,7 +68,7 @@ Info& Info::operator=(Info&& other) noexcept
 
 std::string Info::string() const
 {
-std::stringstream ss; ss << *this; return ss.str();
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Info::swap(Info& other) noexcept
@@ -191,7 +191,7 @@ Extra& Extra::operator=(Extra&& other) noexcept
 
 std::string Extra::string() const
 {
-std::stringstream ss; ss << *this; return ss.str();
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Extra::swap(Extra& other) noexcept
