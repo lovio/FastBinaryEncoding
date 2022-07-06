@@ -8712,7 +8712,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
                     Write("alloc");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
-                } else if (!field->optional && *field->type != "bytes" && std::find_if(enums.begin(), enums.end(),
+                } else if (!IsVariantType(p, *field->type) && !field->optional && *field->type != "bytes" && std::find_if(enums.begin(), enums.end(),
                  [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
                      return *e->name == t; }) == enums.end()) {
                     Write("alloc");
