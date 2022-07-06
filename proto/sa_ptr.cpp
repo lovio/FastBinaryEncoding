@@ -71,6 +71,11 @@ Extra& Extra::operator=(Extra&& other) noexcept
     return *this;
 }
 
+std::string Extra::string() const
+{
+std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Extra::swap(Extra& other) noexcept
 {
     using std::swap;
@@ -138,6 +143,11 @@ Simple& Simple::operator=(Simple&& other) noexcept
         sex = std::move(other.sex);
     }
     return *this;
+}
+
+std::string Simple::string() const
+{
+std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Simple::swap(Simple& other) noexcept
@@ -255,6 +265,11 @@ Complex& Complex::operator=(Complex&& other) noexcept
         nums = std::move(other.nums);
     }
     return *this;
+}
+
+std::string Complex::string() const
+{
+std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Complex::swap(Complex& other) noexcept
