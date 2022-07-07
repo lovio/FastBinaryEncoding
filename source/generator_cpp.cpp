@@ -8630,7 +8630,7 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct string convert
     WriteLine();
-    WriteLineIndent("std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }");
+    WriteLineIndent("std::string string() const;");
 
     // Generate struct output stream operator
     WriteLine();
@@ -8832,6 +8832,15 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
         }
     }
     WriteLineIndent("return false;");
+    Indent(-1);
+    WriteLineIndent("}");
+
+    // Generate struct string method
+    WriteLine();
+    WriteLineIndent("std::string " + *s->name + "::string() const");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("std::stringstream ss; ss << *this; return ss.str();");
     Indent(-1);
     WriteLineIndent("}");
 

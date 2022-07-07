@@ -78,6 +78,11 @@ Simple& Simple::operator=(Simple&& other) noexcept
     return *this;
 }
 
+std::string Simple::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Simple::swap(Simple& other) noexcept
 {
     using std::swap;

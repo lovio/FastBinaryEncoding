@@ -72,6 +72,11 @@ Simple& Simple::operator=(Simple&& other) noexcept
     return *this;
 }
 
+std::string Simple::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Simple::swap(Simple& other) noexcept
 {
     using std::swap;
@@ -121,6 +126,11 @@ Value& Value::operator=(Value&& other) noexcept
         v = std::move(other.v);
     }
     return *this;
+}
+
+std::string Value::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Value::swap(Value& other) noexcept

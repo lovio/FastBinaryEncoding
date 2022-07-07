@@ -58,7 +58,7 @@ struct Line : FBE::Base
     bool operator>(const Line& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Line& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Line& value);
 
