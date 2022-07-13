@@ -132,6 +132,14 @@ public:
     void set(const std::vector<TStruct>& values) noexcept;
     void set(const std::vector<TStruct*>& values) noexcept;
 
+    // Get the array as std::pmr::vector
+    void get(std::pmr::vector<TStruct>& values) const noexcept;
+    void get(std::pmr::vector<TStruct*>& values) const noexcept;
+
+    // Set the array as std::pmr::vector
+    void set(const std::pmr::vector<TStruct>& values) noexcept;
+    void set(const std::pmr::vector<TStruct*>& values) noexcept;
+
 private:
     FBEBuffer& _buffer;
     size_t _offset;
@@ -189,6 +197,26 @@ public:
     void set(const std::set<TStruct>& values) noexcept;
     void set(const std::set<TStruct*>& values) noexcept;
 
+    // Get the vector as std::pmr::vector
+    void get(std::pmr::vector<TStruct>& values) const noexcept;
+    void get(std::pmr::vector<TStruct*>& values) const noexcept;
+    // Get the vector as std::pmr::list
+    void get(std::pmr::list<TStruct>& values) const noexcept;
+    void get(std::pmr::list<TStruct*>& values) const noexcept;
+    // Get the vector as std::pmr::set
+    void get(std::pmr::set<TStruct>& values) const noexcept;
+    void get(std::pmr::set<TStruct*>& values) const noexcept;
+
+    // Set the vector as std::pmr::vector
+    void set(const std::pmr::vector<TStruct>& values) noexcept;
+    void set(const std::pmr::vector<TStruct*>& values) noexcept;
+    // Set the vector as std::pmr::list
+    void set(const std::pmr::list<TStruct>& values) noexcept;
+    void set(const std::pmr::list<TStruct*>& values) noexcept;
+    // Set the vector as std::pmr::set
+    void set(const std::pmr::set<TStruct>& values) noexcept;
+    void set(const std::pmr::set<TStruct*>& values) noexcept;
+
 private:
     FBEBuffer& _buffer;
     size_t _offset;
@@ -239,6 +267,20 @@ public:
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKStruct, TValueStruct>& values) noexcept;
     void set(const std::unordered_map<TKStruct, TValueStruct*>& values) noexcept;
+
+    // Get the map as std::pmr::map
+    void get(std::pmr::map<TKStruct, TValueStruct>& values) const noexcept;
+    void get(std::pmr::map<TKStruct, TValueStruct*>& values) const noexcept;
+    // Get the map as std::pmr::unordered_map
+    void get(std::pmr::unordered_map<TKStruct, TValueStruct>& values) const noexcept;
+    void get(std::pmr::unordered_map<TKStruct, TValueStruct*>& values) const noexcept;
+
+    // Set the map as std::pmr::map
+    void set(const std::pmr::map<TKStruct, TValueStruct>& values) noexcept;
+    void set(const std::pmr::map<TKStruct, TValueStruct*>& values) noexcept;
+    // Set the map as std::pmr::unordered_map
+    void set(const std::pmr::unordered_map<TKStruct, TValueStruct>& values) noexcept;
+    void set(const std::pmr::unordered_map<TKStruct, TValueStruct*>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;

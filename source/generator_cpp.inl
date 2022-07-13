@@ -372,11 +372,9 @@ public:
 
     code += code_extra;
 
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
-        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+    code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+    code += code_extra;
 
     code += R"CODE(
 private:
@@ -620,11 +618,9 @@ inline void FieldModelCustomArray<T, TStruct, N>::set(const std::vector<TStruct*
 )CODE";
     code += code_extra;
 
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
-        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+    code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+    code += code_extra;
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
@@ -691,12 +687,10 @@ public:
 )CODE";
 
     code += code_extra;
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
-        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
-        code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+    code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+    code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
+    code += code_extra;
 
 code += R"CODE(
 private:
@@ -1032,12 +1026,10 @@ inline void FieldModelCustomVector<T, TStruct>::set(const std::set<TStruct*>& va
 
     code += code_extra;
 
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
-        code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
-        code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::vector"), "std::pmr::vector");
+    code_extra = std::regex_replace(code_extra, std::regex("std::list"), "std::pmr::list");
+    code_extra = std::regex_replace(code_extra, std::regex("std::set"), "std::pmr::set");
+    code += code_extra;
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
@@ -1099,11 +1091,9 @@ public:
 
     code += code_extra;
 
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
-        code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
+    code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+    code += code_extra;
 
     code += R"CODE(
 private:
@@ -1398,11 +1388,9 @@ inline void FieldModelCustomMap<TKey, TValue, TKStruct, TValueStruct>::set(const
 
     code += code_extra;
 
-    if (Arena()) {
-        code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
-        code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
-        code += code_extra;
-    }
+    code_extra = std::regex_replace(code_extra, std::regex("std::map"), "std::pmr::map");
+    code_extra = std::regex_replace(code_extra, std::regex("std::unordered_map"), "std::pmr::unordered_map");
+    code += code_extra;
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
