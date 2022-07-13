@@ -147,4 +147,86 @@ std::ostream& operator<<(std::ostream& stream, const Value& value)
     return stream;
 }
 
+ValueContainer::ValueContainer()
+    : vv()
+    , vm()
+{}
+
+ValueContainer::ValueContainer(std::vector<::variants_ptr::V> arg_vv, std::unordered_map<int32_t, ::variants_ptr::V> arg_vm)
+    : vv(std::move(arg_vv))
+    , vm(std::move(arg_vm))
+{}
+
+ValueContainer::ValueContainer(ValueContainer&& other) noexcept
+    : vv(std::move(other.vv))
+    , vm(std::move(other.vm))
+{}
+
+ValueContainer::~ValueContainer()
+{
+}
+
+bool ValueContainer::operator==([[maybe_unused]] const ValueContainer& other) const noexcept
+{
+    return (
+        true
+        );
+}
+
+bool ValueContainer::operator<([[maybe_unused]] const ValueContainer& other) const noexcept
+{
+    return false;
+}
+
+ValueContainer& ValueContainer::operator=(ValueContainer&& other) noexcept
+{
+    if (this != &other)
+    {
+        vv = std::move(other.vv);
+        vm = std::move(other.vm);
+    }
+    return *this;
+}
+
+std::string ValueContainer::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
+void ValueContainer::swap(ValueContainer& other) noexcept
+{
+    using std::swap;
+    swap(vv, other.vv);
+    swap(vm, other.vm);
+}
+
+std::ostream& operator<<(std::ostream& stream, const ValueContainer& value)
+{
+    stream << "ValueContainer(";
+    {
+        bool first = true;
+        stream << "vv=[" << value.vv.size() << "][";
+        for (const auto& it : value.vv)
+        {
+            stream << std::string(first ? "" : ",") << it;
+            first = false;
+        }
+        stream << "]";
+    }
+    {
+        bool first = true;
+        stream << ",vm=[" << value.vm.size()<< "][{";
+        for (const auto& it : value.vm)
+        {
+            stream << std::string(first ? "" : ",") << it.first;
+            stream << "->";
+            stream << it.second;
+            first = false;
+        }
+        stream << "}]";
+    }
+    stream << ")";
+    return stream;
+}
+
 } // namespace variants_ptr

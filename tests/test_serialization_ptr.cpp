@@ -16,6 +16,7 @@
 #include "../proto/osa_models.h"
 #include "../proto/pkg_ptr_models.h"
 #include "../proto/variants_ptr_ptr_models.h"
+#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -770,5 +771,37 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         for (auto& s : v_copy) {
             delete s;
         }
+    }
+
+    SECTION ("variant used in container") {
+        ::variants_ptr::ValueContainer value_container;
+        value_container.vv.emplace_back(::variants_ptr::V{42});
+        value_container.vv.emplace_back(::variants_ptr::V{"42"});
+        value_container.vm.emplace(1, ::variants_ptr::V{42});
+        value_container.vm.emplace(2, ::variants_ptr::V{"42"});
+
+        FBE::variants_ptr::ValueContainerModel writer;
+        size_t serialized = writer.serialize(value_container);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueContainerModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::ValueContainer value_container_copy;
+        size_t deserialized = reader.deserialize(value_container_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_container_copy.vv.size() == 2);
+        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vv.at(0)));
+        REQUIRE(std::get<int32_t>(value_container_copy.vv.at(0)) == 42);
+        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vv.at(1)));
+        REQUIRE(std::get<std::string>(value_container_copy.vv.at(1)) == "42");
+        REQUIRE(value_container_copy.vm.size() == 2);
+        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vm.at(0)));
+        REQUIRE(std::get<int32_t>(value_container_copy.vm.at(0)) == 42);
+        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vm.at(1)));
+        REQUIRE(std::get<std::string>(value_container_copy.vm.at(1)) == "42");
     }
 }

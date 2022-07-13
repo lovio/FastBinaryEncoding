@@ -1226,4 +1226,365 @@ size_t ValueModel::deserialize(::variants_ptr::Value& value) noexcept
 
 } // namespace variants_ptr
 
+FieldModelPtr_variants_ptr_ValueContainer::FieldModelPtr_variants_ptr_ValueContainer(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+{}
+
+FieldModelPtr_variants_ptr_ValueContainer::~FieldModelPtr_variants_ptr_ValueContainer()
+{
+    if (ptr) delete ptr;
+}
+
+size_t FieldModelPtr_variants_ptr_ValueContainer::fbe_extra() const noexcept
+{
+    if (!ptr) return 0;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_ptr_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
+    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_ptr_offset);
+    size_t fbe_result = ptr->fbe_size() + ptr->fbe_extra();
+    _buffer.unshift(fbe_ptr_offset);
+
+    return fbe_result;
+}
+
+bool FieldModelPtr_variants_ptr_ValueContainer::verify() const noexcept
+{
+    if (!ptr) return true;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    if (fbe_has_value == 0)
+        return true;
+
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
+    if (fbe_optional_offset == 0)
+        return false;
+
+    _buffer.shift(fbe_optional_offset);
+    bool fbe_result = ptr->verify();
+    _buffer.unshift(fbe_optional_offset);
+    return fbe_result;
+}
+
+bool FieldModelPtr_variants_ptr_ValueContainer::has_value() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return false;
+
+    uint8_t fbe_has_value = *((const uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    return (fbe_has_value != 0);
+}
+
+size_t FieldModelPtr_variants_ptr_ValueContainer::get_begin() const noexcept
+{
+    if (!has_value())
+        return 0;
+
+    uint32_t fbe_ptr_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
+    assert((fbe_ptr_offset > 0) && "Model is broken!");
+    if (fbe_ptr_offset == 0)
+        return 0;
+
+    _buffer.shift(fbe_ptr_offset);
+    return fbe_ptr_offset;
+}
+
+void FieldModelPtr_variants_ptr_ValueContainer::get_end(size_t fbe_begin) const noexcept
+{
+    _buffer.unshift(fbe_begin);
+}
+
+void FieldModelPtr_variants_ptr_ValueContainer::get(::variants_ptr::ValueContainer** fbe_value) noexcept
+{
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    ptr = new FieldModel_variants_ptr_ValueContainer(_buffer, 0);
+
+    ::variants_ptr::ValueContainer *tempModel = new ::variants_ptr::ValueContainer();
+    ptr->get(*tempModel);
+    *fbe_value = tempModel;
+
+    get_end(fbe_begin);
+}
+
+size_t FieldModelPtr_variants_ptr_ValueContainer::set_begin(bool has_value)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint8_t fbe_has_value = has_value ? 1 : 0;
+    *((uint8_t *)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_has_value;
+    if (fbe_has_value == 0)
+        return 0;
+
+    uint32_t fbe_ptr_size = 4;
+    uint32_t fbe_ptr_offset = (uint32_t)(_buffer.allocate(fbe_ptr_size) - _buffer.offset());
+    assert(((fbe_ptr_offset > 0) && ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_ptr_offset == 0) || ((_buffer.offset() + fbe_ptr_offset + fbe_ptr_size) > _buffer.size()))
+        return 0;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1, fbe_ptr_offset);
+
+    _buffer.shift(fbe_ptr_offset);
+    return fbe_ptr_offset;
+}
+
+void FieldModelPtr_variants_ptr_ValueContainer::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+void FieldModelPtr_variants_ptr_ValueContainer::set(const ::variants_ptr::ValueContainer* fbe_value) noexcept
+{
+    size_t fbe_begin = set_begin(fbe_value != nullptr);
+    if (fbe_begin == 0)
+        return;
+
+    if (fbe_value != nullptr) {
+        BaseFieldModel* temp = new FieldModel_variants_ptr_ValueContainer(_buffer, 0);
+        ptr = temp;
+        ptr->set(*fbe_value);
+    }
+
+    set_end(fbe_begin);
+}
+
+FieldModel_variants_ptr_ValueContainer::FieldModel_variants_ptr_ValueContainer(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+    , vv(buffer, 4 + 4)
+    , vm(buffer, vv.fbe_offset() + vv.fbe_size())
+{}
+
+size_t FieldModel_variants_ptr_ValueContainer::fbe_body() const noexcept
+{
+    size_t fbe_result = 4 + 4
+        + vv.fbe_size()
+        + vm.fbe_size()
+        ;
+    return fbe_result;
+}
+
+size_t FieldModel_variants_ptr_ValueContainer::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_struct_offset);
+
+    size_t fbe_result = fbe_body()
+        + vv.fbe_extra()
+        + vm.fbe_extra()
+        ;
+
+    _buffer.unshift(fbe_struct_offset);
+
+    return fbe_result;
+}
+
+bool FieldModel_variants_ptr_ValueContainer::verify(bool fbe_verify_type) const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
+        return false;
+
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
+    if (fbe_struct_size < (4 + 4))
+        return false;
+
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
+    if (fbe_verify_type && (fbe_struct_type != fbe_type()))
+        return false;
+
+    _buffer.shift(fbe_struct_offset);
+    bool fbe_result = verify_fields(fbe_struct_size);
+    _buffer.unshift(fbe_struct_offset);
+    return fbe_result;
+}
+
+bool FieldModel_variants_ptr_ValueContainer::verify_fields(size_t fbe_struct_size) const noexcept
+{
+    size_t fbe_current_size = 4 + 4;
+
+    if ((fbe_current_size + vv.fbe_size()) > fbe_struct_size)
+        return true;
+    if (!vv.verify())
+        return false;
+    fbe_current_size += vv.fbe_size();
+
+    if ((fbe_current_size + vm.fbe_size()) > fbe_struct_size)
+        return true;
+    if (!vm.verify())
+        return false;
+    fbe_current_size += vm.fbe_size();
+
+    return true;
+}
+
+size_t FieldModel_variants_ptr_ValueContainer::get_begin() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
+    assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
+    if (fbe_struct_size < (4 + 4))
+        return 0;
+
+    _buffer.shift(fbe_struct_offset);
+    return fbe_struct_offset;
+}
+
+void FieldModel_variants_ptr_ValueContainer::get_end(size_t fbe_begin) const noexcept
+{
+    _buffer.unshift(fbe_begin);
+}
+
+void FieldModel_variants_ptr_ValueContainer::get(::FBE::Base& fbe_value) noexcept
+{
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
+    get_fields(fbe_value, fbe_struct_size);
+    get_end(fbe_begin);
+}
+
+void FieldModel_variants_ptr_ValueContainer::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+{
+    ::variants_ptr::ValueContainer& fbe_value = static_cast<::variants_ptr::ValueContainer&>(base_fbe_value);
+    size_t fbe_current_size = 4 + 4;
+
+    if ((fbe_current_size + vv.fbe_size()) <= fbe_struct_size)
+        {
+            vv.get(fbe_value.vv);
+        }
+    else
+        fbe_value.vv.clear();
+    fbe_current_size += vv.fbe_size();
+
+    if ((fbe_current_size + vm.fbe_size()) <= fbe_struct_size)
+        {
+            vm.get(fbe_value.vm);
+        }
+    else
+        fbe_value.vm.clear();
+    fbe_current_size += vm.fbe_size();
+}
+
+size_t FieldModel_variants_ptr_ValueContainer::set_begin()
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_struct_size = (uint32_t)fbe_body();
+    uint32_t fbe_struct_offset = (uint32_t)(_buffer.allocate(fbe_struct_size) - _buffer.offset());
+    assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
+        return 0;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, fbe_type());
+
+    _buffer.shift(fbe_struct_offset);
+    return fbe_struct_offset;
+}
+
+void FieldModel_variants_ptr_ValueContainer::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+void FieldModel_variants_ptr_ValueContainer::set(const ::FBE::Base& fbe_value) noexcept
+{
+    size_t fbe_begin = set_begin();
+    if (fbe_begin == 0)
+        return;
+
+    set_fields(fbe_value);
+    set_end(fbe_begin);
+}
+
+void FieldModel_variants_ptr_ValueContainer::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+{
+    const ::variants_ptr::ValueContainer& fbe_value = static_cast<const ::variants_ptr::ValueContainer&>(base_fbe_value);
+    vv.set(fbe_value.vv);
+    vm.set(fbe_value.vm);
+}
+
+namespace variants_ptr {
+
+bool ValueContainerModel::verify()
+{
+    if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
+        return false;
+
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
+    if (fbe_full_size < model.fbe_size())
+        return false;
+
+    return model.verify();
+}
+
+size_t ValueContainerModel::create_begin()
+{
+    size_t fbe_begin = this->buffer().allocate(4 + model.fbe_size());
+    return fbe_begin;
+}
+
+size_t ValueContainerModel::create_end(size_t fbe_begin)
+{
+    size_t fbe_end = this->buffer().size();
+    uint32_t fbe_full_size = (uint32_t)(fbe_end - fbe_begin);
+    *((uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4)) = fbe_full_size;
+    return fbe_full_size;
+}
+
+size_t ValueContainerModel::serialize(const ::variants_ptr::ValueContainer& value)
+{
+    size_t fbe_begin = create_begin();
+    model.set(value);
+    size_t fbe_full_size = create_end(fbe_begin);
+    return fbe_full_size;
+}
+
+size_t ValueContainerModel::deserialize(::variants_ptr::ValueContainer& value) noexcept
+{
+    if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
+        return 0;
+
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
+    assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
+    if (fbe_full_size < model.fbe_size())
+        return 0;
+
+    model.get(value);
+    return fbe_full_size;
+}
+
+} // namespace variants_ptr
+
 } // namespace FBE

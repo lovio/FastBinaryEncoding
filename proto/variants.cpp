@@ -56,6 +56,11 @@ bool Simple::operator<([[maybe_unused]] const Simple& other) const noexcept
     return false;
 }
 
+std::string Simple::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Simple::swap(Simple& other) noexcept
 {
     using std::swap;
@@ -88,6 +93,11 @@ bool Value::operator==([[maybe_unused]] const Value& other) const noexcept
 bool Value::operator<([[maybe_unused]] const Value& other) const noexcept
 {
     return false;
+}
+
+std::string Value::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Value::swap(Value& other) noexcept

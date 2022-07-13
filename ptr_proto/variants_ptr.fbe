@@ -29,3 +29,8 @@ variant Expr {
 struct Value {
   V v;
 }
+
+struct ValueContainer {
+  V[] vv;
+  V{int32} vm;
+}
