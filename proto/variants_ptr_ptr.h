@@ -33,6 +33,7 @@ namespace variants_ptr {
 // forward declaration
 struct Simple;
 struct Value;
+struct ValueContainer;
 
 using V = std::variant<std::string, int32_t, double, ::variants_ptr::Simple, ::variants_ptr::Simple*, std::vector<::variants_ptr::Simple>, std::vector<int32_t>, std::unordered_map<int32_t, ::variants_ptr::Simple>, std::vector<FBE::buffer_t>, std::vector<std::string>, std::unordered_map<int32_t, FBE::buffer_t>, std::unordered_map<std::string, FBE::buffer_t>, std::vector<::variants_ptr::Simple*>>;
 std::ostream& operator<<(std::ostream& stream, const V& value);
@@ -129,6 +130,58 @@ template<>
 struct hash<variants_ptr::Value>
 {
     typedef variants_ptr::Value argument_type;
+    typedef size_t result_type;
+
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
+    {
+        result_type result = 17;
+        return result;
+    }
+};
+
+} // namespace std
+
+namespace variants_ptr {
+
+struct ValueContainer : FBE::Base
+{
+    std::vector<::variants_ptr::V> vv;
+    std::unordered_map<int32_t, ::variants_ptr::V> vm;
+
+    size_t fbe_type() const noexcept { return 3; }
+
+    ValueContainer();
+    ValueContainer(std::vector<::variants_ptr::V> arg_vv, std::unordered_map<int32_t, ::variants_ptr::V> arg_vm);
+    ValueContainer(const ValueContainer& other) = delete;
+    ValueContainer(ValueContainer&& other) noexcept;
+    ~ValueContainer() override;
+
+    ValueContainer& operator=(const ValueContainer& other) = delete;
+    ValueContainer& operator=(ValueContainer&& other) noexcept;
+
+    bool operator==(const ValueContainer& other) const noexcept;
+    bool operator!=(const ValueContainer& other) const noexcept { return !operator==(other); }
+    bool operator<(const ValueContainer& other) const noexcept;
+    bool operator<=(const ValueContainer& other) const noexcept { return operator<(other) || operator==(other); }
+    bool operator>(const ValueContainer& other) const noexcept { return !operator<=(other); }
+    bool operator>=(const ValueContainer& other) const noexcept { return !operator<(other); }
+
+    std::string string() const;
+
+    friend std::ostream& operator<<(std::ostream& stream, const ValueContainer& value);
+
+    void swap(ValueContainer& other) noexcept;
+    friend void swap(ValueContainer& value1, ValueContainer& value2) noexcept { value1.swap(value2); }
+};
+
+} // namespace variants_ptr
+
+namespace std {
+
+template<>
+struct hash<variants_ptr::ValueContainer>
+{
+    typedef variants_ptr::ValueContainer argument_type;
     typedef size_t result_type;
 
     result_type operator() ([[maybe_unused]] const argument_type& value) const
