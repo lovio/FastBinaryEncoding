@@ -799,10 +799,10 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(std::holds_alternative<std::string>(value_container_copy.vv.at(1)));
         REQUIRE(std::get<std::string>(value_container_copy.vv.at(1)) == "42");
         REQUIRE(value_container_copy.vm.size() == 2);
-        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vm.at(0)));
-        REQUIRE(std::get<int32_t>(value_container_copy.vm.at(0)) == 42);
-        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vm.at(1)));
-        REQUIRE(std::get<std::string>(value_container_copy.vm.at(1)) == "42");
+        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vm.at(1)));
+        REQUIRE(std::get<int32_t>(value_container_copy.vm.at(1)) == 42);
+        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vm.at(2)));
+        REQUIRE(std::get<std::string>(value_container_copy.vm.at(2)) == "42");
     }
 
     SECTION ("variant of variant") {
