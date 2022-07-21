@@ -4,6 +4,11 @@ struct Simple {
   string name;
 }
 
+variant Expr {
+  bool;
+  int32;
+}
+
 // container type not supported yet
 variant V {
   string;
@@ -19,11 +24,7 @@ variant V {
   bytes{int32};
   bytes{string};
   Simple*[];
-}
-
-variant Expr {
-  bool;
-  int32;
+  Expr;
 }
 
 struct Value {

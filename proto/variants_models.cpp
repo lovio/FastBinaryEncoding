@@ -7,346 +7,6 @@
 
 namespace FBE {
 
-FieldModel_variants_V::FieldModel_variants_V(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
-{}
-
-size_t FieldModel_variants_V::fbe_body() const noexcept
-{
-    // variant type's fbe_size not included
-    size_t fbe_result = 4;
-    return fbe_result;
-}
-
-size_t FieldModel_variants_V::fbe_extra() const noexcept
-{
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return 0;
-
-    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
-    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
-        return 0;
-
-    _buffer.shift(fbe_struct_offset);
-
-    size_t fbe_result = fbe_body();
-
-    _buffer.unshift(fbe_struct_offset);
-
-    return fbe_result;
-}
-
-bool FieldModel_variants_V::verify() const noexcept
-{
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return true;
-
-    uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
-    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
-        return false;
-
-    uint32_t fbe_variant_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    if (fbe_variant_type < 0 || fbe_variant_type >= 11)
-        return false;
-
-    _buffer.shift(fbe_variant_offset);
-    switch(fbe_variant_type) {
-        case 0: {
-            FieldModel<std::string> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 1: {
-            FieldModel<int32_t> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 2: {
-            FieldModel<double> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 3: {
-            FieldModel<::variants::Simple> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 4: {
-            FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 5: {
-            FieldModelVector<int32_t> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 6: {
-            FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 7: {
-            FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 8: {
-            FieldModelVector<std::string> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 9: {
-            FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-        case 10: {
-            FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
-            if (!fbe_model.verify())
-                return false;
-            break;
-        }
-    }
-
-    _buffer.unshift(fbe_variant_offset);
-    return true;
-}
-
-void FieldModel_variants_V::get(::variants::V& fbe_value) const noexcept
-{
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return;
-
-    uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
-    assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + 4) <= _buffer.size())) && "Model is broken!");
-    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
-        return;
-    uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    assert(vairant_type_index >= 0 && vairant_type_index < 11 && "Model is broken!");
-
-    _buffer.shift(fbe_variant_offset);
-
-    switch(vairant_type_index) {
-        case 0: {
-            FieldModel<std::string> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::string>();
-            auto& value = std::get<0>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 1: {
-            FieldModel<int32_t> fbe_model(_buffer, 4);
-            fbe_value.emplace<int32_t>();
-            auto& value = std::get<1>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 2: {
-            FieldModel<double> fbe_model(_buffer, 4);
-            fbe_value.emplace<double>();
-            auto& value = std::get<2>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 3: {
-            FieldModel<::variants::Simple> fbe_model(_buffer, 4);
-            fbe_value.emplace<::variants::Simple>();
-            auto& value = std::get<3>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 4: {
-            FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::vector<::variants::Simple>>();
-            auto& value = std::get<4>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 5: {
-            FieldModelVector<int32_t> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::vector<int32_t>>();
-            auto& value = std::get<5>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 6: {
-            FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::unordered_map<int32_t, ::variants::Simple>>();
-            auto& value = std::get<6>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 7: {
-            FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::vector<FBE::buffer_t>>();
-            auto& value = std::get<7>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 8: {
-            FieldModelVector<std::string> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::vector<std::string>>();
-            auto& value = std::get<8>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 9: {
-            FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::unordered_map<int32_t, FBE::buffer_t>>();
-            auto& value = std::get<9>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-        case 10: {
-            FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
-            fbe_value.emplace<std::unordered_map<std::string, FBE::buffer_t>>();
-            auto& value = std::get<10>(fbe_value);
-            fbe_model.get(value);
-            break;
-        }
-    }
-
-    _buffer.unshift(fbe_variant_offset);
-}
-
-size_t FieldModel_variants_V::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
-{
-    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return 0;
-
-    uint32_t fbe_variant_size = (uint32_t)(fbe_body() + variant_type_fbe_size);
-    uint32_t fbe_variant_offset = (uint32_t)(_buffer.allocate(fbe_variant_size) - _buffer.offset());
-    assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) <= _buffer.size())) && "Model is broken!");
-    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) > _buffer.size()))
-        return 0;
-
-    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_variant_offset);
-    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset, variant_type_index);
-
-    _buffer.shift(fbe_variant_offset);
-    return fbe_variant_offset;
-}
-
-void FieldModel_variants_V::set_end(size_t fbe_begin)
-{
-    _buffer.unshift(fbe_begin);
-}
-
-// Set the variant value
-void FieldModel_variants_V::set(const ::variants::V& fbe_value) noexcept
-{
-    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
-    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
-        return;
-
-    std::visit(
-        overloaded
-        {
-            [this, fbe_variant_index = fbe_value.index()](const std::string& v) {
-                FieldModel<std::string> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](int32_t v) {
-                FieldModel<int32_t> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](double v) {
-                FieldModel<double> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const ::variants::Simple& v) {
-                FieldModel<::variants::Simple> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::vector<::variants::Simple>& v) {
-                FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::vector<int32_t>& v) {
-                FieldModelVector<int32_t> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<int32_t, ::variants::Simple>& v) {
-                FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::vector<FBE::buffer_t>& v) {
-                FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::vector<std::string>& v) {
-                FieldModelVector<std::string> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<int32_t, FBE::buffer_t>& v) {
-                FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<std::string, FBE::buffer_t>& v) {
-                FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
-                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
-                if (fbe_begin == 0)
-                    return;
-                fbe_model.set(v);
-                set_end(fbe_begin);
-            }
-        },
-        fbe_value
-    );
-}
-
-
 FieldModel_variants_Expr::FieldModel_variants_Expr(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
 {}
 
@@ -486,6 +146,367 @@ void FieldModel_variants_Expr::set(const ::variants::Expr& fbe_value) noexcept
             }
             , [this, fbe_variant_index = fbe_value.index()](int32_t v) {
                 FieldModel<int32_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+        },
+        fbe_value
+    );
+}
+
+
+FieldModel_variants_V::FieldModel_variants_V(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+{}
+
+size_t FieldModel_variants_V::fbe_body() const noexcept
+{
+    // variant type's fbe_size not included
+    size_t fbe_result = 4;
+    return fbe_result;
+}
+
+size_t FieldModel_variants_V::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
+        return 0;
+
+    _buffer.shift(fbe_struct_offset);
+
+    size_t fbe_result = fbe_body();
+
+    _buffer.unshift(fbe_struct_offset);
+
+    return fbe_result;
+}
+
+bool FieldModel_variants_V::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
+        return false;
+
+    uint32_t fbe_variant_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
+    if (fbe_variant_type < 0 || fbe_variant_type >= 12)
+        return false;
+
+    _buffer.shift(fbe_variant_offset);
+    switch(fbe_variant_type) {
+        case 0: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 1: {
+            FieldModel<int32_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 2: {
+            FieldModel<double> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 3: {
+            FieldModel<::variants::Simple> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 4: {
+            FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 5: {
+            FieldModelVector<int32_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 6: {
+            FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 7: {
+            FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 8: {
+            FieldModelVector<std::string> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 9: {
+            FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 10: {
+            FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 11: {
+            FieldModel<::variants::Expr> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+    }
+
+    _buffer.unshift(fbe_variant_offset);
+    return true;
+}
+
+void FieldModel_variants_V::get(::variants::V& fbe_value) const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_variant_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + 4) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
+        return;
+    uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
+    assert(vairant_type_index >= 0 && vairant_type_index < 12 && "Model is broken!");
+
+    _buffer.shift(fbe_variant_offset);
+
+    switch(vairant_type_index) {
+        case 0: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::string>();
+            auto& value = std::get<0>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 1: {
+            FieldModel<int32_t> fbe_model(_buffer, 4);
+            fbe_value.emplace<int32_t>();
+            auto& value = std::get<1>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 2: {
+            FieldModel<double> fbe_model(_buffer, 4);
+            fbe_value.emplace<double>();
+            auto& value = std::get<2>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 3: {
+            FieldModel<::variants::Simple> fbe_model(_buffer, 4);
+            fbe_value.emplace<::variants::Simple>();
+            auto& value = std::get<3>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 4: {
+            FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::vector<::variants::Simple>>();
+            auto& value = std::get<4>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 5: {
+            FieldModelVector<int32_t> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::vector<int32_t>>();
+            auto& value = std::get<5>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 6: {
+            FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::unordered_map<int32_t, ::variants::Simple>>();
+            auto& value = std::get<6>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 7: {
+            FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::vector<FBE::buffer_t>>();
+            auto& value = std::get<7>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 8: {
+            FieldModelVector<std::string> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::vector<std::string>>();
+            auto& value = std::get<8>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 9: {
+            FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::unordered_map<int32_t, FBE::buffer_t>>();
+            auto& value = std::get<9>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 10: {
+            FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::unordered_map<std::string, FBE::buffer_t>>();
+            auto& value = std::get<10>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 11: {
+            FieldModel<::variants::Expr> fbe_model(_buffer, 4);
+            fbe_value.emplace<::variants::Expr>();
+            auto& value = std::get<11>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+    }
+
+    _buffer.unshift(fbe_variant_offset);
+}
+
+size_t FieldModel_variants_V::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_variant_size = (uint32_t)(fbe_body() + variant_type_fbe_size);
+    uint32_t fbe_variant_offset = (uint32_t)(_buffer.allocate(fbe_variant_size) - _buffer.offset());
+    assert(((fbe_variant_offset > 0) && ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + fbe_variant_size) > _buffer.size()))
+        return 0;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_variant_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset, variant_type_index);
+
+    _buffer.shift(fbe_variant_offset);
+    return fbe_variant_offset;
+}
+
+void FieldModel_variants_V::set_end(size_t fbe_begin)
+{
+    _buffer.unshift(fbe_begin);
+}
+
+// Set the variant value
+void FieldModel_variants_V::set(const ::variants::V& fbe_value) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    std::visit(
+        overloaded
+        {
+            [this, fbe_variant_index = fbe_value.index()](const std::string& v) {
+                FieldModel<std::string> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](int32_t v) {
+                FieldModel<int32_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](double v) {
+                FieldModel<double> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const ::variants::Simple& v) {
+                FieldModel<::variants::Simple> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::vector<::variants::Simple>& v) {
+                FieldModelVector<::variants::Simple> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::vector<int32_t>& v) {
+                FieldModelVector<int32_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<int32_t, ::variants::Simple>& v) {
+                FieldModelMap<int32_t, ::variants::Simple> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::vector<FBE::buffer_t>& v) {
+                FieldModelVector<FBE::buffer_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::vector<std::string>& v) {
+                FieldModelVector<std::string> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<int32_t, FBE::buffer_t>& v) {
+                FieldModelMap<int32_t, FBE::buffer_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::unordered_map<std::string, FBE::buffer_t>& v) {
+                FieldModelMap<std::string, FBE::buffer_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const ::variants::Expr& v) {
+                FieldModel<::variants::Expr> fbe_model(_buffer, 4);
                 size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
                 if (fbe_begin == 0)
                     return;

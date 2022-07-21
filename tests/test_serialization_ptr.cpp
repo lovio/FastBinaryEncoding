@@ -799,9 +799,34 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(std::holds_alternative<std::string>(value_container_copy.vv.at(1)));
         REQUIRE(std::get<std::string>(value_container_copy.vv.at(1)) == "42");
         REQUIRE(value_container_copy.vm.size() == 2);
-        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vm.at(0)));
-        REQUIRE(std::get<int32_t>(value_container_copy.vm.at(0)) == 42);
-        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vm.at(1)));
-        REQUIRE(std::get<std::string>(value_container_copy.vm.at(1)) == "42");
+        REQUIRE(std::holds_alternative<int32_t>(value_container_copy.vm.at(1)));
+        REQUIRE(std::get<int32_t>(value_container_copy.vm.at(1)) == 42);
+        REQUIRE(std::holds_alternative<std::string>(value_container_copy.vm.at(2)));
+        REQUIRE(std::get<std::string>(value_container_copy.vm.at(2)) == "42");
+    }
+
+    SECTION ("variant of variant") {
+        ::variants_ptr::Expr expr {42};
+        ::variants_ptr::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<::variants_ptr::Expr>(std::move(expr));
+
+        FBE::variants_ptr::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants_ptr::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants_ptr::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 13);
+        auto& v_copy_expr = std::get<::variants_ptr::Expr>(value_copy.v);
+        REQUIRE(v_copy_expr.index() == 1);
+        REQUIRE(std::get<1>(v_copy_expr) == 42);
     }
 }

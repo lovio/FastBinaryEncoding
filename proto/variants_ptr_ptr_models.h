@@ -23,45 +23,6 @@
 
 namespace FBE {
 
-class FieldModel_variants_ptr_V
-{
-public:
-    FieldModel_variants_ptr_V(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModel_variants_ptr_V() = default;
-
-    // Get the field offset
-    size_t fbe_offset() const noexcept { return _offset; }
-    // Get the field size
-    size_t fbe_size() const noexcept { return 4; }
-    // Get the field body size
-    size_t fbe_body() const noexcept;
-    // Get the field extra size
-    size_t fbe_extra() const noexcept;
-
-    // Shift the current field offset
-    void fbe_shift(size_t size) noexcept { _offset += size; }
-    // Unshift the current field offset
-    void fbe_unshift(size_t size) noexcept { _offset -= size; }
-
-    // Check if the variant value is valid
-    bool verify() const noexcept;
-
-    // Get the variant value
-    void get(::variants_ptr::V& fbe_value) const noexcept;
-
-    // Set the variant value (begin phase)
-    size_t set_begin(size_t variant_type_fbe_size, size_t variant_type_index);
-    // Set the variant value (end phase)
-    void set_end(size_t fbe_begin);
-
-    // Set the variant value
-    void set(const ::variants_ptr::V& fbe_value) noexcept;
-
-private:
-    FBEBuffer& _buffer;
-    size_t _offset;
-};
-
 class FieldModel_variants_ptr_Expr
 {
 public:
@@ -95,6 +56,45 @@ public:
 
     // Set the variant value
     void set(const ::variants_ptr::Expr& fbe_value) noexcept;
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+
+class FieldModel_variants_ptr_V
+{
+public:
+    FieldModel_variants_ptr_V(FBEBuffer& buffer, size_t offset) noexcept;
+    ~FieldModel_variants_ptr_V() = default;
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field body size
+    size_t fbe_body() const noexcept;
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the variant value is valid
+    bool verify() const noexcept;
+
+    // Get the variant value
+    void get(::variants_ptr::V& fbe_value) const noexcept;
+
+    // Set the variant value (begin phase)
+    size_t set_begin(size_t variant_type_fbe_size, size_t variant_type_index);
+    // Set the variant value (end phase)
+    void set_end(size_t fbe_begin);
+
+    // Set the variant value
+    void set(const ::variants_ptr::V& fbe_value) noexcept;
 
 private:
     FBEBuffer& _buffer;

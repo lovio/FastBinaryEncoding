@@ -35,11 +35,11 @@ struct Simple;
 struct Value;
 struct ValueContainer;
 
-using V = std::variant<std::string, int32_t, double, ::variants_ptr::Simple, ::variants_ptr::Simple*, std::vector<::variants_ptr::Simple>, std::vector<int32_t>, std::unordered_map<int32_t, ::variants_ptr::Simple>, std::vector<FBE::buffer_t>, std::vector<std::string>, std::unordered_map<int32_t, FBE::buffer_t>, std::unordered_map<std::string, FBE::buffer_t>, std::vector<::variants_ptr::Simple*>>;
-std::ostream& operator<<(std::ostream& stream, const V& value);
-
 using Expr = std::variant<bool, int32_t>;
 std::ostream& operator<<(std::ostream& stream, const Expr& value);
+
+using V = std::variant<std::string, int32_t, double, ::variants_ptr::Simple, ::variants_ptr::Simple*, std::vector<::variants_ptr::Simple>, std::vector<int32_t>, std::unordered_map<int32_t, ::variants_ptr::Simple>, std::vector<FBE::buffer_t>, std::vector<std::string>, std::unordered_map<int32_t, FBE::buffer_t>, std::unordered_map<std::string, FBE::buffer_t>, std::vector<::variants_ptr::Simple*>, ::variants_ptr::Expr>;
+std::ostream& operator<<(std::ostream& stream, const V& value);
 
 struct Simple : FBE::Base
 {

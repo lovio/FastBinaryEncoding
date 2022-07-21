@@ -7,6 +7,8 @@
 #include "../proto/proto_models.h"
 #include "../proto/test_models.h"
 #include "../proto/variants_models.h"
+#include "variants.h"
+#include <cstdint>
 
 TEST_CASE("Serialization: domain", "[FBE]")
 {
@@ -1585,5 +1587,30 @@ TEST_CASE("Serialization: variant", "[FBE]") {
         auto& v_copy = std::get<10>(value_copy.v);
         REQUIRE(v_copy.size() == 1);
         REQUIRE(v_copy.at("hello world").string() == "ABCDE");
+    }
+
+    SECTION ("variant of variant") {
+        ::variants::Expr expr {42};
+        ::variants::Value value;
+        REQUIRE(value.v.index() == 0);
+        value.v.emplace<::variants::Expr>(std::move(expr));
+
+        FBE::variants::ValueModel writer;
+        size_t serialized = writer.serialize(value);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::variants::ValueModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Value value_copy;
+        size_t deserialized = reader.deserialize(value_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(value_copy.v.index() == 11);
+        auto& v_copy_expr = std::get<::variants::Expr>(value_copy.v);
+        REQUIRE(v_copy_expr.index() == 1);
+        REQUIRE(std::get<1>(v_copy_expr) == 42);
     }
 }
