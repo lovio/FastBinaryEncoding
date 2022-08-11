@@ -1763,6 +1763,8 @@ void GeneratorCpp::GeneratePtrStruct_Header(const std::shared_ptr<Package>& p, c
                 if (unique_type_set.find(*field->type) != unique_type_set.end()) {
                     continue;
                 } else {
+                    if (IsVariantType(p, *field->type))
+                        continue;
                     WriteLine();
                     WriteLineIndent("struct " + *field->type + ";");
                     unique_type_set.insert(*field->type);
