@@ -8503,7 +8503,7 @@ void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p
         WriteLine(std::string(" v) { stream << ") + (value->ptr ? "*" : "") + "v; }");
         first = false;
     }
-    WriteLineIndent(", [&stream](auto&) { stream << \"unknown type\"; },");
+    WriteLineIndent(std::string(first ? "" : ", ") + "[&stream](auto&) { stream << \"unknown type\"; },");
     Indent(-1);
     WriteLineIndent("},");
     WriteLineIndent("value);");
