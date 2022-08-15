@@ -45,7 +45,7 @@ bool FieldModel_variants_Expr::verify() const noexcept
         return false;
 
     uint32_t fbe_variant_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    if (fbe_variant_type < 0 || fbe_variant_type >= 2)
+    if (fbe_variant_type < 0 || fbe_variant_type >= 3)
         return false;
 
     _buffer.shift(fbe_variant_offset);
@@ -58,6 +58,12 @@ bool FieldModel_variants_Expr::verify() const noexcept
         }
         case 1: {
             FieldModel<int32_t> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
+        case 2: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
             if (!fbe_model.verify())
                 return false;
             break;
@@ -78,7 +84,7 @@ void FieldModel_variants_Expr::get(::variants::Expr& fbe_value) const noexcept
     if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
         return;
     uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    assert(vairant_type_index >= 0 && vairant_type_index < 2 && "Model is broken!");
+    assert(vairant_type_index >= 0 && vairant_type_index < 3 && "Model is broken!");
 
     _buffer.shift(fbe_variant_offset);
 
@@ -94,6 +100,13 @@ void FieldModel_variants_Expr::get(::variants::Expr& fbe_value) const noexcept
             FieldModel<int32_t> fbe_model(_buffer, 4);
             fbe_value.emplace<int32_t>();
             auto& value = std::get<1>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
+        case 2: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::string>();
+            auto& value = std::get<2>(fbe_value);
             fbe_model.get(value);
             break;
         }
@@ -146,6 +159,14 @@ void FieldModel_variants_Expr::set(const ::variants::Expr& fbe_value) noexcept
             }
             , [this, fbe_variant_index = fbe_value.index()](int32_t v) {
                 FieldModel<int32_t> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
+            , [this, fbe_variant_index = fbe_value.index()](const std::string& v) {
+                FieldModel<std::string> fbe_model(_buffer, 4);
                 size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
                 if (fbe_begin == 0)
                     return;

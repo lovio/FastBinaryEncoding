@@ -1331,7 +1331,7 @@ TEST_CASE("Serialization: struct hash extended", "[FBE]")
 
 TEST_CASE("Serialization: variant", "[FBE]") {
     SECTION ("string") {
-        ::variants::Value value{"variant v"};
+        ::variants::Value value{std::string("variant v")};
 
         FBE::variants::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -1590,7 +1590,7 @@ TEST_CASE("Serialization: variant", "[FBE]") {
     }
 
     SECTION ("variant of variant") {
-        ::variants::Expr expr {42};
+        ::variants::Expr expr {"42"};
         ::variants::Value value;
         REQUIRE(value.v.index() == 0);
         value.v.emplace<::variants::Expr>(std::move(expr));
@@ -1610,7 +1610,7 @@ TEST_CASE("Serialization: variant", "[FBE]") {
 
         REQUIRE(value_copy.v.index() == 11);
         auto& v_copy_expr = std::get<::variants::Expr>(value_copy.v);
-        REQUIRE(v_copy_expr.index() == 1);
-        REQUIRE(std::get<1>(v_copy_expr) == 42);
+        REQUIRE(v_copy_expr.index() == 2);
+        REQUIRE(std::get<2>(v_copy_expr) == "42");
     }
 }

@@ -776,9 +776,9 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
     SECTION ("variant used in container") {
         ::variants_ptr::ValueContainer value_container;
         value_container.vv.emplace_back(::variants_ptr::V{42});
-        value_container.vv.emplace_back(::variants_ptr::V{"42"});
+        value_container.vv.emplace_back(::variants_ptr::V{std::string("42")});
         value_container.vm.emplace(1, ::variants_ptr::V{42});
-        value_container.vm.emplace(2, ::variants_ptr::V{"42"});
+        value_container.vm.emplace(2, ::variants_ptr::V{std::string("42")});
 
         FBE::variants_ptr::ValueContainerModel writer;
         size_t serialized = writer.serialize(value_container);
@@ -806,7 +806,7 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
     }
 
     SECTION ("variant of variant") {
-        ::variants_ptr::Expr expr {42};
+        ::variants_ptr::Expr expr {"42"};
         ::variants_ptr::Value value;
         REQUIRE(value.v.index() == 0);
         value.v.emplace<::variants_ptr::Expr>(std::move(expr));
@@ -826,7 +826,7 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
 
         REQUIRE(value_copy.v.index() == 13);
         auto& v_copy_expr = std::get<::variants_ptr::Expr>(value_copy.v);
-        REQUIRE(v_copy_expr.index() == 1);
-        REQUIRE(std::get<1>(v_copy_expr) == 42);
+        REQUIRE(v_copy_expr.index() == 2);
+        REQUIRE(std::get<2>(v_copy_expr) == "42");
     }
 }
