@@ -2321,10 +2321,11 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
 void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel<" + variant_name + ">";
 
     // Generate variant field model begin
     WriteLine();
+    WriteLineIndent("template <>");
     WriteLineIndent("class " + class_name);
     WriteLineIndent("{");
     WriteLineIndent("public:");
@@ -2332,7 +2333,6 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
 
     // Generate variant field model constructor
     WriteLineIndent(class_name + "(FBEBuffer& buffer, size_t offset) noexcept;");
-    WriteLineIndent("~" + class_name + "() = default;");
 
     // Generate variant field model FBE methods
     WriteLine();
@@ -2385,11 +2385,11 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
 void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel<" + variant_name + ">";
 
     // Generate variant field model begin
     WriteLine();
-    WriteLineIndent(class_name + "::" + class_name + "(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    WriteLineIndent(class_name + "::FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
     WriteLineIndent("{}");
     WriteLine();
 
