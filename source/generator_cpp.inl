@@ -2785,17 +2785,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     {
         for (const auto& field : s->body->fields)
         {
-            auto field_model_type_name = ConvertPtrFieldModelType(p, field);
-            if (!CppCommon::StringUtils::Contains(field_model_type_name, "<") && !IsCurrentPackageType(*field->type) && !IsContainerType(*field) && !field->optional) {
-                WriteLineIndent("#ifndef " + field_model_type_name);
-                Indent(1);
-                auto model_name = "::" + *field->type;
-                CppCommon::StringUtils::ReplaceAll(model_name, ".", "::");
-                WriteLineIndent("using " + field_model_type_name + " = FieldModel<" + model_name + ">;");
-                Indent(-1);
-                WriteLineIndent("#endif");
-            }
-            WriteLineIndent(field_model_type_name + " " + *field->name + ";");
+            WriteLineIndent(ConvertPtrFieldModelType(p, field) + " " + *field->name + ";");
         }
     }
 
