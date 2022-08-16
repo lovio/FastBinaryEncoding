@@ -3,12 +3,15 @@
 //
 
 #include "catch2/catch.hpp"
+#include "enums.h"
 #include "extra_ptr.h"
 #include "osa.h"
 #include "pkg_ptr.h"
 #include "sa_ptr.h"
+#include "variants.h"
 #include "variants_ptr_ptr.h"
 #include "test.h"
+#include "template_variant_ptr.h"
 
 #include "../proto/simple_ptr_models.h"
 #include "../proto/extra_ptr_models.h"
@@ -16,6 +19,7 @@
 #include "../proto/osa_models.h"
 #include "../proto/pkg_ptr_models.h"
 #include "../proto/variants_ptr_ptr_models.h"
+#include "../proto/template_variant_ptr_models.h"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -840,5 +844,119 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         REQUIRE(value_copy.vo2.has_value());
         REQUIRE(value_copy.vo2->index() == 3);
         REQUIRE(std::get<::variants_ptr::Simple>(value_copy.vo2.value()).name == "simple");
+    }
+}
+
+
+TEST_CASE("Serialization (import template)", "[Ptr-based FBE]") {
+    SECTION("variant") {
+        ::template_variant::Line line;
+        // variant of variant
+        ::variants::Expr expr {"42"};
+        line.v.emplace<::variants::Expr>(std::move(expr));
+
+        std::vector<::variants::Simple> vs;
+        vs.emplace_back(::variants::Simple{"simple1"});
+        vs.emplace_back(::variants::Simple{"simple2"});\
+        ::variants::V v1;
+        v1.emplace<std::vector<::variants::Simple>>(std::move(vs));
+        line.vv.emplace_back(std::move(v1));
+        ::variants::V v2 {std::string("hello")};
+        line.vv.emplace_back(std::move(v2));
+
+        ::variants::V v3 {42};
+        ::variants::V v4 {::variants::Simple("simple")};
+        line.vm.emplace("key3", std::move(v3));
+        line.vm.emplace("key4", std::move(v4));
+
+        line.vo.emplace(::variants::V{::variants::Simple{"optional simple"}});
+
+        FBE::template_variant::LineModel writer;
+        size_t serialized = writer.serialize(line);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::template_variant::LineModel reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Line line_copy;
+        size_t deserialized = reader.deserialize(line_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(std::holds_alternative<::variants::Expr>(line_copy.v));
+        REQUIRE(line_copy.vv.size() == 2);
+        REQUIRE(std::holds_alternative<std::vector<::variants::Simple>>(line_copy.vv.at(0)));
+        REQUIRE(std::get<std::vector<::variants::Simple>>(line_copy.vv.at(0)).size() == 2);
+        REQUIRE(std::get<std::vector<::variants::Simple>>(line_copy.vv.at(0)).at(0).name == "simple1");
+        REQUIRE(std::get<std::vector<::variants::Simple>>(line_copy.vv.at(0)).at(1).name == "simple2");
+        REQUIRE(std::holds_alternative<std::string>(line_copy.vv.at(1)));
+        REQUIRE(std::get<std::string>(line_copy.vv.at(1)) == "hello");
+        REQUIRE(std::holds_alternative<std::string>(line_copy.vv.at(1)));
+        REQUIRE(line_copy.vm.size() == 2);
+        REQUIRE(std::holds_alternative<int32_t>(line_copy.vm.at("key3")));
+        REQUIRE(std::get<int32_t>(line_copy.vm.at("key3")) == 42);
+        REQUIRE(std::holds_alternative<::variants::Simple>(line_copy.vm.at("key4")));
+        REQUIRE(std::get<::variants::Simple>(line_copy.vm.at("key4")).name == "simple");
+
+        REQUIRE(line.vo.has_value());
+        REQUIRE(std::holds_alternative<::variants::Simple>(line.vo.value()));
+        REQUIRE(std::get<::variants::Simple>(line.vo.value()).name == "optional simple");
+    }
+    SECTION("enum and variant in a map") {
+        ::template_variant::Line2 line;
+
+        ::variants::V v3 {42};
+        ::variants::V v4 {::variants::Simple("simple")};
+        line.vm.emplace(::enums::EnumInt8::ENUM_VALUE_1, std::move(v3));
+        line.vm.emplace(::enums::EnumInt8::ENUM_VALUE_2, std::move(v4));
+
+        FBE::template_variant::Line2Model writer;
+        size_t serialized = writer.serialize(line);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::template_variant::Line2Model reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Line2 line_copy;
+        size_t deserialized = reader.deserialize(line_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(line_copy.vm.size() == 2);
+        REQUIRE(std::holds_alternative<int32_t>(line_copy.vm.at(::enums::EnumInt8::ENUM_VALUE_1)));
+        REQUIRE(std::get<int32_t>(line_copy.vm.at(::enums::EnumInt8::ENUM_VALUE_1)) == 42);
+        REQUIRE(std::holds_alternative<::variants::Simple>(line_copy.vm.at(::enums::EnumInt8::ENUM_VALUE_2)));
+        REQUIRE(std::get<::variants::Simple>(line_copy.vm.at(::enums::EnumInt8::ENUM_VALUE_2)).name == "simple");
+
+    }
+    SECTION("struct") {
+        ::template_variant::Line3 line;
+
+        std::vector<uint8_t> v {65, 66, 67, 68, 69};
+        std::vector<FBE::buffer_t> bytes_v;
+        bytes_v.emplace_back(FBE::buffer_t(v));
+
+        REQUIRE(line.value.v.index() == 0);
+        line.value.v.emplace<7>(std::move(bytes_v));
+
+        FBE::template_variant::Line3Model writer;
+        size_t serialized = writer.serialize(line);
+        REQUIRE(serialized == writer.buffer().size());
+        REQUIRE(writer.verify());
+
+        FBE::template_variant::Line3Model reader;
+        reader.attach(writer.buffer());
+        REQUIRE(reader.verify());
+
+        ::variants::Line3 line_copy;
+        size_t deserialized = reader.deserialize(line_copy);
+        REQUIRE(deserialized == reader.buffer().size());
+
+        REQUIRE(line_copy.value.v.index() == 7);
+        auto& v_copy = std::get<7>(line_copy.value.v);
+        REQUIRE(v_copy.size() == 1);
+        REQUIRE(v_copy.at(0).string() == "ABCDE");
     }
 }
