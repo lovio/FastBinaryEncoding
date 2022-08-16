@@ -23,11 +23,11 @@
 
 namespace FBE {
 
-class FieldModel_variants_Expr
+template <>
+class FieldModel<::variants::Expr>
 {
 public:
-    FieldModel_variants_Expr(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModel_variants_Expr() = default;
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -62,11 +62,11 @@ private:
     size_t _offset;
 };
 
-class FieldModel_variants_V
+template <>
+class FieldModel<::variants::V>
 {
 public:
-    FieldModel_variants_V(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModel_variants_V() = default;
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -246,7 +246,7 @@ private:
     size_t _offset;
 
 public:
-    FieldModel_variants_V v;
+    FieldModel<::variants::V> v;
 };
 
 namespace variants {

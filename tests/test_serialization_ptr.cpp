@@ -473,7 +473,7 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         size_t deserialized = reader.deserialize(value_copy);
         REQUIRE(deserialized == reader.buffer().size());
 
-        REQUIRE(value_copy.v.index() == 0);
+        REQUIRE(value_copy.v.index() == 1);
         REQUIRE(std::get<std::string>(value_copy.v) == "variant v");
     }
 
@@ -494,7 +494,7 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         size_t deserialized = reader.deserialize(value_copy);
         REQUIRE(deserialized == reader.buffer().size());
 
-        REQUIRE(value_copy.v.index() == 1);
+        REQUIRE(value_copy.v.index() == 0);
         REQUIRE(std::get<int32_t>(value_copy.v) == 42);
     }
 
@@ -810,6 +810,12 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
         ::variants_ptr::Value value;
         REQUIRE(value.v.index() == 0);
         value.v.emplace<::variants_ptr::Expr>(std::move(expr));
+        REQUIRE_FALSE(value.vo.has_value());
+        ::variants_ptr::V v {42};
+        value.vo.emplace(std::move(v));
+        REQUIRE_FALSE(value.vo2.has_value());
+        value.vo2.emplace(::variants_ptr::V{::variants_ptr::Simple{"simple"}});
+
 
         FBE::variants_ptr::ValueModel writer;
         size_t serialized = writer.serialize(value);
@@ -826,7 +832,13 @@ TEST_CASE("Serialization (variant)", "[Ptr-based FBE]") {
 
         REQUIRE(value_copy.v.index() == 13);
         auto& v_copy_expr = std::get<::variants_ptr::Expr>(value_copy.v);
-        REQUIRE(v_copy_expr.index() == 2);
-        REQUIRE(std::get<2>(v_copy_expr) == "42");
+        REQUIRE(v_copy_expr.index() == 1);
+        REQUIRE(std::get<1>(v_copy_expr) == "42");
+        REQUIRE(value_copy.vo.has_value());
+        REQUIRE(value_copy.vo->index() == 0);
+        REQUIRE(std::get<int32_t>(value_copy.vo.value()) == 42);
+        REQUIRE(value_copy.vo2.has_value());
+        REQUIRE(value_copy.vo2->index() == 3);
+        REQUIRE(std::get<::variants_ptr::Simple>(value_copy.vo2.value()).name == "simple");
     }
 }

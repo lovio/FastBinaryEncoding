@@ -23,11 +23,11 @@
 
 namespace FBE {
 
-class FieldModel_variants_ptr_Expr
+template <>
+class FieldModel<::variants_ptr::Expr>
 {
 public:
-    FieldModel_variants_ptr_Expr(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModel_variants_ptr_Expr() = default;
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -62,11 +62,11 @@ private:
     size_t _offset;
 };
 
-class FieldModel_variants_ptr_V
+template <>
+class FieldModel<::variants_ptr::V>
 {
 public:
-    FieldModel_variants_ptr_V(FBEBuffer& buffer, size_t offset) noexcept;
-    ~FieldModel_variants_ptr_V() = default;
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept;
 
     // Get the field offset
     size_t fbe_offset() const noexcept { return _offset; }
@@ -403,7 +403,9 @@ private:
     size_t _offset;
 
 public:
-    FieldModel_variants_ptr_V v;
+    FieldModel<::variants_ptr::V> v;
+    FieldModel<std::optional<::variants_ptr::V>> vo;
+    FieldModel<std::optional<::variants_ptr::V>> vo2;
 };
 
 namespace variants_ptr {
@@ -494,8 +496,8 @@ private:
     size_t _offset;
 
 public:
-    FieldModelCustomVector<FieldModel_variants_ptr_V, ::variants_ptr::V> vv;
-    FieldModelCustomMap<FieldModel<int32_t>, FieldModel_variants_ptr_V, int32_t, ::variants_ptr::V> vm;
+    FieldModelVector<::variants_ptr::V> vv;
+    FieldModelMap<int32_t, ::variants_ptr::V> vm;
 };
 
 namespace variants_ptr {

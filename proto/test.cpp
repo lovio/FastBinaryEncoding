@@ -243,6 +243,11 @@ bool StructSimple::operator<([[maybe_unused]] const StructSimple& other) const n
     return false;
 }
 
+std::string StructSimple::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructSimple::swap(StructSimple& other) noexcept
 {
     using std::swap;
@@ -502,6 +507,11 @@ bool StructOptional::operator<([[maybe_unused]] const StructOptional& other) con
     return false;
 }
 
+std::string StructOptional::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructOptional::swap(StructOptional& other) noexcept
 {
     using std::swap;
@@ -697,6 +707,11 @@ bool StructNested::operator<([[maybe_unused]] const StructNested& other) const n
     return false;
 }
 
+std::string StructNested::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructNested::swap(StructNested& other) noexcept
 {
     using std::swap;
@@ -759,6 +774,11 @@ bool StructBytes::operator<([[maybe_unused]] const StructBytes& other) const noe
     return false;
 }
 
+std::string StructBytes::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructBytes::swap(StructBytes& other) noexcept
 {
     using std::swap;
@@ -813,6 +833,11 @@ bool StructArray::operator==([[maybe_unused]] const StructArray& other) const no
 bool StructArray::operator<([[maybe_unused]] const StructArray& other) const noexcept
 {
     return false;
+}
+
+std::string StructArray::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void StructArray::swap(StructArray& other) noexcept
@@ -975,6 +1000,11 @@ bool StructVector::operator<([[maybe_unused]] const StructVector& other) const n
     return false;
 }
 
+std::string StructVector::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructVector::swap(StructVector& other) noexcept
 {
     using std::swap;
@@ -1135,6 +1165,11 @@ bool StructList::operator<([[maybe_unused]] const StructList& other) const noexc
     return false;
 }
 
+std::string StructList::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructList::swap(StructList& other) noexcept
 {
     using std::swap;
@@ -1283,6 +1318,11 @@ bool StructSet::operator<([[maybe_unused]] const StructSet& other) const noexcep
     return false;
 }
 
+std::string StructSet::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructSet::swap(StructSet& other) noexcept
 {
     using std::swap;
@@ -1375,6 +1415,11 @@ bool StructMap::operator==([[maybe_unused]] const StructMap& other) const noexce
 bool StructMap::operator<([[maybe_unused]] const StructMap& other) const noexcept
 {
     return false;
+}
+
+std::string StructMap::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void StructMap::swap(StructMap& other) noexcept
@@ -1557,6 +1602,11 @@ bool StructHash::operator<([[maybe_unused]] const StructHash& other) const noexc
     return false;
 }
 
+std::string StructHash::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructHash::swap(StructHash& other) noexcept
 {
     using std::swap;
@@ -1721,6 +1771,11 @@ bool StructHashEx::operator<([[maybe_unused]] const StructHashEx& other) const n
     return false;
 }
 
+std::string StructHashEx::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void StructHashEx::swap(StructHashEx& other) noexcept
 {
     using std::swap;
@@ -1772,6 +1827,11 @@ bool StructEmpty::operator==([[maybe_unused]] const StructEmpty& other) const no
 bool StructEmpty::operator<([[maybe_unused]] const StructEmpty& other) const noexcept
 {
     return false;
+}
+
+std::string StructEmpty::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void StructEmpty::swap(StructEmpty& other) noexcept

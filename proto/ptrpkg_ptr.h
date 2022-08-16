@@ -36,14 +36,13 @@ namespace ptrpkg {
 
 struct Line : FBE::Base
 {
-    ::variants_ptr::V v;
     ::variants_ptr::Value value;
     ::variants_ptr::Value* value_ptr;
 
     size_t fbe_type() const noexcept { return 1; }
 
     Line();
-    Line(::variants_ptr::V&& arg_v, ::variants_ptr::Value&& arg_value, std::unique_ptr<::variants_ptr::Value> arg_value_ptr);
+    Line(::variants_ptr::Value&& arg_value, std::unique_ptr<::variants_ptr::Value> arg_value_ptr);
     Line(const Line& other) = delete;
     Line(Line&& other) noexcept;
     ~Line() override;

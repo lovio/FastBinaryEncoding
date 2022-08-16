@@ -113,6 +113,11 @@ bool Order::operator<([[maybe_unused]] const Order& other) const noexcept
     return false;
 }
 
+std::string Order::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Order::swap(Order& other) noexcept
 {
     using std::swap;
@@ -168,6 +173,11 @@ bool Balance::operator<([[maybe_unused]] const Balance& other) const noexcept
     return false;
 }
 
+std::string Balance::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Balance::swap(Balance& other) noexcept
 {
     using std::swap;
@@ -216,6 +226,11 @@ bool Account::operator<([[maybe_unused]] const Account& other) const noexcept
     if (other.id < id)
         return false;
     return false;
+}
+
+std::string Account::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Account::swap(Account& other) noexcept
@@ -271,6 +286,11 @@ bool OrderMessage::operator<([[maybe_unused]] const OrderMessage& other) const n
     return false;
 }
 
+std::string OrderMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void OrderMessage::swap(OrderMessage& other) noexcept
 {
     using std::swap;
@@ -305,6 +325,11 @@ bool BalanceMessage::operator<([[maybe_unused]] const BalanceMessage& other) con
     return false;
 }
 
+std::string BalanceMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void BalanceMessage::swap(BalanceMessage& other) noexcept
 {
     using std::swap;
@@ -337,6 +362,11 @@ bool AccountMessage::operator==([[maybe_unused]] const AccountMessage& other) co
 bool AccountMessage::operator<([[maybe_unused]] const AccountMessage& other) const noexcept
 {
     return false;
+}
+
+std::string AccountMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void AccountMessage::swap(AccountMessage& other) noexcept

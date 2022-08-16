@@ -2980,7 +2980,9 @@ public:
     void get_end(size_t fbe_begin) const noexcept;
 
     // Get the optional value
-    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+    void get(std::optional<T>& opt, const std::optional<T>& defaults) const noexcept;
+    // Get the optional value
+    void get(std::optional<T>& opt) const noexcept;
 
     // Set the optional value (begin phase)
     size_t set_begin(bool has_value);
@@ -3087,7 +3089,21 @@ inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt, const std::
 
     T temp = T();
     value.get(temp);
-    opt.emplace(temp);
+    opt.emplace(std::move(temp));
+
+    get_end(fbe_begin);
+}
+
+template <typename T>
+inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt) const noexcept
+{
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    T temp = T();
+    value.get(temp);
+    opt.emplace(std::move(temp));
 
     get_end(fbe_begin);
 }
@@ -3549,7 +3565,7 @@ inline void FieldModelVector<T>::get(std::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3568,7 +3584,7 @@ inline void FieldModelVector<T>::get(std::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3587,7 +3603,7 @@ inline void FieldModelVector<T>::get(std::set<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace(value);
+        values.emplace(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3608,7 +3624,7 @@ inline void FieldModelVector<T>::get(std::pmr::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3627,7 +3643,7 @@ inline void FieldModelVector<T>::get(std::pmr::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3646,7 +3662,7 @@ inline void FieldModelVector<T>::get(std::pmr::set<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace(value);
+        values.emplace(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3949,7 +3965,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) con
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3971,7 +3987,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>& v
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3993,7 +4009,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::pmr::map<TKey, TValue>& values
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -4015,7 +4031,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::pmr::unordered_map<TKey, TValu
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -9349,10 +9365,7 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     {
         for (const auto& field : s->body->fields)
         {
-            if (IsVariantType(p, *field->type)) {
-                WriteLineIndent("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
-            }
-            else if (field->array)
+            if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional) + "> " + *field->name + ";");

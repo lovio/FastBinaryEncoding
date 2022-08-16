@@ -130,7 +130,6 @@ private:
     size_t _offset;
 
 public:
-    FieldModel_variants_ptr_V v;
     FieldModel_variants_ptr_Value value;
     FieldModelPtr_variants_ptr_Value value_ptr;
 };
