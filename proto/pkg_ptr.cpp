@@ -70,7 +70,7 @@ void Info::swap(Info& other) noexcept
     swap(extra, other.extra);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Info& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Info& value)
 {
     stream << "Info(";
     stream << "info="; stream << "\"" << value.info << "\"";
@@ -134,7 +134,7 @@ void Detail::swap(Detail& other) noexcept
     swap(extram, other.extram);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Detail& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Detail& value)
 {
     stream << "Detail(";
     {

@@ -7,7 +7,7 @@
 
 namespace variants_ptr {
 
-std::ostream& operator<<(std::ostream& stream, const Expr& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Expr& value)
 {
     std::visit(
         overloaded
@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& stream, const Expr& value)
     return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const V& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const V& value)
 {
     std::visit(
         overloaded
@@ -85,7 +85,7 @@ void Simple::swap(Simple& other) noexcept
     swap(name, other.name);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Simple& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& value)
 {
     stream << "Simple(";
     stream << "name="; stream << "\"" << value.name << "\"";
@@ -175,7 +175,7 @@ void Value::swap(Value& other) noexcept
     swap(vo2, other.vo2);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Value& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Value& value)
 {
     stream << "Value(";
     stream << "v="; stream << value.v;
@@ -238,7 +238,7 @@ void ValueContainer::swap(ValueContainer& other) noexcept
     swap(vm, other.vm);
 }
 
-std::ostream& operator<<(std::ostream& stream, const ValueContainer& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const ValueContainer& value)
 {
     stream << "ValueContainer(";
     {

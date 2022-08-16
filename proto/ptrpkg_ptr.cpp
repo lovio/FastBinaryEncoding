@@ -61,7 +61,7 @@ void Line::swap(Line& other) noexcept
     swap(value_ptr, other.value_ptr);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Line& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Line& value)
 {
     stream << "Line(";
     stream << "value="; stream << value.value;

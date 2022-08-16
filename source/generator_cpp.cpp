@@ -8133,7 +8133,7 @@ void GeneratorCpp::GenerateEnum(const std::shared_ptr<Package>& p, const std::sh
 
     // Generate enum output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value);");
 
     // Generate enum logging stream operator declaration
     WriteLine();
@@ -8146,7 +8146,7 @@ void GeneratorCpp::GenerateEnumOutputStream(const std::shared_ptr<EnumType>& e)
 {
     // Generate enum output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8320,7 +8320,7 @@ void GeneratorCpp::GenerateFlags(const std::shared_ptr<Package>& p, const std::s
 
     // Generate flags output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value);");
 
     // Generate flags logging stream operator declaration
     WriteLine();
@@ -8333,7 +8333,7 @@ void GeneratorCpp::GenerateFlagsOutputStream(const std::shared_ptr<FlagsType>& f
 {
     // Generate flags output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8493,13 +8493,13 @@ void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const
     }
     code += ">;";
     WriteLineIndent(code);
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value);");
 }
 
 void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8650,7 +8650,7 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct output stream operator
     WriteLine();
-    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
+    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value);");
 
     // Generate struct output stream operator
     if (Logging())
@@ -8862,7 +8862,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
 
     // Generate struct swap method
     WriteLine();
-    WriteLineIndent("void " + *s->name + "::swap(" + *s->name + "& other) noexcept");
+    WriteLineIndent("void " + *s->name + "::swap([[maybe_unused]] " + *s->name + "& other) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("using std::swap;");
@@ -8879,7 +8879,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
 {
     // Generate struct output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -9497,7 +9497,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model verify_fields() method
-    WriteLineIndent("bool " + model_name + "::verify_fields(size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("bool " + model_name + "::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -9595,7 +9595,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model get_fields() method
-    WriteLineIndent("void " + model_name + "::get_fields(" + struct_name + "& fbe_value, size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("void " + model_name + "::get_fields([[maybe_unused]] " + struct_name + "& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -9692,7 +9692,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model set_fields() method
-    WriteLineIndent("void " + model_name + "::set_fields(const " + struct_name + "& fbe_value) noexcept");
+    WriteLineIndent("void " + model_name + "::set_fields([[maybe_unused]] const " + struct_name + "& fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))

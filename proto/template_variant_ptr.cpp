@@ -83,7 +83,7 @@ void Line::swap(Line& other) noexcept
     swap(vo, other.vo);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Line& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Line& value)
 {
     stream << "Line(";
     stream << "v="; stream << value.v;
@@ -162,7 +162,7 @@ void Line2::swap(Line2& other) noexcept
     swap(vm, other.vm);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Line2& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Line2& value)
 {
     stream << "Line2(";
     {
@@ -229,7 +229,7 @@ void Line3::swap(Line3& other) noexcept
     swap(value, other.value);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Line3& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Line3& value)
 {
     stream << "Line3(";
     stream << "value="; stream << value.value;
