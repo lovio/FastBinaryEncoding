@@ -386,7 +386,7 @@ inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
     Write(code);
-};
+}
 
 void GeneratorCpp::GenerateImportHelper_Header()
 {
