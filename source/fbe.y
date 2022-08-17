@@ -32,6 +32,9 @@ int yyerror(const std::string& msg);
     FBE::FlagsBody* flags_body;
     FBE::FlagsValue* flags_value;
     FBE::FlagsConst* flags_const;
+    FBE::VariantValue* variant_value;
+    FBE::VariantType* variant_type;
+    FBE::VariantBody* variant_body;
     FBE::StructType* struct_type;
     FBE::StructRequest* struct_request;
     FBE::StructResponse* struct_response;
@@ -41,7 +44,7 @@ int yyerror(const std::string& msg);
 }
 
 // Define our terminal symbols (tokens)
-%token <token>  PDOMAIN PACKAGE OFFSET IMPORT VERSION ENUM FLAGS STRUCT MESSAGE BASE ID KEY HIDDEN DEPRECATED REQ RES REJ
+%token <token>  PDOMAIN PACKAGE OFFSET IMPORT VERSION ENUM FLAGS VARIANT STRUCT MESSAGE BASE ID KEY HIDDEN DEPRECATED REQ RES REJ
 %token <string> BOOL BYTE BYTES CHAR WCHAR INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64 FLOAT DOUBLE DECIMAL STRING USTRING TIMESTAMP UUID
 %token <string> CONST_TRUE CONST_FALSE CONST_NULL CONST_EPOCH CONST_UTC CONST_UUID0 CONST_UUID1 CONST_UUID4 CONST_CHAR CONST_INT CONST_FLOAT CONST_STRING
 %token <string> IDENTIFIER
@@ -66,6 +69,15 @@ int yyerror(const std::string& msg);
 %type <flags_body> flags_body
 %type <flags_value> flags_value
 %type <flags_const> flags_const
+%type <variant_type> variant
+%type <variant_body> variant_body
+%type <variant_value> variant_value
+%type <variant_value> variant_value_base
+%type <variant_value> variant_value_vector
+%type <variant_value> variant_value_list
+%type <variant_value> variant_value_map
+%type <variant_value> variant_value_hash
+%type <variant_value> variant_value_base_ptr
 %type <struct_type> struct
 %type <boolean> struct_type
 %type <struct_request> struct_request
@@ -76,6 +88,7 @@ int yyerror(const std::string& msg);
 %type <struct_field> struct_field
 %type <struct_field> struct_field_type
 %type <struct_field> struct_field_base
+%type <struct_field> struct_field_base_ptr
 %type <struct_field> struct_field_optional
 %type <struct_field> struct_field_reseter
 %type <struct_field> struct_field_array
@@ -84,6 +97,7 @@ int yyerror(const std::string& msg);
 %type <struct_field> struct_field_set
 %type <struct_field> struct_field_map
 %type <struct_field> struct_field_hash
+%type <struct_field> struct_field_ptr
 %type <string> struct_field_value
 %type <string> type_name
 
@@ -129,6 +143,7 @@ statements
 statement
     : enum                                                                                  { $$ = new FBE::Statement(); $$->e.reset($1); }
     | flags                                                                                 { $$ = new FBE::Statement(); $$->f.reset($1); }
+    | variant                                                                               { $$ = new FBE::Statement(); $$->v.reset($1); }
     | struct                                                                                { $$ = new FBE::Statement(); $$->s.reset($1); }
     | struct_request struct_response struct_rejects struct                                  { $$ = new FBE::Statement(); $$->s.reset($4); $$->s->request.reset($1); $$->s->response.reset($2); $$->s->rejects.reset($3); }
     ;
@@ -167,6 +182,7 @@ enum_body
     :                                                                                       { $$ = new FBE::EnumBody(); }
     | enum_value                                                                            { $$ = new FBE::EnumBody(); $$->AddValue($1); }
     | enum_body enum_value                                                                  { $$ = $1; $$->AddValue($2); }
+    ;
 
 enum_value
     : attributes name ';'                                                                   { $$ = new FBE::EnumValue(); $$->attributes.reset($1); $$->name.reset($2); }
@@ -177,6 +193,70 @@ enum_const
     : CONST_CHAR                                                                            { $$ = new FBE::EnumConst(); $$->constant.reset($1); }
     | CONST_INT                                                                             { $$ = new FBE::EnumConst(); $$->constant.reset($1); }
     | name                                                                                  { $$ = new FBE::EnumConst(); $$->reference.reset($1); }
+    ;
+
+variant
+    : attributes VARIANT name '{' variant_body '}'                                          { $$ = new FBE::VariantType(); $$->attributes.reset($1); $$->name.reset($3); $$->body.reset($5); }
+
+variant_body
+    : variant_value                                                                         { $$ = new FBE::VariantBody(); $$->AddValue($1); }
+    | variant_body variant_value                                                            { $$ = $1; $$->AddValue($2); }
+    ;
+
+variant_value
+    : variant_value_base ';'
+    | variant_value_vector ';'
+    | variant_value_list ';'
+    | variant_value_map ';'
+    | variant_value_hash ';'
+    | variant_value_base_ptr ';'
+    ;
+
+variant_value_base
+    : BOOL                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | BYTE                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | BYTES                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | CHAR                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | WCHAR                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | INT8                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | UINT8                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | INT16                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | UINT16                                                                                { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | INT32                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | UINT32                                                                                { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | INT64                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | UINT64                                                                                { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | FLOAT                                                                                 { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | DOUBLE                                                                                { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | DECIMAL                                                                               { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | STRING                                                                                { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | TIMESTAMP                                                                             { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | UUID                                                                                  { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    | type_name                                                                             { $$ = new FBE::VariantValue(); $$->type.reset($1); }
+    ;
+
+variant_value_vector
+    : variant_value_base '[' ']'                                                             { $$ = $1; $$->vector = true; }
+    | variant_value_base_ptr '[' ']'                                                         { $$ = $1; $$->vector = true; }
+    ;
+
+variant_value_list
+    : variant_value_base '(' ')'                                                             { $$ = $1; $$->list = true; }
+    | variant_value_base_ptr '(' ')'                                                         { $$ = $1; $$->list = true; }
+    ;
+
+variant_value_map
+    : variant_value_base '<' variant_value_base '>'                                           { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    | variant_value_base_ptr '<' variant_value_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    ;
+
+variant_value_hash
+    : variant_value_base '{' variant_value_base '}'                                           { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    | variant_value_base_ptr '{' variant_value_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    ;
+
+variant_value_base_ptr                                                                       
+    : type_name '*'                                                                         { $$ = new FBE::VariantValue(); $$->type.reset($1); $$->ptr = true; }
     ;
 
 flags
@@ -271,6 +351,7 @@ struct_field_type
     | struct_field_set
     | struct_field_map
     | struct_field_hash
+    | struct_field_ptr
     ;
 
 struct_field_base
@@ -296,6 +377,10 @@ struct_field_base
     | type_name                                                                             { $$ = new FBE::StructField(); $$->type.reset($1); }
     ;
 
+struct_field_base_ptr                                                                       
+    : type_name '*'                                                                         { $$ = new FBE::StructField(); $$->type.reset($1); $$->ptr = true; }
+    ;
+
 struct_field_optional
     : struct_field_base '?'                                                                 { $$ = $1; $$->optional = true; }
     ;
@@ -307,16 +392,19 @@ struct_field_reseter
 struct_field_array
     : struct_field_base '[' CONST_INT ']'                                                   { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
     | struct_field_optional '[' CONST_INT ']'                                               { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
+    | struct_field_base_ptr '[' CONST_INT ']'                                               { $$ = $1; $$->array = true; $$->SetArraySize(std::stoi(*$3)); delete $3; }
     ;
 
 struct_field_vector
     : struct_field_base '[' ']'                                                             { $$ = $1; $$->vector = true; }
     | struct_field_optional '[' ']'                                                         { $$ = $1; $$->vector = true; }
+    | struct_field_base_ptr '[' ']'                                                         { $$ = $1; $$->vector = true; }
     ;
 
 struct_field_list
     : struct_field_base '(' ')'                                                             { $$ = $1; $$->list = true; }
     | struct_field_optional '(' ')'                                                         { $$ = $1; $$->list = true; }
+    | struct_field_base_ptr '(' ')'                                                         { $$ = $1; $$->list = true; }
     ;
 
 struct_field_set
@@ -326,11 +414,17 @@ struct_field_set
 struct_field_map
     : struct_field_base '<' struct_field_base '>'                                           { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
     | struct_field_optional '<' struct_field_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
+    | struct_field_base_ptr '<' struct_field_base '>'                                       { $$ = $1; $$->map = true; $$->key = $3->type; delete $3; }
     ;
 
 struct_field_hash
     : struct_field_base '{' struct_field_base '}'                                           { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
     | struct_field_optional '{' struct_field_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    | struct_field_base_ptr '{' struct_field_base '}'                                       { $$ = $1; $$->hash = true; $$->key = $3->type; delete $3; }
+    ;
+
+struct_field_ptr
+    : struct_field_base_ptr                                                                 { $$ = $1; $$->ptr = true; }
     ;
 
 struct_field_value

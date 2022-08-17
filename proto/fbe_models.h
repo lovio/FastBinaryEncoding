@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -204,6 +208,53 @@ private:
     size_t _offset;
 };
 
+// Fast Binary Encoding field model bytes specialization
+template <>
+class FieldModel<pmr_buffer_t>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the bytes value is valid
+    bool verify() const noexcept;
+
+    // Get the bytes value
+    size_t get(void* data, size_t size) const noexcept;
+    // Get the bytes value
+    template <size_t N>
+    size_t get(uint8_t (&data)[N]) const noexcept { return get(data, N); }
+    // Get the bytes value
+    void get(std::pmr::vector<uint8_t>& value) const noexcept;
+    // Get the bytes value
+    void get(pmr_buffer_t& value) const noexcept { get(value.buffer()); }
+
+    // Set the bytes value
+    void set(const void* data, size_t size);
+    // Set the bytes value
+    template <size_t N>
+    void set(const uint8_t (&data)[N]) { set(data, N); }
+    // Set the bytes value
+    void set(const std::pmr::vector<uint8_t>& value) { set(value.data(), value.size()); }
+    // Set the bytes value
+    void set(const pmr_buffer_t& value) { set(value.buffer()); }
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+
 // Fast Binary Encoding field model string specialization
 template <>
 class FieldModel<std::string>
@@ -255,6 +306,57 @@ private:
     size_t _offset;
 };
 
+// Fast Binary Encoding field model string specialization
+template <>
+class FieldModel<std::pmr::string>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the string value is valid
+    bool verify() const noexcept;
+
+    // Get the string value
+    size_t get(char* data, size_t size) const noexcept;
+    // Get the string value
+    template <size_t N>
+    size_t get(char (&data)[N]) const noexcept { return get(data, N); }
+    // Get the string value
+    template <size_t N>
+    size_t get(std::array<char, N>& data) const noexcept { return get(data.data(), data.size()); }
+    // Get the pmr string value
+    void get(std::pmr::string& value) const noexcept;
+    // Get the pmr string value
+    void get(std::pmr::string& value, const std::pmr::string& defaults) const noexcept;
+
+    // Set the string value
+    void set(const char* data, size_t size);
+    // Set the string value
+    template <size_t N>
+    void set(const char (&data)[N]) { set(data, N); }
+    // Set the string value
+    template <size_t N>
+    void set(const std::array<char, N>& data) { set(data.data(), data.size()); }
+    // Set the string value
+    void set(const std::pmr::string& value);
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+
 // Fast Binary Encoding field model optional specialization
 template <typename T>
 class FieldModel<std::optional<T>>
@@ -289,7 +391,9 @@ public:
     void get_end(size_t fbe_begin) const noexcept;
 
     // Get the optional value
-    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+    void get(std::optional<T>& opt, const std::optional<T>& defaults) const noexcept;
+    // Get the optional value
+    void get(std::optional<T>& opt) const noexcept;
 
     // Set the optional value (begin phase)
     size_t set_begin(bool has_value);
@@ -406,12 +510,26 @@ public:
     // Get the vector as std::set
     void get(std::set<T>& values) const noexcept;
 
+    // Get the vector as std::pmr::vector
+    void get(std::pmr::vector<T>& values) const noexcept;
+    // Get the vector as std::pmr::list
+    void get(std::pmr::list<T>& values) const noexcept;
+    // Get the vector as std::pmr::set
+    void get(std::pmr::set<T>& values) const noexcept;
+
     // Set the vector as std::vector
     void set(const std::vector<T>& values) noexcept;
     // Set the vector as std::list
     void set(const std::list<T>& values) noexcept;
     // Set the vector as std::set
     void set(const std::set<T>& values) noexcept;
+
+    // Set the vector as std::pmr::vector
+    void set(const std::pmr::vector<T>& values) noexcept;
+    // Set the vector as std::pmr::list
+    void set(const std::pmr::list<T>& values) noexcept;
+    // Set the vector as std::pmr::set
+    void set(const std::pmr::set<T>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -456,10 +574,20 @@ public:
     // Get the map as std::unordered_map
     void get(std::unordered_map<TKey, TValue>& values) const noexcept;
 
+    // Get the map as std::pmr::map
+    void get(std::pmr::map<TKey, TValue>& values) const noexcept;
+    // Get the map as std::pmr::unordered_map
+    void get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept;
+
     // Set the map as std::map
     void set(const std::map<TKey, TValue>& values) noexcept;
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKey, TValue>& values) noexcept;
+
+    // Set the map as std::pmr::map
+    void set(const std::pmr::map<TKey, TValue>& values) noexcept;
+    // Set the map as std::pmr::unordered_map
+    void set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;

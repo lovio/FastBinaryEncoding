@@ -5,7 +5,6 @@
     \date 20.04.2018
     \copyright MIT License
 */
-
 #include "generator_cpp.h"
 
 namespace FBE {
@@ -20,6 +19,21 @@ void GeneratorCpp::Generate(const std::shared_ptr<Package>& package)
     GenerateFBEModels_Header(_output);
     GenerateFBEModels_Inline(_output);
     GenerateFBEModels_Source(_output);
+
+    if (Ptr()) {
+        GenerateFBEPtr_Header(_output);
+        GenerateFBECustomModels_Header(_output);
+        GenerateFBECustomModels_Inline(_output);
+
+        // Generate package files
+        GeneratePtrPackage_Header(package);
+        GeneratePtrPackage_Source(package);
+        // Generate package models files
+        GeneratePtrPackageModels_Header(package);
+        GeneratePtrPackageModels_Source(package);
+        return;
+    }
+
     if (Final())
     {
         GenerateFBEFinalModels_Header(_output);
@@ -76,6 +90,10 @@ void GeneratorCpp::GenerateHeader(const std::string& source)
 //------------------------------------------------------------------------------
 
 #pragma once
+
+#ifdef isset
+#undef isset
+#endif
 
 #if defined(__clang__)
 #pragma clang system_header
@@ -188,6 +206,9 @@ void GeneratorCpp::GenerateImports()
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include <memory_resource>
+#include <utility>
+#include <variant>
 
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
@@ -251,19 +272,25 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     // Generate common imports
     WriteLine();
     WriteLineIndent("#include \"fbe.h\"");
+    if (Arena()) {
+        WriteLineIndent("#include \"" + ArenaHeader() + "\"");
+    }
 
     // Generate packages import
     if (p->import)
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + ".h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + ".h\"");
     }
 
     // Generate domain namespace using
     WriteLine();
     WriteLineIndent("namespace " + *p->name + " {");
     WriteLineIndent("using namespace FBE;");
+    if (Arena()) {
+        WriteLineIndent("using allocator_type = std::pmr::polymorphic_allocator<char>;");
+    }
     if (p->import)
     {
         for (const auto& import : p->import->imports)
@@ -278,18 +305,18 @@ void GeneratorCpp::GenerateImports(const std::shared_ptr<Package>& p)
     WriteLineIndent("} // namespace FBE");
 }
 
-void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool final)
+void GeneratorCpp::GenerateImportsModels(const std::shared_ptr<Package>& p, bool final, bool ptr)
 {
     // Generate common imports
     WriteLine();
-    WriteLineIndent("#include \"" + *p->name + ".h\"");
+    WriteLineIndent("#include \"" + *p->name + (ptr ? "_ptr" : "") + ".h\"");
 
     // Generate packages import
     if (p->import)
     {
         WriteLine();
         for (const auto& import : p->import->imports)
-            WriteLineIndent("#include \"" + *import + (final ? "_final" : "") + "_models.h\"");
+            WriteLineIndent("#include \"" + *import + (ImportPtr() ? "_ptr" : "") + (final ? "_final" : "") + "_models.h\"");
     }
 }
 
@@ -333,6 +360,71 @@ void GeneratorCpp::GenerateImportsJson(const std::shared_ptr<Package>& p)
         for (const auto& import : p->import->imports)
             WriteLineIndent("#include \"" + *import + "_json.h\"");
     }
+}
+
+void GeneratorCpp::GenerateUnalignedAccessor_Header()
+{
+    std::string code = R"CODE(
+template <typename T>
+inline auto unaligned_load(void const* ptr) noexcept -> T {
+    // using memcpy so we don't get into unaligned load problems.
+    // compiler should optimize this very well anyways.
+    T t;
+    std::memcpy(&t, ptr, sizeof(T));
+    return t;
+};
+
+template <typename T>
+inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+};
+
+void GeneratorCpp::GenerateImportHelper_Header()
+{
+    std::string code = R"CODE(
+template<typename T> struct is_variant : std::false_type {};
+
+template<typename ...Args>
+struct is_variant<std::variant<Args...>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_variant_v=is_variant<T>::value;
+
+template<typename T, typename Alloc>
+auto assign_member(Alloc alloc) -> T {
+    return T(alloc);
+}
+
+template<typename T, typename Alloc>
+requires std::is_enum_v<T> || is_variant_v<T>
+auto assign_member([[maybe_unused]] Alloc alloc) -> T {
+    return T();
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateVariantVisitHelper_Header()
+{
+    std::string code = R"CODE(
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;  // deduction guide
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
 }
 
 void GeneratorCpp::GenerateBufferWrapper_Header()
@@ -516,7 +608,198 @@ buffer_t buffer_t::base64decode(const std::string& str)
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
+    Write(code);
+}
 
+void GeneratorCpp::GeneratePMRBufferWrapper_Header()
+{
+    std::string code = R"CODE(
+//! PMR bytes buffer type
+/*!
+    Represents pmr bytes buffer which is a lightweight wrapper around std::pmr::vector<uint8_t>
+    with similar interface.
+*/
+class pmr_buffer_t
+{
+public:
+    typedef std::pmr::vector<uint8_t>::iterator iterator;
+    typedef std::pmr::vector<uint8_t>::const_iterator const_iterator;
+    typedef std::pmr::vector<uint8_t>::reverse_iterator reverse_iterator;
+    typedef std::pmr::vector<uint8_t>::const_reverse_iterator const_reverse_iterator;
+    using allocator_type = std::pmr::polymorphic_allocator<char>;
+
+
+    pmr_buffer_t() = default;
+    explicit pmr_buffer_t(allocator_type alloc): _data(alloc) {}
+    explicit pmr_buffer_t(size_t capacity) { reserve(capacity); }
+    explicit pmr_buffer_t(const std::pmr::string& str) { assign(str); }
+    pmr_buffer_t(size_t size, uint8_t value) { assign(size, value); }
+    pmr_buffer_t(const uint8_t* data, size_t size) { assign(data, size); }
+    explicit pmr_buffer_t(const std::pmr::vector<uint8_t>& other) : _data(other) {}
+    explicit pmr_buffer_t(std::pmr::vector<uint8_t>&& other) : _data(std::move(other)) {}
+    explicit pmr_buffer_t(const pmr_buffer_t& other) = default;
+    explicit pmr_buffer_t(pmr_buffer_t&& other) = default;
+    ~pmr_buffer_t() = default;
+
+    pmr_buffer_t& operator=(const std::pmr::string& str) { assign(str); return *this; }
+    pmr_buffer_t& operator=(const std::pmr::vector<uint8_t>& other) { _data = other; return *this; }
+    pmr_buffer_t& operator=(std::pmr::vector<uint8_t>&& other) { _data = std::move(other); return *this; }
+    pmr_buffer_t& operator=(const pmr_buffer_t& other) = default;
+    pmr_buffer_t& operator=(pmr_buffer_t&& other) = default;
+
+    uint8_t& operator[](size_t index) { return _data[index]; }
+    const uint8_t& operator[](size_t index) const { return _data[index]; }
+
+    bool empty() const { return _data.empty(); }
+    size_t capacity() const { return _data.capacity(); }
+    size_t size() const { return _data.size(); }
+    size_t max_size() const { return _data.max_size(); }
+
+    std::pmr::vector<uint8_t>& buffer() noexcept { return _data; }
+    const std::pmr::vector<uint8_t>& buffer() const noexcept { return _data; }
+    uint8_t* data() noexcept { return _data.data(); }
+    const uint8_t* data() const noexcept { return _data.data(); }
+    uint8_t& at(size_t index) { return _data.at(index); }
+    const uint8_t& at(size_t index) const { return _data.at(index); }
+    uint8_t& front() { return _data.front(); }
+    const uint8_t& front() const { return _data.front(); }
+    uint8_t& back() { return _data.back(); }
+    const uint8_t& back() const { return _data.back(); }
+
+    void reserve(size_t capacity) { _data.reserve(capacity); }
+    void resize(size_t size, uint8_t value = 0) { _data.resize(size, value); }
+    void shrink_to_fit() { _data.shrink_to_fit(); }
+
+    void assign(const std::pmr::string& str) { assign((const uint8_t*)str.c_str(), str.size()); }
+    void assign(const std::pmr::vector<uint8_t>& vec) { assign(vec.begin(), vec.end()); }
+    void assign(size_t size, uint8_t value) { _data.assign(size, value); }
+    void assign(const uint8_t* data, size_t size) { _data.assign(data, data + size); }
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last) { _data.assign(first, last); }
+    iterator insert(const_iterator position, uint8_t value) { return _data.insert(position, value); }
+    iterator insert(const_iterator position, const std::pmr::string& str) { return insert(position, (const uint8_t*)str.c_str(), str.size()); }
+    iterator insert(const_iterator position, const std::pmr::vector<uint8_t>& vec) { return insert(position, vec.begin(), vec.end()); }
+    iterator insert(const_iterator position, size_t size, uint8_t value) { return _data.insert(position, size, value); }
+    iterator insert(const_iterator position, const uint8_t* data, size_t size) { return _data.insert(position, data, data + size); }
+    template <class InputIterator>
+    iterator insert(const_iterator position, InputIterator first, InputIterator last) { return _data.insert(position, first, last); }
+    iterator erase(const_iterator position) { return _data.erase(position); }
+    iterator erase(const_iterator first, const_iterator last) { return _data.erase(first, last); }
+    void clear() noexcept { _data.clear(); }
+
+    void push_back(uint8_t value) { _data.push_back(value); }
+    void pop_back() { _data.pop_back(); }
+
+    template <class... Args>
+    iterator emplace(const_iterator position, Args&&... args) { return _data.emplace(position, args...); }
+    template <class... Args>
+    void emplace_back(Args&&... args) { _data.emplace_back(args...); }
+
+    iterator begin() noexcept { return _data.begin(); }
+    const_iterator begin() const noexcept { return _data.begin(); }
+    const_iterator cbegin() const noexcept { return _data.cbegin(); }
+    reverse_iterator rbegin() noexcept { return _data.rbegin(); }
+    const_reverse_iterator rbegin() const noexcept { return _data.rbegin(); }
+    const_reverse_iterator crbegin() const noexcept { return _data.crbegin(); }
+    iterator end() noexcept { return _data.end(); }
+    const_iterator end() const noexcept { return _data.end(); }
+    const_iterator cend() const noexcept { return _data.cend(); }
+    reverse_iterator rend() noexcept { return _data.rend(); }
+    const_reverse_iterator rend() const noexcept { return _data.rend(); }
+    const_reverse_iterator crend() const noexcept { return _data.crend(); }
+
+    //! Get the string equivalent from the bytes buffer
+    std::string string() const { return std::string(_data.begin(), _data.end()); }
+
+    //! Encode the Base64 string from the bytes buffer
+    std::string base64encode() const;
+    //! Decode the bytes buffer from the Base64 string
+    static buffer_t base64decode(const std::string& str);
+
+    //! Swap two instances
+    void swap(pmr_buffer_t& value) noexcept
+    { using std::swap; swap(_data, value._data); }
+    friend void swap(pmr_buffer_t& value1, pmr_buffer_t& value2) noexcept
+    { value1.swap(value2); }
+
+    //! Output instance into the given output stream
+    friend std::ostream& operator<<(std::ostream& os, const pmr_buffer_t& value)
+    { os << value.string(); return os; }
+
+private:
+    std::pmr::vector<uint8_t> _data;
+    
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GeneratePMRBufferWrapper_Source()
+{
+    std::string code = R"CODE(
+std::string pmr_buffer_t::base64encode() const
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+
+    int val = 0;
+    int valb = -6;
+    for (auto c : _data)
+    {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0)
+        {
+            result.push_back(base64[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+
+    if (valb > -6)
+        result.push_back(base64[((val << 8) >> (valb + 8)) & 0x3F]);
+
+    while (result.size() % 4)
+        result.push_back('=');
+
+    return result;
+}
+
+buffer_t pmr_buffer_t::base64decode(const std::string& str)
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    buffer_t result;
+
+    std::vector<int> pattern(256, -1);
+    for (int i = 0; i < 64; ++i)
+        pattern[base64[i]] = i;
+
+    int val = 0;
+    int valb = -8;
+    for (auto c : str)
+    {
+        if (pattern[c] == -1)
+            break;
+
+        val = (val << 6) + pattern[c];
+        valb += 6;
+
+        if (valb >= 0)
+        {
+            result.push_back((uint8_t)((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+
+    return result;
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
     Write(code);
 }
 
@@ -1343,8 +1626,11 @@ size_t FBEBuffer::allocate(size_t size)
 
     _capacity = std::max(total, 2 * _capacity);
     uint8_t* data = (uint8_t*)std::malloc(_capacity);
-    std::memcpy(data, _data, _size);
-    std::free(_data);
+    if (_data != nullptr)
+    {
+        std::memcpy(data, _data, _size);
+        std::free(_data);
+    }
     _data = data;
     _size = total;
     return offset;
@@ -1532,7 +1818,7 @@ inline void FieldModelBase<T, TBase>::get(T& value, T defaults) const noexcept
         return;
     }
 
-    value = (T)(*((const TBase*)(_buffer.data() + _buffer.offset() + fbe_offset())));
+    value = unaligned_load<T>(_buffer.data() + _buffer.offset() + fbe_offset());
 }
 
 template <typename T, typename TBase>
@@ -1542,7 +1828,7 @@ inline void FieldModelBase<T, TBase>::set(T value) noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
 
-    *((TBase*)(_buffer.data() + _buffer.offset() + fbe_offset())) = (TBase)value;
+    unaligned_store<TBase>(_buffer.data() + _buffer.offset() + fbe_offset(), (TBase)value);
 }
 )CODE";
 
@@ -1652,9 +1938,9 @@ void FieldModel<decimal_t>::get(decimal_t& value, decimal_t defaults) const noex
     const double ds2to64 = 1.8446744073709552e+019;
 
     // Read decimal parts
-    uint64_t low = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    uint32_t high = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 8));
-    uint32_t flags = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 12));
+    uint64_t low = unaligned_load<uint64_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    uint32_t high = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 8);
+    uint32_t flags = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 12);
 
     // Calculate decimal value
     double dValue = ((double)low + (double)high * ds2to64) / pow(10.0, (uint8_t)(flags >> 16));
@@ -1985,11 +2271,11 @@ size_t FieldModel<buffer_t>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_bytes_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
     return (size_t)(4 + fbe_bytes_size);
 }
 
@@ -1998,14 +2284,14 @@ bool FieldModel<buffer_t>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_bytes_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_bytes_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
     if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
         return false;
 
@@ -2021,7 +2307,7 @@ size_t FieldModel<buffer_t>::get(void* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_bytes_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_bytes_offset == 0)
         return 0;
 
@@ -2029,7 +2315,7 @@ size_t FieldModel<buffer_t>::get(void* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
     assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
         return 0;
@@ -2046,7 +2332,7 @@ void FieldModel<buffer_t>::get(std::vector<uint8_t>& value) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
 
-    uint32_t fbe_bytes_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_bytes_offset == 0)
         return;
 
@@ -2054,7 +2340,7 @@ void FieldModel<buffer_t>::get(std::vector<uint8_t>& value) const noexcept
     if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
         return;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
     assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
         return;
@@ -2079,8 +2365,181 @@ void FieldModel<buffer_t>::set(const void* data, size_t size)
     if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size()))
         return;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_bytes_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset)) = fbe_bytes_size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_bytes_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset, fbe_bytes_size);
+
+    memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4), data, fbe_bytes_size);
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+
+void GeneratorCpp::GenerateFBEFieldModelPMRBytes_Header()
+{
+    std::string code = R"CODE(
+// Fast Binary Encoding field model bytes specialization
+template <>
+class FieldModel<pmr_buffer_t>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the bytes value is valid
+    bool verify() const noexcept;
+
+    // Get the bytes value
+    size_t get(void* data, size_t size) const noexcept;
+    // Get the bytes value
+    template <size_t N>
+    size_t get(uint8_t (&data)[N]) const noexcept { return get(data, N); }
+    // Get the bytes value
+    void get(std::pmr::vector<uint8_t>& value) const noexcept;
+    // Get the bytes value
+    void get(pmr_buffer_t& value) const noexcept { get(value.buffer()); }
+
+    // Set the bytes value
+    void set(const void* data, size_t size);
+    // Set the bytes value
+    template <size_t N>
+    void set(const uint8_t (&data)[N]) { set(data, N); }
+    // Set the bytes value
+    void set(const std::pmr::vector<uint8_t>& value) { set(value.data(), value.size()); }
+    // Set the bytes value
+    void set(const pmr_buffer_t& value) { set(value.buffer()); }
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelPMRBytes_Source()
+{
+    std::string code = R"CODE(
+size_t FieldModel<pmr_buffer_t>::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    return (size_t)(4 + fbe_bytes_size);
+}
+
+bool FieldModel<pmr_buffer_t>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return true;
+
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return false;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return false;
+
+    return true;
+}
+
+size_t FieldModel<pmr_buffer_t>::get(void* data, size_t size) const noexcept
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return 0;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return 0;
+
+    assert(((_buffer.offset() + fbe_bytes_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return 0;
+
+    size_t result = std::min(size, (size_t)fbe_bytes_size);
+    memcpy(data, (const char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4), result);
+    return result;
+}
+
+void FieldModel<pmr_buffer_t>::get(std::pmr::vector<uint8_t>& value) const noexcept
+{
+    value.clear();
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_bytes_offset == 0)
+        return;
+
+    assert(((_buffer.offset() + fbe_bytes_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset);
+    assert(((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size())
+        return;
+
+    const char* fbe_bytes = (const char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4);
+    value.assign(fbe_bytes, fbe_bytes + fbe_bytes_size);
+}
+
+void FieldModel<pmr_buffer_t>::set(const void* data, size_t size)
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return;
+
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_bytes_size = (uint32_t)size;
+    uint32_t fbe_bytes_offset = (uint32_t)(_buffer.allocate(4 + fbe_bytes_size) - _buffer.offset());
+    assert(((fbe_bytes_offset > 0) && ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_bytes_offset == 0) || ((_buffer.offset() + fbe_bytes_offset + 4 + fbe_bytes_size) > _buffer.size()))
+        return;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_bytes_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_bytes_offset, fbe_bytes_size);
 
     memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_bytes_offset + 4), data, fbe_bytes_size);
 }
@@ -2153,6 +2612,68 @@ private:
     Write(code);
 }
 
+
+void GeneratorCpp::GenerateFBEFieldModelPMRString_Header()
+{
+    std::string code = R"CODE(
+// Fast Binary Encoding field model string specialization
+template <>
+class FieldModel<std::pmr::string>
+{
+public:
+    FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset) {}
+
+    // Get the field offset
+    size_t fbe_offset() const noexcept { return _offset; }
+    // Get the field size
+    size_t fbe_size() const noexcept { return 4; }
+    // Get the field extra size
+    size_t fbe_extra() const noexcept;
+
+    // Shift the current field offset
+    void fbe_shift(size_t size) noexcept { _offset += size; }
+    // Unshift the current field offset
+    void fbe_unshift(size_t size) noexcept { _offset -= size; }
+
+    // Check if the string value is valid
+    bool verify() const noexcept;
+
+    // Get the string value
+    size_t get(char* data, size_t size) const noexcept;
+    // Get the string value
+    template <size_t N>
+    size_t get(char (&data)[N]) const noexcept { return get(data, N); }
+    // Get the string value
+    template <size_t N>
+    size_t get(std::array<char, N>& data) const noexcept { return get(data.data(), data.size()); }
+    // Get the pmr string value
+    void get(std::pmr::string& value) const noexcept;
+    // Get the pmr string value
+    void get(std::pmr::string& value, const std::pmr::string& defaults) const noexcept;
+
+    // Set the string value
+    void set(const char* data, size_t size);
+    // Set the string value
+    template <size_t N>
+    void set(const char (&data)[N]) { set(data, N); }
+    // Set the string value
+    template <size_t N>
+    void set(const std::array<char, N>& data) { set(data.data(), data.size()); }
+    // Set the string value
+    void set(const std::pmr::string& value);
+
+private:
+    FBEBuffer& _buffer;
+    size_t _offset;
+};
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
 void GeneratorCpp::GenerateFBEFieldModelString_Source()
 {
     std::string code = R"CODE(
@@ -2161,11 +2682,11 @@ size_t FieldModel<std::string>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_string_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
     return (size_t)(4 + fbe_string_size);
 }
 
@@ -2174,14 +2695,14 @@ bool FieldModel<std::string>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_string_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_string_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
     if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
         return false;
 
@@ -2197,7 +2718,7 @@ size_t FieldModel<std::string>::get(char* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_string_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_string_offset == 0)
         return 0;
 
@@ -2205,7 +2726,7 @@ size_t FieldModel<std::string>::get(char* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
     assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
         return 0;
@@ -2222,7 +2743,7 @@ void FieldModel<std::string>::get(std::string& value) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
 
-    uint32_t fbe_string_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + _offset));
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + _offset);
     if (fbe_string_offset == 0)
         return;
 
@@ -2230,7 +2751,7 @@ void FieldModel<std::string>::get(std::string& value) const noexcept
     if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
         return;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
     assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
         return;
@@ -2245,7 +2766,7 @@ void FieldModel<std::string>::get(std::string& value, const std::string& default
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
 
-    uint32_t fbe_string_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + _offset));
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + _offset);
     if (fbe_string_offset == 0)
         return;
 
@@ -2253,7 +2774,7 @@ void FieldModel<std::string>::get(std::string& value, const std::string& default
     if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
         return;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
     assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
         return;
@@ -2277,8 +2798,9 @@ void FieldModel<std::string>::set(const char* data, size_t size)
     if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size()))
         return;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_string_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset)) = fbe_string_size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_string_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset, fbe_string_size);
+
 
     memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), data, fbe_string_size);
 }
@@ -2295,8 +2817,164 @@ void FieldModel<std::string>::set(const std::string& value)
     if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size()))
         return;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_string_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_string_offset)) = fbe_string_size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_string_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset, fbe_string_size);
+
+    memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), value.data(), fbe_string_size);
+}
+)CODE";
+
+    // Prepare code template
+    code = std::regex_replace(code, std::regex("\n"), EndLine());
+
+    Write(code);
+}
+
+void GeneratorCpp::GenerateFBEFieldModelPMRString_Source()
+{
+    std::string code = R"CODE(
+size_t FieldModel<std::pmr::string>::fbe_extra() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size()))
+        return 0;
+
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
+    return (size_t)(4 + fbe_string_size);
+}
+
+bool FieldModel<std::pmr::string>::verify() const noexcept
+{
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return true;
+
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_string_offset == 0)
+        return true;
+
+    if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
+        return false;
+
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
+    if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
+        return false;
+
+    return true;
+}
+
+size_t FieldModel<std::pmr::string>::get(char* data, size_t size) const noexcept
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return 0;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    if (fbe_string_offset == 0)
+        return 0;
+
+    assert(((_buffer.offset() + fbe_string_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
+        return 0;
+
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
+    assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
+        return 0;
+
+    size_t result = std::min(size, (size_t)fbe_string_size);
+    memcpy(data, (const char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), result);
+    return result;
+}
+
+void FieldModel<std::pmr::string>::get(std::pmr::string& value) const noexcept
+{
+    value.clear();
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + _offset);
+    if (fbe_string_offset == 0)
+        return;
+
+    assert(((_buffer.offset() + fbe_string_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
+    assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
+        return;
+
+    value.assign((const char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), fbe_string_size);
+}
+
+void FieldModel<std::pmr::string>::get(std::pmr::string& value, const std::pmr::string& defaults) const noexcept
+{
+    value = defaults;
+
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + _offset);
+    if (fbe_string_offset == 0)
+        return;
+
+    assert(((_buffer.offset() + fbe_string_offset + 4) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset);
+    assert(((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size())
+        return;
+
+    value.assign((const char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), fbe_string_size);
+}
+
+void FieldModel<std::pmr::string>::set(const char* data, size_t size)
+{
+    assert(((size == 0) || (data != nullptr)) && "Invalid buffer!");
+    if ((size > 0) && (data == nullptr))
+        return;
+
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_size = (uint32_t)size;
+    uint32_t fbe_string_offset = (uint32_t)(_buffer.allocate(4 + fbe_string_size) - _buffer.offset());
+    assert(((fbe_string_offset > 0) && ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size()))
+        return;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_string_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset, fbe_string_size);
+
+
+    memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), data, fbe_string_size);
+}
+
+void FieldModel<std::pmr::string>::set(const std::pmr::string& value)
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    uint32_t fbe_string_size = (uint32_t)value.size();
+    uint32_t fbe_string_offset = (uint32_t)(_buffer.allocate(4 + fbe_string_size) - _buffer.offset());
+    assert(((fbe_string_offset > 0) && ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) <= _buffer.size())) && "Model is broken!");
+    if ((fbe_string_offset == 0) || ((_buffer.offset() + fbe_string_offset + 4 + fbe_string_size) > _buffer.size()))
+        return;
+
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_string_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_string_offset, fbe_string_size);
 
     memcpy((char*)(_buffer.data() + _buffer.offset() + fbe_string_offset + 4), value.data(), fbe_string_size);
 }
@@ -2345,7 +3023,9 @@ public:
     void get_end(size_t fbe_begin) const noexcept;
 
     // Get the optional value
-    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+    void get(std::optional<T>& opt, const std::optional<T>& defaults) const noexcept;
+    // Get the optional value
+    void get(std::optional<T>& opt) const noexcept;
 
     // Set the optional value (begin phase)
     size_t set_begin(bool has_value);
@@ -2380,7 +3060,7 @@ inline size_t FieldModel<std::optional<T>>::fbe_extra() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + 4) > _buffer.size()))
         return 0;
 
@@ -2410,7 +3090,7 @@ inline bool FieldModel<std::optional<T>>::verify() const noexcept
     if (fbe_has_value == 0)
         return true;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     if (fbe_optional_offset == 0)
         return false;
 
@@ -2426,7 +3106,7 @@ inline size_t FieldModel<std::optional<T>>::get_begin() const noexcept
     if (!has_value())
         return 0;
 
-    uint32_t fbe_optional_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1));
+    uint32_t fbe_optional_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1);
     assert((fbe_optional_offset > 0) && "Model is broken!");
     if (fbe_optional_offset == 0)
         return 0;
@@ -2452,7 +3132,21 @@ inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt, const std::
 
     T temp = T();
     value.get(temp);
-    opt.emplace(temp);
+    opt.emplace(std::move(temp));
+
+    get_end(fbe_begin);
+}
+
+template <typename T>
+inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt) const noexcept
+{
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    T temp = T();
+    value.get(temp);
+    opt.emplace(std::move(temp));
 
     get_end(fbe_begin);
 }
@@ -2475,7 +3169,7 @@ inline size_t FieldModel<std::optional<T>>::set_begin(bool has_value)
     if ((fbe_optional_offset == 0) || ((_buffer.offset() + fbe_optional_offset + fbe_optional_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 1)) = fbe_optional_offset;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 1, fbe_optional_offset);
 
     _buffer.shift(fbe_optional_offset);
     return fbe_optional_offset;
@@ -2757,12 +3451,26 @@ public:
     // Get the vector as std::set
     void get(std::set<T>& values) const noexcept;
 
+    // Get the vector as std::pmr::vector
+    void get(std::pmr::vector<T>& values) const noexcept;
+    // Get the vector as std::pmr::list
+    void get(std::pmr::list<T>& values) const noexcept;
+    // Get the vector as std::pmr::set
+    void get(std::pmr::set<T>& values) const noexcept;
+
     // Set the vector as std::vector
     void set(const std::vector<T>& values) noexcept;
     // Set the vector as std::list
     void set(const std::list<T>& values) noexcept;
     // Set the vector as std::set
     void set(const std::set<T>& values) noexcept;
+
+    // Set the vector as std::pmr::vector
+    void set(const std::pmr::vector<T>& values) noexcept;
+    // Set the vector as std::pmr::list
+    void set(const std::pmr::list<T>& values) noexcept;
+    // Set the vector as std::pmr::set
+    void set(const std::pmr::set<T>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -2785,11 +3493,11 @@ inline size_t FieldModelVector<T>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
 
     size_t fbe_result = 4;
     FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
@@ -2807,7 +3515,7 @@ inline size_t FieldModelVector<T>::offset() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     return fbe_vector_offset;
 }
 
@@ -2817,11 +3525,11 @@ inline size_t FieldModelVector<T>::size() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_vector_offset == 0) || ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
     return fbe_vector_size;
 }
 
@@ -2830,10 +3538,10 @@ inline FieldModel<T> FieldModelVector<T>::operator[](size_t index) const noexcep
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    [[maybe_unused]] uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
     assert((index < fbe_vector_size) && "Index is out of bounds!");
 
     FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
@@ -2850,8 +3558,8 @@ inline FieldModel<T> FieldModelVector<T>::resize(size_t size)
     uint32_t fbe_vector_offset = (uint32_t)(_buffer.allocate(4 + fbe_vector_size) - _buffer.offset());
     assert(((fbe_vector_offset > 0) && ((_buffer.offset() + fbe_vector_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_vector_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset)) = (uint32_t)size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_vector_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset, size);
 
     memset((char*)(_buffer.data() + _buffer.offset() + fbe_vector_offset + 4), 0, fbe_vector_size);
 
@@ -2864,14 +3572,14 @@ inline bool FieldModelVector<T>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_vector_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_vector_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_vector_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_vector_offset));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_vector_offset);
 
     FieldModel<T> fbe_model(_buffer, fbe_vector_offset + 4);
     for (size_t i = fbe_vector_size; i-- > 0;)
@@ -2900,7 +3608,7 @@ inline void FieldModelVector<T>::get(std::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -2919,7 +3627,7 @@ inline void FieldModelVector<T>::get(std::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -2938,7 +3646,66 @@ inline void FieldModelVector<T>::get(std::set<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace(value);
+        values.emplace(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::vector<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    values.reserve(fbe_vector_size);
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::list<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace_back(std::move(value));
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::get(std::pmr::set<T>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_vector_size = size();
+    if (fbe_vector_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_vector_size; i-- > 0;)
+    {
+        T value = T();
+        fbe_model.get(value);
+        values.emplace(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -2987,11 +3754,55 @@ inline void FieldModelVector<T>::set(const std::set<T>& values) noexcept
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::vector<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::list<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
+
+template <typename T>
+inline void FieldModelVector<T>::set(const std::pmr::set<T>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.set(value);
+        fbe_model.fbe_shift(fbe_model.fbe_size());
+    }
+}
 )CODE";
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -3036,10 +3847,20 @@ public:
     // Get the map as std::unordered_map
     void get(std::unordered_map<TKey, TValue>& values) const noexcept;
 
+    // Get the map as std::pmr::map
+    void get(std::pmr::map<TKey, TValue>& values) const noexcept;
+    // Get the map as std::pmr::unordered_map
+    void get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept;
+
     // Set the map as std::map
     void set(const std::map<TKey, TValue>& values) noexcept;
     // Set the map as std::unordered_map
     void set(const std::unordered_map<TKey, TValue>& values) noexcept;
+
+    // Set the map as std::pmr::map
+    void set(const std::pmr::map<TKey, TValue>& values) noexcept;
+    // Set the map as std::pmr::unordered_map
+    void set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept;
 
 private:
     FBEBuffer& _buffer;
@@ -3049,7 +3870,6 @@ private:
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -3062,11 +3882,11 @@ inline size_t FieldModelMap<TKey, TValue>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
 
     size_t fbe_result = 4;
     FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
@@ -3087,7 +3907,7 @@ inline size_t FieldModelMap<TKey, TValue>::offset() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     return fbe_map_offset;
 }
 
@@ -3097,11 +3917,11 @@ inline size_t FieldModelMap<TKey, TValue>::size() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_map_offset == 0) || ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
     return fbe_map_size;
 }
 
@@ -3110,10 +3930,10 @@ inline std::pair<FieldModel<TKey>, FieldModel<TValue>> FieldModelMap<TKey, TValu
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4) <= _buffer.size())) && "Model is broken!");
 
-    [[maybe_unused]] uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    [[maybe_unused]] uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
     assert((index < fbe_map_size) && "Index is out of bounds!");
 
     FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
@@ -3133,8 +3953,9 @@ inline std::pair<FieldModel<TKey>, FieldModel<TValue>> FieldModelMap<TKey, TValu
     uint32_t fbe_map_offset = (uint32_t)(_buffer.allocate(4 + fbe_map_size) - _buffer.offset());
     assert(((fbe_map_offset > 0) && ((_buffer.offset() + fbe_map_offset + 4 + fbe_map_size) <= _buffer.size())) && "Model is broken!");
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_map_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset)) = (uint32_t)size;
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_map_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset, size);
+
 
     memset((char*)(_buffer.data() + _buffer.offset() + fbe_map_offset + 4), 0, fbe_map_size);
 
@@ -3147,14 +3968,14 @@ inline bool FieldModelMap<TKey, TValue>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_map_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_map_offset == 0)
         return true;
 
     if ((_buffer.offset() + fbe_map_offset + 4) > _buffer.size())
         return false;
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_map_offset));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_map_offset);
 
     FieldModel<TKey> fbe_model_key(_buffer, fbe_map_offset + 4);
     FieldModel<TValue> fbe_model_value(_buffer, fbe_map_offset + 4 + fbe_model_key.fbe_size());
@@ -3187,7 +4008,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) con
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3209,7 +4030,51 @@ inline void FieldModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>& v
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::get(std::pmr::map<TKey, TValue>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKey key;
+        TValue value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(std::move(key), std::move(value));
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::get(std::pmr::unordered_map<TKey, TValue>& values) const noexcept
+{
+    values.clear();
+
+    size_t fbe_map_size = size();
+    if (fbe_map_size == 0)
+        return;
+
+    auto fbe_model = (*this)[0];
+    for (size_t i = fbe_map_size; i-- > 0;)
+    {
+        TKey key;
+        TValue value;
+        fbe_model.first.get(key);
+        fbe_model.second.get(value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3248,11 +4113,44 @@ inline void FieldModelMap<TKey, TValue>::set(const std::unordered_map<TKey, TVal
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
 }
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::set(const std::pmr::map<TKey, TValue>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
+
+template <typename TKey, typename TValue>
+inline void FieldModelMap<TKey, TValue>::set(const std::pmr::unordered_map<TKey, TValue>& values) noexcept
+{
+    assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
+    if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
+        return;
+
+    auto fbe_model = resize(values.size());
+    for (const auto& value : values)
+    {
+        fbe_model.first.set(value.first);
+        fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+        fbe_model.second.set(value.second);
+        fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
+    }
+}
 )CODE";
 
     // Prepare code template
     code = std::regex_replace(code, std::regex("\n"), EndLine());
-
     Write(code);
 }
 
@@ -3352,7 +4250,8 @@ inline size_t FinalModelBase<T, TBase>::get(T& value) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    value = (T)(*((const TBase*)(_buffer.data() + _buffer.offset() + fbe_offset())));
+    value = unaligned_load<T>(_buffer.data() + _buffer.offset() + fbe_offset());
+
     return fbe_size();
 }
 
@@ -3483,9 +4382,9 @@ size_t FinalModel<decimal_t>::get(decimal_t& value) const noexcept
     const double ds2to64 = 1.8446744073709552e+019;
 
     // Read decimal parts
-    uint64_t low = *((const uint64_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
-    uint32_t high = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 8));
-    uint32_t flags = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset() + 12));
+    uint64_t low = unaligned_load<uint64_t>(_buffer.data() + _buffer.offset() + fbe_offset());
+    uint32_t high = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 8);
+    uint32_t flags = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset() + 12);
 
     // Calculate decimal value
     double dValue = ((double)low + (double)high * ds2to64) / pow(10.0, (uint8_t)(flags >> 16));
@@ -3836,7 +4735,7 @@ size_t FinalModel<buffer_t>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_bytes_size) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
@@ -3853,7 +4752,7 @@ size_t FinalModel<buffer_t>::get(void* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((_buffer.offset() + fbe_offset() + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_bytes_size) > _buffer.size())
         return 4;
@@ -3871,7 +4770,7 @@ size_t FinalModel<buffer_t>::get(std::vector<uint8_t>& value) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_bytes_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_bytes_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((_buffer.offset() + fbe_offset() + 4 + fbe_bytes_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_bytes_size) > _buffer.size())
         return 4;
@@ -3982,7 +4881,7 @@ size_t FinalModel<std::string>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_string_size) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
@@ -3999,7 +4898,7 @@ size_t FinalModel<std::string>::get(char* data, size_t size) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((_buffer.offset() + fbe_offset() + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_string_size) > _buffer.size())
         return 4;
@@ -4017,7 +4916,7 @@ size_t FinalModel<std::string>::get(std::string& value) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    uint32_t fbe_string_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_string_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((_buffer.offset() + fbe_offset() + 4 + fbe_string_size) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + 4 + fbe_string_size) > _buffer.size())
         return 4;
@@ -4532,7 +5431,7 @@ inline size_t FinalModelVector<T>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
-    uint32_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
 
     size_t size = 4;
     FinalModel<T> fbe_model(_buffer, fbe_offset() + 4);
@@ -4556,7 +5455,7 @@ inline size_t FinalModelVector<T>::get(std::vector<T>& values) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    size_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    size_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_vector_size == 0)
         return 4;
 
@@ -4584,7 +5483,7 @@ inline size_t FinalModelVector<T>::get(std::list<T>& values) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    size_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    size_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_vector_size == 0)
         return 4;
 
@@ -4610,7 +5509,7 @@ inline size_t FinalModelVector<T>::get(std::set<T>& values) const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    size_t fbe_vector_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    size_t fbe_vector_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_vector_size == 0)
         return 4;
 
@@ -4780,7 +5679,7 @@ inline size_t FinalModelMap<TKey, TValue>::verify() const noexcept
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return std::numeric_limits<std::size_t>::max();
 
-    uint32_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
 
     size_t size = 4;
     FinalModel<TKey> fbe_model_key(_buffer, fbe_offset() + 4);
@@ -4812,7 +5711,7 @@ inline size_t FinalModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) c
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    size_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    size_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_map_size == 0)
         return 4;
 
@@ -4844,7 +5743,7 @@ inline size_t FinalModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>&
     if ((_buffer.offset() + fbe_offset() + 4) > _buffer.size())
         return 0;
 
-    size_t fbe_map_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    size_t fbe_map_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if (fbe_map_size == 0)
         return 4;
 
@@ -6277,7 +7176,7 @@ struct ChildNodeReader
             return false;
 
         // Deserialize the child object
-        return FBE::JSON::from_json(member->value.GetObj(), value);
+        return FBE::JSON::from_json(member->value.GetObject(), value);
     }
 };
 
@@ -6318,7 +7217,11 @@ void GeneratorCpp::GenerateFBE_Header(const CppCommon::Path& path)
     WriteLineIndent("namespace FBE {");
 
     // Generate common body
+    GenerateUnalignedAccessor_Header();
+    GenerateImportHelper_Header();
+    GenerateVariantVisitHelper_Header();
     GenerateBufferWrapper_Header();
+    GeneratePMRBufferWrapper_Header();
     GenerateDecimalWrapper_Header();
     GenerateFlagsWrapper_Header();
     GenerateTimeWrapper_Header();
@@ -6362,6 +7265,7 @@ void GeneratorCpp::GenerateFBE_Source(const CppCommon::Path& path)
 
     // Generate common body
     GenerateBufferWrapper_Source();
+    GeneratePMRBufferWrapper_Source();
     GenerateTimeWrapper_Source();
     GenerateUUIDWrapper_Source();
     GenerateFBEBuffer_Source();
@@ -6402,7 +7306,9 @@ void GeneratorCpp::GenerateFBEModels_Header(const CppCommon::Path& path)
     GenerateFBEFieldModelDecimal_Header();
     GenerateFBEFieldModelUUID_Header();
     GenerateFBEFieldModelBytes_Header();
+    GenerateFBEFieldModelPMRBytes_Header();
     GenerateFBEFieldModelString_Header();
+    GenerateFBEFieldModelPMRString_Header();
     GenerateFBEFieldModelOptional_Header();
     GenerateFBEFieldModelArray_Header();
     GenerateFBEFieldModelVector_Header();
@@ -6481,7 +7387,9 @@ void GeneratorCpp::GenerateFBEModels_Source(const CppCommon::Path& path)
     GenerateFBEFieldModelDecimal_Source();
     GenerateFBEFieldModelUUID_Source();
     GenerateFBEFieldModelBytes_Source();
+    GenerateFBEFieldModelPMRBytes_Source();
     GenerateFBEFieldModelString_Source();
+    GenerateFBEFieldModelPMRString_Source();
 
     // Generate namespace end
     WriteLine();
@@ -6749,6 +7657,15 @@ void GeneratorCpp::GeneratePackage_Header(const std::shared_ptr<Package>& p)
         for (const auto& f : p->body->flags)
             GenerateFlags(p, f);
 
+        if (!p->body->variants.empty()) {
+            // forward declarations
+            GeneratorStructForwardDeclaration(p->body->structs);
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantAlias(p, v);
+            }
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
             GenerateStruct_Header(p, s);
@@ -6764,6 +7681,13 @@ void GeneratorCpp::GeneratePackage_Header(const std::shared_ptr<Package>& p)
     // Store the output file
     WriteEnd();
     Store(output);
+}
+
+void GeneratorCpp::GeneratorStructForwardDeclaration(const std::vector<std::shared_ptr<StructType>>& structs) {
+    WriteLineIndent("// forward declaration");
+    for (auto& s: structs){
+        WriteLine(std::string("struct ") + *s->name + ";");
+    }
 }
 
 void GeneratorCpp::GeneratePackage_Source(const std::shared_ptr<Package>& p)
@@ -6810,6 +7734,14 @@ void GeneratorCpp::GeneratePackage_Source(const std::shared_ptr<Package>& p)
             // Generate flags logging stream
             if (Logging())
                 GenerateFlagsLoggingStream(f);
+        }
+
+        if (!p->body->variants.empty()) {
+            for (const auto& v : p->body->variants)
+            {
+                GenerateVariantOutputStream(p, v);
+            }
+            WriteLine();
         }
 
         // Generate child structs
@@ -6907,7 +7839,7 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
 
     // Generate imports
     GenerateImports("fbe_models.h");
-    GenerateImportsModels(p, false);
+    GenerateImportsModels(p, false, false);
 
     // Generate namespace begin
     WriteLine();
@@ -6928,6 +7860,11 @@ void GeneratorCpp::GeneratePackageModels_Header(const std::shared_ptr<Package>& 
         {
             // Generate flags field model
             GenerateFlagsFieldModel(p, f);
+        }
+
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Header(p, v);
         }
 
         // Generate child structs
@@ -6975,6 +7912,11 @@ void GeneratorCpp::GeneratePackageModels_Source(const std::shared_ptr<Package>& 
     // Generate namespace body
     if (p->body)
     {
+        // Generate variant
+        for(const auto& v : p->body->variants) {
+            GenerateVariantFieldModel_Source(p, v);
+        }
+
         // Generate child structs
         for (const auto& s : p->body->structs)
         {
@@ -7012,7 +7954,7 @@ void GeneratorCpp::GeneratePackageFinalModels_Header(const std::shared_ptr<Packa
 
     // Generate imports
     GenerateImports("fbe_final_models.h");
-    GenerateImportsModels(p, true);
+    GenerateImportsModels(p, true, false);
 
     // Generate namespace begin
     WriteLine();
@@ -7237,7 +8179,7 @@ void GeneratorCpp::GenerateEnum(const std::shared_ptr<Package>& p, const std::sh
 
     // Generate enum output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value);");
 
     // Generate enum formatter declaration
     WriteLine();
@@ -7256,7 +8198,7 @@ void GeneratorCpp::GenerateEnumOutputStream(const std::shared_ptr<EnumType>& e)
 {
     // Generate enum output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -7430,7 +8372,7 @@ void GeneratorCpp::GenerateFlags(const std::shared_ptr<Package>& p, const std::s
 
     // Generate flags output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value);");
 
     // Generate flags formatter declaration
     WriteLine();
@@ -7449,7 +8391,7 @@ void GeneratorCpp::GenerateFlagsOutputStream(const std::shared_ptr<FlagsType>& f
 {
     // Generate flags output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -7598,6 +8540,53 @@ public:
     Write(code);
 }
 
+void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    WriteLine();
+    std::string code = "using " + *v->name + " = std::variant<";
+    bool first = true;
+    for (auto value : v->body->values) {
+        code += (!first ? ", " : "") + ConvertVariantTypeName(*p->name, *value);
+        first = false;
+    }
+    code += ">;";
+    WriteLineIndent(code);
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value);");
+}
+
+void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
+{
+    WriteLine();
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value)");
+    WriteLineIndent("{");
+    Indent(1);
+
+    WriteLineIndent("std::visit(");
+    Indent(1);
+    WriteLineIndent("overloaded");
+    WriteLineIndent("{");
+    Indent(1);
+    bool first = true;
+    for (auto& value : v->body->values) {
+        if (IsContainerType(*value) || value->ptr)
+            // TODO: Generate container output stream
+            continue;
+        WriteIndent(first ? "" : ", ");
+        Write("[&stream](");
+        Write(ConvertVariantTypeNameAsArgument(*p->name, *value));
+        WriteLine(std::string(" v) { stream << ") + (value->ptr ? "*" : "") + "v; }");
+        first = false;
+    }
+    WriteLineIndent(std::string(first ? "" : ", ") + "[&stream](auto&) { stream << \"unknown type\"; },");
+    Indent(-1);
+    WriteLineIndent("},");
+    WriteLineIndent("value);");
+    Indent(-1);
+    WriteLineIndent("return stream;");
+    Indent(-1);
+    WriteLineIndent("}");
+}
+
 void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s)
 {
     // Generate struct response forward declaration
@@ -7632,6 +8621,15 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
     }
 
     // Generate struct body
+    // Write Arena ArenaTags
+    if (Arena())
+    {
+        for(auto &tag: ArenaTags()){
+            WriteLineIndent(tag + ";");
+        }
+        WriteLine();
+    }
+
     if (s->body)
     {
         for (const auto& field : s->body->fields)
@@ -7655,6 +8653,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
     bool first = true;
     WriteLine();
     WriteLineIndent(*s->name + "();");
+
+    // Generate cstr with Arena
+    if (Arena()) {
+        WriteLineIndent("explicit " + *s->name + "(allocator_type alloc);");
+    }
 
     // Generate struct initialization constructor
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -7701,11 +8704,11 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct string convert
     WriteLine();
-    WriteLineIndent("std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }");
+    WriteLineIndent("std::string string() const;");
 
     // Generate struct output stream operator
     WriteLine();
-    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
+    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value);");
 
     // Generate struct output stream operator
     if (Logging())
@@ -7764,6 +8767,42 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     Indent(-1);
     WriteLineIndent("{}");
 
+    // Generate struct constructor with arena
+    if (Arena()) {
+        first = true;
+        WriteLine();
+        WriteLineIndent(*s->name + "::" + *s->name + "([[maybe_unused]] allocator_type alloc)");
+        Indent(1);
+        if (s->base && !s->base->empty())
+        {
+            WriteLineIndent(": " + ConvertTypeName(*p->name, *s->base, false) + "()");
+            first = false;
+        }
+        if (s->body)
+        {
+            auto enums = p->body->enums;
+            for (const auto& field : s->body->fields)
+            {
+                WriteIndent();
+                Write(std::string(first ? ": " : ", ") + *field->name + "(");
+                if (*field->type == "string" || *field->type == "bytes" || IsContainerType(*field)) {
+                    Write("alloc");
+                } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
+                    Write(ConvertDefault(*p->name, *field));
+                } else if (!IsVariantType(p, *field->type) && !field->optional && *field->type != "bytes" && std::find_if(enums.begin(), enums.end(),
+                 [t = *field->type](const std::shared_ptr<EnumType>& e) -> bool { 
+                     return *e->name == t; }) == enums.end()) {
+                    Write("alloc");
+                }
+                Write(")");
+                WriteLine();
+                first = false;
+            }
+        }
+        Indent(-1);
+        WriteLineIndent("{}");
+    }
+
     // Generate struct initialization constructor
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
     {
@@ -7805,7 +8844,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
 
     // Generate struct compare operators
     WriteLine();
-    WriteLineIndent("bool " + *s->name + "::operator==(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("bool " + *s->name + "::operator==([[maybe_unused]] const " + *s->name + "& other) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("return (");
@@ -7838,7 +8877,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     WriteLineIndent("}");
 
     WriteLine();
-    WriteLineIndent("bool " + *s->name + "::operator<(const " + *s->name + "& other) const noexcept");
+    WriteLineIndent("bool " + *s->name + "::operator<([[maybe_unused]] const " + *s->name + "& other) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if (s->base && !s->base->empty())
@@ -7873,9 +8912,18 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
     Indent(-1);
     WriteLineIndent("}");
 
+    // Generate struct string method
+    WriteLine();
+    WriteLineIndent("std::string " + *s->name + "::string() const");
+    WriteLineIndent("{");
+    Indent(1);
+    WriteLineIndent("std::stringstream ss; ss << *this; return ss.str();");
+    Indent(-1);
+    WriteLineIndent("}");
+
     // Generate struct swap method
     WriteLine();
-    WriteLineIndent("void " + *s->name + "::swap(" + *s->name + "& other) noexcept");
+    WriteLineIndent("void " + *s->name + "::swap([[maybe_unused]] " + *s->name + "& other) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("using std::swap;");
@@ -7892,7 +8940,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
 {
     // Generate struct output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -7920,7 +8968,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("for (size_t i = 0; i < " + std::to_string(field->N) + "; ++i)");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "value." + *field->name + "[i]", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "value."+ *field->name + "[i]", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7933,11 +8981,11 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("{");
                 Indent(1);
                 WriteLineIndent("bool first = true;");
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ".size()" + " << \"][\"" + ";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << value." + *field->name + ".size()" + " << \"][\"" + ";");
                 WriteLineIndent("for (const auto& it : value." + *field->name + ")");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7950,11 +8998,11 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("{");
                 Indent(1);
                 WriteLineIndent("bool first = true;");
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ".size()" + "<< \"]<\"" + ";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << value." + *field->name + ".size()" + "<< \"]<\"" + ";");
                 WriteLineIndent("for (const auto& it : value." + *field->name + ")");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7967,11 +9015,11 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("{");
                 Indent(1);
                 WriteLineIndent("bool first = true;");
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ".size()" + "<< \"]{\"" + ";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << value." + *field->name + ".size()" + "<< \"]{\"" + ";");
                 WriteLineIndent("for (const auto& it : value." + *field->name + ")");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->optional, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it", field->ptr, field->optional, true));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -7984,13 +9032,13 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("{");
                 Indent(1);
                 WriteLineIndent("bool first = true;");
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << " + "value." + *field->name + ".size()" + "<< \"]<{\"" + ";");
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=[\" << value." + *field->name + ".size()" + "<< \"]<{\"" + ";");
                 WriteLineIndent("for (const auto& it : value." + *field->name + ")");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, false, true));
                 WriteLineIndent("stream << \"->\";");
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->optional, false));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->ptr, field->optional, false));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -8007,9 +9055,9 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("for (const auto& it : value." + *field->name + ")");
                 WriteLineIndent("{");
                 Indent(1);
-                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, true));
+                WriteLineIndent(ConvertOutputStreamValue(*field->key, "it.first", false, false, true));
                 WriteLineIndent("stream << \"->\";");
-                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->optional, false));
+                WriteLineIndent(ConvertOutputStreamValue(*field->type, "it.second", field->ptr, field->optional, false));
                 WriteLineIndent("first = false;");
                 Indent(-1);
                 WriteLineIndent("}");
@@ -8018,7 +9066,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
                 WriteLineIndent("}");
             }
             else
-                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=\"; " + ConvertOutputStreamValue(*field->type, "value." + *field->name, field->optional, false));
+                WriteLineIndent("stream << \"" + std::string(first ? "" : ",") + *field->name + "=\"; " + ConvertOutputStreamValue(*field->type, "value." + *field->name, field->ptr, field->optional, false));
             first = false;
         }
     }
@@ -8195,7 +9243,7 @@ void GeneratorCpp::GenerateStructHash(const std::shared_ptr<Package>& p, const s
     WriteLineIndent("typedef " + *p->name + "::" + *s->name + " argument_type;");
     WriteLineIndent("typedef size_t result_type;");
     WriteLine();
-    WriteLineIndent("result_type operator() (const argument_type& value) const");
+    WriteLineIndent("result_type operator() ([[maybe_unused]] const argument_type& value) const");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("result_type result = 17;");
@@ -8450,7 +9498,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
@@ -8484,19 +9532,19 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("return true;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);");
     WriteLineIndent("if (fbe_struct_size < (4 + 4))");
     Indent(1);
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));");
+    WriteLineIndent("uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);");
     WriteLineIndent("if (fbe_verify_type && (fbe_struct_type != fbe_type()))");
     Indent(1);
     WriteLineIndent("return false;");
@@ -8511,7 +9559,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model verify_fields() method
-    WriteLineIndent("bool " + model_name + "::verify_fields(size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("bool " + model_name + "::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -8562,14 +9610,14 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));");
+    WriteLineIndent("uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());");
     WriteLineIndent("assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && \"Model is broken!\");");
     WriteLineIndent("if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))");
     Indent(1);
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);");
     WriteLineIndent("assert((fbe_struct_size >= (4 + 4)) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_struct_size < (4 + 4))");
     Indent(1);
@@ -8601,7 +9649,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("return;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));");
+    WriteLineIndent("uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());");
     WriteLineIndent("get_fields(fbe_value, fbe_struct_size);");
     WriteLineIndent("get_end(fbe_begin);");
     Indent(-1);
@@ -8609,7 +9657,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model get_fields() method
-    WriteLineIndent("void " + model_name + "::get_fields(" + struct_name + "& fbe_value, size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("void " + model_name + "::get_fields([[maybe_unused]] " + struct_name + "& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -8670,9 +9718,9 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;");
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;");
-    WriteLineIndent("*((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);");
+    WriteLineIndent("unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());");
     WriteLine();
     WriteLineIndent("_buffer.shift(fbe_struct_offset);");
     WriteLineIndent("return fbe_struct_offset;");
@@ -8706,7 +9754,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model set_fields() method
-    WriteLineIndent("void " + model_name + "::set_fields(const " + struct_name + "& fbe_value) noexcept");
+    WriteLineIndent("void " + model_name + "::set_fields([[maybe_unused]] const " + struct_name + "& fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -8807,7 +9855,7 @@ void GeneratorCpp::GenerateStructModel_Source(const std::shared_ptr<Package>& p,
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);");
     WriteLineIndent("if (fbe_full_size < model.fbe_size())");
     Indent(1);
     WriteLineIndent("return false;");
@@ -8861,7 +9909,7 @@ void GeneratorCpp::GenerateStructModel_Source(const std::shared_ptr<Package>& p,
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));");
+    WriteLineIndent("uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);");
     WriteLineIndent("assert((fbe_full_size >= model.fbe_size()) && \"Model is broken!\");");
     WriteLineIndent("if (fbe_full_size < model.fbe_size())");
     Indent(1);
@@ -9234,8 +10282,8 @@ void GeneratorCpp::GenerateStructModelFinal_Source(const std::shared_ptr<Package
     WriteLineIndent("return false;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("size_t fbe_struct_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 8));");
-    WriteLineIndent("size_t fbe_struct_type = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 4));");
+    WriteLineIndent("size_t fbe_struct_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 8);");
+    WriteLineIndent("size_t fbe_struct_type = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 4);");
     WriteLineIndent("if ((fbe_struct_size == 0) || (fbe_struct_type != fbe_type()))");
     Indent(1);
     WriteLineIndent("return false;");
@@ -9282,8 +10330,8 @@ void GeneratorCpp::GenerateStructModelFinal_Source(const std::shared_ptr<Package
     WriteLineIndent("return 0;");
     Indent(-1);
     WriteLine();
-    WriteLineIndent("size_t fbe_struct_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 8));");
-    WriteLineIndent("size_t fbe_struct_type = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 4));");
+    WriteLineIndent("size_t fbe_struct_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 8);");
+    WriteLineIndent("size_t fbe_struct_type = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + _model.fbe_offset() - 4);");
     WriteLineIndent("assert(((fbe_struct_size > 0) && (fbe_struct_type == fbe_type())) && \"Model is broken!\");");
     WriteLineIndent("if ((fbe_struct_size == 0) || (fbe_struct_type != fbe_type()))");
     Indent(1);
@@ -10388,7 +11436,7 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     else if (type == "byte")
         return "uint8_t";
     else if (type == "bytes")
-        return "FBE::buffer_t";
+        return Arena() ? "FBE::pmr_buffer_t" : "FBE::buffer_t";
     else if (type == "char")
         return "char";
     else if (type == "wchar")
@@ -10416,7 +11464,7 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
     else if (type == "decimal")
         return "FBE::decimal_t";
     else if (type == "string")
-        return "std::string";
+        return Arena() ? "std::pmr::string" : "std::string";
     else if (type == "timestamp")
         return "uint64_t";
     else if (type == "uuid")
@@ -10429,18 +11477,22 @@ std::string GeneratorCpp::ConvertTypeName(const std::string& package, const std:
 
 std::string GeneratorCpp::ConvertTypeName(const std::string& package, const StructField& field)
 {
+    std::string prefix = "std";
+    if (Arena()) {
+        prefix += "::pmr";
+    }
     if (field.array)
         return "std::array<" + ConvertTypeName(package, *field.type, field.optional) + ", " + std::to_string(field.N) + ">";
     else if (field.vector)
-        return "std::vector<" + ConvertTypeName(package, *field.type, field.optional) + ">";
+        return prefix + "::vector<" + ConvertTypeName(package, *field.type, field.optional) + ">";
     else if (field.list)
-        return "std::list<" + ConvertTypeName(package, *field.type, field.optional) + ">";
+        return prefix + "::list<" + ConvertTypeName(package, *field.type, field.optional) + ">";
     else if (field.set)
-        return "std::set<" + ConvertTypeName(package, *field.key, false) + ">";
+        return prefix + "::set<" + ConvertTypeName(package, *field.key, false) + ">";
     else if (field.map)
-        return "std::map<" + ConvertTypeName(package, *field.key, false) + ", " + ConvertTypeName(package, *field.type, field.optional) +">";
+        return prefix + "::map<" + ConvertTypeName(package, *field.key, false) + ", " + ConvertTypeName(package, *field.type, field.optional) +">";
     else if (field.hash)
-        return "std::unordered_map<" + ConvertTypeName(package, *field.key, false) + ", " + ConvertTypeName(package, *field.type, field.optional) +">";
+        return prefix + "::unordered_map<" + ConvertTypeName(package, *field.key, false) + ", " + ConvertTypeName(package, *field.type, field.optional) +">";
 
     return ConvertTypeName(package, *field.type, field.optional);
 }
@@ -10619,10 +11671,12 @@ std::string GeneratorCpp::ConvertDefault(const std::string& package, const std::
 
 std::string GeneratorCpp::ConvertDefault(const std::string& package, const StructField& field)
 {
+    if (field.ptr)
+        return "nullptr";
     if (field.value)
         return ConvertConstant(*field.type, *field.value, field.optional);
 
-    if (field.array || field.vector || field.list || field.set || field.map || field.hash)
+    if (field.array || field.vector || field.list || field.set || field.map || field.hash || field.ptr)
         return "";
     else if (field.optional)
         return "std::nullopt";
@@ -10630,12 +11684,17 @@ std::string GeneratorCpp::ConvertDefault(const std::string& package, const Struc
     return ConvertDefault(package, *field.type);
 }
 
-std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const std::string& name, bool optional)
+std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const std::string& name, bool ptr, bool optional)
 {
+    std::string wrapped_name = name;
+    if (ptr) {
+      return "\" ptr of other struct\" << (" + name +
+             " == nullptr ? \"true\" : \"false\"" + ")";
+    }
     if (type == "bool")
-        return "(" + std::string(optional ? "*" : "") + name + " ? \"true\" : \"false\"" + ")";
+        return "(" + std::string(optional ? "*" : "") + wrapped_name + " ? \"true\" : \"false\"" + ")";
     else if ((type == "byte") || (type == "int8") || (type == "uint8"))
-        return "(int)" + std::string(optional ? "*" : "") + name;
+        return "(int)" + std::string(optional ? "*" : "") + wrapped_name;
     else if (type == "bytes")
         return "\"bytes[\" << " + name + std::string(optional ? "->" : ".") + "size() << \"]\"";
     else if (type == "char")
@@ -10643,19 +11702,18 @@ std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const
     else if (type == "wchar")
         return "\"'\" << (char)" + std::string(optional ? "*" : "") + name + " << \"'\"";
     else if ((type == "string") || (type == "uuid"))
-        return "\"\\\"\" << " + std::string(optional ? "*" : "") + name + " << \"\\\"\"";
-    else
-        return std::string(optional ? "*" : "") + name;
+        return "\"\\\"\" << " + std::string(optional ? "*" : "") + wrapped_name + " << \"\\\"\"";
+    return std::string(optional ? "*" : "") + wrapped_name;
 }
 
-std::string GeneratorCpp::ConvertOutputStreamValue(const std::string& type, const std::string& name, bool optional, bool separate)
+std::string GeneratorCpp::ConvertOutputStreamValue(const std::string& type, const std::string& name, bool ptr, bool optional, bool separate)
 {
     std::string comma = separate ? "<< std::string(first ? \"\" : \",\") " : "";
 
     if (optional)
-        return "if (" + name + ") stream " + comma + "<< " + ConvertOutputStreamType(type, name, true) + "; else stream " + comma + "<< \"null\";";
+        return "if (" + name + ") stream " + comma + "<< " + ConvertOutputStreamType(type, name, ptr, true) + "; else stream " + comma + "<< \"null\";";
     else
-        return "stream " + comma + "<< " + ConvertOutputStreamType(type, name, false) + ";";
+        return "stream " + comma + "<< " + ConvertOutputStreamType(type, name, ptr, false) + ";";
 }
 
 std::string GeneratorCpp::ConvertLoggingStreamType(const std::string& type, const std::string& name, bool optional)
@@ -10684,4 +11742,13 @@ std::string GeneratorCpp::ConvertLoggingStreamValue(const std::string& type, con
         return "record." + comma + ConvertLoggingStreamType(type, name, false) + ";";
 }
 
+bool GeneratorCpp::IsVariantType(const std::shared_ptr<Package>& p, const std::string& type) {
+    auto& variants = p->body->variants;
+    return std::find_if(variants.begin(), variants.end(), [&type](const auto& v) -> bool {
+        return *v->name == type;
+    }) != variants.end();
+}
+
 } // namespace FBE
+
+#include "generator_cpp.inl"

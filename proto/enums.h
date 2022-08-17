@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -334,7 +338,7 @@ struct Enums
     bool operator>(const Enums& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Enums& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Enums& value);
 
@@ -354,7 +358,7 @@ struct std::hash<enums::Enums>
     typedef enums::Enums argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

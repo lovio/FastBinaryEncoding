@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -214,7 +218,7 @@ struct StructSimple
     bool operator>(const StructSimple& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructSimple& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructSimple& value);
 
@@ -234,7 +238,7 @@ struct std::hash<test::StructSimple>
     typedef test::StructSimple argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -331,7 +335,7 @@ struct StructOptional : public ::test::StructSimple
     bool operator>(const StructOptional& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructOptional& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructOptional& value);
 
@@ -351,7 +355,7 @@ struct std::hash<test::StructOptional>
     typedef test::StructOptional argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<::test::StructSimple>()(value);
@@ -394,7 +398,7 @@ struct StructNested : public ::test::StructOptional
     bool operator>(const StructNested& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructNested& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructNested& value);
 
@@ -414,7 +418,7 @@ struct std::hash<test::StructNested>
     typedef test::StructNested argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<::test::StructOptional>()(value);
@@ -448,7 +452,7 @@ struct StructBytes
     bool operator>(const StructBytes& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructBytes& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructBytes& value);
 
@@ -468,7 +472,7 @@ struct std::hash<test::StructBytes>
     typedef test::StructBytes argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -508,7 +512,7 @@ struct StructArray
     bool operator>(const StructArray& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructArray& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructArray& value);
 
@@ -528,7 +532,7 @@ struct std::hash<test::StructArray>
     typedef test::StructArray argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -568,7 +572,7 @@ struct StructVector
     bool operator>(const StructVector& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructVector& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructVector& value);
 
@@ -588,7 +592,7 @@ struct std::hash<test::StructVector>
     typedef test::StructVector argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -628,7 +632,7 @@ struct StructList
     bool operator>(const StructList& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructList& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructList& value);
 
@@ -648,7 +652,7 @@ struct std::hash<test::StructList>
     typedef test::StructList argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -682,7 +686,7 @@ struct StructSet
     bool operator>(const StructSet& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructSet& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructSet& value);
 
@@ -702,7 +706,7 @@ struct std::hash<test::StructSet>
     typedef test::StructSet argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -742,7 +746,7 @@ struct StructMap
     bool operator>(const StructMap& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructMap& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructMap& value);
 
@@ -762,7 +766,7 @@ struct std::hash<test::StructMap>
     typedef test::StructMap argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -802,7 +806,7 @@ struct StructHash
     bool operator>(const StructHash& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructHash& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructHash& value);
 
@@ -822,7 +826,7 @@ struct std::hash<test::StructHash>
     typedef test::StructHash argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -854,7 +858,7 @@ struct StructHashEx
     bool operator>(const StructHashEx& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructHashEx& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructHashEx& value);
 
@@ -874,7 +878,7 @@ struct std::hash<test::StructHashEx>
     typedef test::StructHashEx argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -902,7 +906,7 @@ struct StructEmpty
     bool operator>(const StructEmpty& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructEmpty& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructEmpty& value);
 
@@ -922,7 +926,7 @@ struct std::hash<test::StructEmpty>
     typedef test::StructEmpty argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

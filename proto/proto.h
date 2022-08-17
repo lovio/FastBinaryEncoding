@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -110,7 +114,7 @@ struct Order
     bool operator>(const Order& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Order& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Order& value);
 
@@ -130,7 +134,7 @@ struct std::hash<proto::Order>
     typedef proto::Order argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -163,7 +167,7 @@ struct Balance
     bool operator>(const Balance& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Balance& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Balance& value);
 
@@ -183,7 +187,7 @@ struct std::hash<proto::Balance>
     typedef proto::Balance argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.currency)>()(value.currency);
@@ -220,7 +224,7 @@ struct Account
     bool operator>(const Account& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Account& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Account& value);
 
@@ -240,7 +244,7 @@ struct std::hash<proto::Account>
     typedef proto::Account argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         result = result * 31 + std::hash<decltype(value.id)>()(value.id);
@@ -272,7 +276,7 @@ struct OrderMessage
     bool operator>(const OrderMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const OrderMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const OrderMessage& value);
 
@@ -292,7 +296,7 @@ struct std::hash<proto::OrderMessage>
     typedef proto::OrderMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -323,7 +327,7 @@ struct BalanceMessage
     bool operator>(const BalanceMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const BalanceMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const BalanceMessage& value);
 
@@ -343,7 +347,7 @@ struct std::hash<proto::BalanceMessage>
     typedef proto::BalanceMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;
@@ -374,7 +378,7 @@ struct AccountMessage
     bool operator>(const AccountMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const AccountMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const AccountMessage& value);
 
@@ -394,7 +398,7 @@ struct std::hash<proto::AccountMessage>
     typedef proto::AccountMessage argument_type;
     typedef size_t result_type;
 
-    result_type operator() (const argument_type& value) const
+    result_type operator() ([[maybe_unused]] const argument_type& value) const
     {
         result_type result = 17;
         return result;

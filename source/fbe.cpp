@@ -48,6 +48,21 @@ void FlagsBody::AddValue(FlagsValue* v)
     values.push_back(std::shared_ptr<FlagsValue>(v));
 }
 
+void VariantBody::AddValue(VariantValue* v)
+{
+    if (v == nullptr)
+        yyerror("Variant is null!");
+    if (v->type->empty())
+        yyerror("Variant type is invalid!");
+
+    // Check for duplicates
+    auto it = std::find_if(values.begin(), values.end(), [v](auto item)->bool { return *item == *v; });
+    if (it != values.end())
+        yyerror("Duplicate Variant type " + *v->type.get());
+
+    values.push_back(std::shared_ptr<VariantValue>(v));
+}
+
 void StructField::SetArraySize(int size)
 {
     if (size <= 0)
@@ -115,7 +130,8 @@ void Statements::AddStatement(Statement* st)
         AddFlags(st->f);
     if (st->s)
         AddStruct(st->s);
-
+    if (st->v)
+        AddVariant(st->v);
     delete st;
 }
 
@@ -151,6 +167,23 @@ void Statements::AddFlags(std::shared_ptr<FlagsType>& f)
         yyerror("Duplicate flags name " + *f->name.get());
 
     flags.push_back(f);
+}
+
+void Statements::AddVariant(std::shared_ptr<VariantType> &v)
+{
+    if (v == nullptr)
+        yyerror("Variant is null!");
+    if (v->name->empty())
+        yyerror("Variant name is invalid!");
+    if (!v->body)
+        yyerror("Variant is empty - " + *v->name.get());
+
+    // Check for duplicates
+    auto it = std::find_if(variants.begin(), variants.end(), [&v](auto item)->bool { return *item->name.get() == *v->name.get(); });
+    if (it != variants.end())
+        yyerror("Duplicate variant name " + *v->name.get());
+
+    variants.push_back(v);
 }
 
 void Statements::AddStruct(std::shared_ptr<StructType>& s)

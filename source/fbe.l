@@ -45,6 +45,7 @@ int yyerror(const std::string& msg);
 "version"               { yycount(); return yytoken(VERSION); }
 "enum"                  { yycount(); return yytoken(ENUM); }
 "flags"                 { yycount(); return yytoken(FLAGS); }
+"variant"               { yycount(); return yytoken(VARIANT); }
 "struct"                { yycount(); return yytoken(STRUCT); }
 "message"               { yycount(); return yytoken(MESSAGE); }
 "base"                  { yycount(); return yytoken(BASE); }
@@ -202,6 +203,11 @@ int main(int argc, char** argv)
     parser.add_option("--final").dest("final").action("store_true").set_default(0).help("Generate Final serialization code");
     parser.add_option("--json").dest("json").action("store_true").set_default(0).help("Generate JSON serialization code");
     parser.add_option("--proto").dest("proto").action("store_true").set_default(0).help("Generate Sender/Receiver protocol code");
+    parser.add_option("--ptr").dest("ptr").action("store_true").set_default(0).help("Generate pointer-based serialization code, conflicts with --final");
+    parser.add_option("--arena").dest("arena").action("store_true").set_default(0).help("Generate arena-based serialization code");
+    parser.add_option("--arena-header").dest("arena-header").action("store").type("string").help("Arena header path, work with --arena");
+    parser.add_option("--arena-tag").dest("arena-tag").action("append").type("string").help("Add arena tag, work with --arena");
+    parser.add_option("--import-ptr").dest("import-ptr").action("store_true").set_default(0).help("import ptr-based FBE package");
 
     optparse::Values options = parser.parse_args(argc, argv);
 
@@ -216,6 +222,8 @@ int main(int argc, char** argv)
     std::string directory;
     std::string input(options.get("input"));
     std::string output(options.get("output"));
+    std::string arena_header(options.get("arena-header"));
+    std::list<std::string> arena_tags(options.all("arena-tag"));
     int indent = options.get("indent");
     bool tabs = options.get("tabs");
     bool quiet = options.get("quiet");
@@ -234,6 +242,9 @@ int main(int argc, char** argv)
     bool final = options.get("final");
     bool json = options.get("json");
     bool proto = options.get("proto");
+    bool ptr = options.get("ptr");
+    bool arena = options.get("arena");
+    bool import_ptr = options.get("import-ptr");
     char space = tabs ? '\t' : ' ';
 
     // Check for the input path
@@ -290,7 +301,17 @@ int main(int argc, char** argv)
     if (cpp)
     {
         if (!quiet) std::cout << "Generating C++ code...";
-        FBE::GeneratorCpp(input, output, (indent ? indent : 4), space).Final(final).JSON(json).Proto(proto).Logging(cpp_logging).Generate(FBE::Package::root);
+        FBE::GeneratorCpp(input, output, (indent ? indent : 4), space)
+            .Final(final)
+            .JSON(json)
+            .Proto(proto)
+            .Logging(cpp_logging)
+            .Ptr(ptr)
+            .Arena(arena)
+            .ArenaHeader(arena_header)
+            .ArenaTags(arena_tags)
+            .ImportPtr(import_ptr)
+            .Generate(FBE::Package::root);
         if (!quiet) std::cout << "Done!" << std::endl;
     }
     if (csharp)

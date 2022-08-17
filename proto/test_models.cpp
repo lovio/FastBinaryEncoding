@@ -114,7 +114,7 @@ size_t FieldModel<::test::StructSimple>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -178,15 +178,15 @@ bool FieldModel<::test::StructSimple>::verify(bool fbe_verify_type) const noexce
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -478,12 +478,12 @@ size_t FieldModel<::test::StructSimple>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -503,7 +503,7 @@ void FieldModel<::test::StructSimple>::get(::test::StructSimple& fbe_value) cons
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -795,9 +795,9 @@ size_t FieldModel<::test::StructSimple>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -874,7 +874,7 @@ bool StructSimpleModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -908,7 +908,7 @@ size_t StructSimpleModel::deserialize(::test::StructSimple& value) const noexcep
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -1068,7 +1068,7 @@ size_t FieldModel<::test::StructOptional>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -1154,15 +1154,15 @@ bool FieldModel<::test::StructOptional>::verify(bool fbe_verify_type) const noex
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -1586,12 +1586,12 @@ size_t FieldModel<::test::StructOptional>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -1611,7 +1611,7 @@ void FieldModel<::test::StructOptional>::get(::test::StructOptional& fbe_value) 
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -2033,9 +2033,9 @@ size_t FieldModel<::test::StructOptional>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -2134,7 +2134,7 @@ bool StructOptionalModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -2168,7 +2168,7 @@ size_t StructOptionalModel::deserialize(::test::StructOptional& value) const noe
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -2220,7 +2220,7 @@ size_t FieldModel<::test::StructNested>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -2252,15 +2252,15 @@ bool FieldModel<::test::StructNested>::verify(bool fbe_verify_type) const noexce
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -2360,12 +2360,12 @@ size_t FieldModel<::test::StructNested>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -2385,7 +2385,7 @@ void FieldModel<::test::StructNested>::get(::test::StructNested& fbe_value) cons
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -2483,9 +2483,9 @@ size_t FieldModel<::test::StructNested>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -2530,7 +2530,7 @@ bool StructNestedModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -2564,7 +2564,7 @@ size_t StructNestedModel::deserialize(::test::StructNested& value) const noexcep
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -2596,7 +2596,7 @@ size_t FieldModel<::test::StructBytes>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -2618,15 +2618,15 @@ bool FieldModel<::test::StructBytes>::verify(bool fbe_verify_type) const noexcep
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -2666,12 +2666,12 @@ size_t FieldModel<::test::StructBytes>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -2691,7 +2691,7 @@ void FieldModel<::test::StructBytes>::get(::test::StructBytes& fbe_value) const 
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -2731,9 +2731,9 @@ size_t FieldModel<::test::StructBytes>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -2768,7 +2768,7 @@ bool StructBytesModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -2802,7 +2802,7 @@ size_t StructBytesModel::deserialize(::test::StructBytes& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -2848,7 +2848,7 @@ size_t FieldModel<::test::StructArray>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -2877,15 +2877,15 @@ bool FieldModel<::test::StructArray>::verify(bool fbe_verify_type) const noexcep
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -2967,12 +2967,12 @@ size_t FieldModel<::test::StructArray>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -2992,7 +2992,7 @@ void FieldModel<::test::StructArray>::get(::test::StructArray& fbe_value) const 
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -3064,9 +3064,9 @@ size_t FieldModel<::test::StructArray>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -3108,7 +3108,7 @@ bool StructArrayModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -3142,7 +3142,7 @@ size_t StructArrayModel::deserialize(::test::StructArray& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -3188,7 +3188,7 @@ size_t FieldModel<::test::StructVector>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -3217,15 +3217,15 @@ bool FieldModel<::test::StructVector>::verify(bool fbe_verify_type) const noexce
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -3307,12 +3307,12 @@ size_t FieldModel<::test::StructVector>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -3332,7 +3332,7 @@ void FieldModel<::test::StructVector>::get(::test::StructVector& fbe_value) cons
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -3414,9 +3414,9 @@ size_t FieldModel<::test::StructVector>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -3458,7 +3458,7 @@ bool StructVectorModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -3492,7 +3492,7 @@ size_t StructVectorModel::deserialize(::test::StructVector& value) const noexcep
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -3538,7 +3538,7 @@ size_t FieldModel<::test::StructList>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -3567,15 +3567,15 @@ bool FieldModel<::test::StructList>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -3657,12 +3657,12 @@ size_t FieldModel<::test::StructList>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -3682,7 +3682,7 @@ void FieldModel<::test::StructList>::get(::test::StructList& fbe_value) const no
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -3764,9 +3764,9 @@ size_t FieldModel<::test::StructList>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -3808,7 +3808,7 @@ bool StructListModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -3842,7 +3842,7 @@ size_t StructListModel::deserialize(::test::StructList& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -3876,7 +3876,7 @@ size_t FieldModel<::test::StructSet>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -3899,15 +3899,15 @@ bool FieldModel<::test::StructSet>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -3953,12 +3953,12 @@ size_t FieldModel<::test::StructSet>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -3978,7 +3978,7 @@ void FieldModel<::test::StructSet>::get(::test::StructSet& fbe_value) const noex
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -4024,9 +4024,9 @@ size_t FieldModel<::test::StructSet>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -4062,7 +4062,7 @@ bool StructSetModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -4096,7 +4096,7 @@ size_t StructSetModel::deserialize(::test::StructSet& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -4142,7 +4142,7 @@ size_t FieldModel<::test::StructMap>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -4171,15 +4171,15 @@ bool FieldModel<::test::StructMap>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -4261,12 +4261,12 @@ size_t FieldModel<::test::StructMap>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -4286,7 +4286,7 @@ void FieldModel<::test::StructMap>::get(::test::StructMap& fbe_value) const noex
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -4368,9 +4368,9 @@ size_t FieldModel<::test::StructMap>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -4412,7 +4412,7 @@ bool StructMapModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -4446,7 +4446,7 @@ size_t StructMapModel::deserialize(::test::StructMap& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -4492,7 +4492,7 @@ size_t FieldModel<::test::StructHash>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -4521,15 +4521,15 @@ bool FieldModel<::test::StructHash>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -4611,12 +4611,12 @@ size_t FieldModel<::test::StructHash>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -4636,7 +4636,7 @@ void FieldModel<::test::StructHash>::get(::test::StructHash& fbe_value) const no
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -4718,9 +4718,9 @@ size_t FieldModel<::test::StructHash>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -4762,7 +4762,7 @@ bool StructHashModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -4796,7 +4796,7 @@ size_t StructHashModel::deserialize(::test::StructHash& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -4826,7 +4826,7 @@ size_t FieldModel<::test::StructHashEx>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -4847,15 +4847,15 @@ bool FieldModel<::test::StructHashEx>::verify(bool fbe_verify_type) const noexce
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -4889,12 +4889,12 @@ size_t FieldModel<::test::StructHashEx>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -4914,7 +4914,7 @@ void FieldModel<::test::StructHashEx>::get(::test::StructHashEx& fbe_value) cons
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -4948,9 +4948,9 @@ size_t FieldModel<::test::StructHashEx>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -4984,7 +4984,7 @@ bool StructHashExModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -5018,7 +5018,7 @@ size_t StructHashExModel::deserialize(::test::StructHashEx& value) const noexcep
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -5044,7 +5044,7 @@ size_t FieldModel<::test::StructEmpty>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -5063,15 +5063,15 @@ bool FieldModel<::test::StructEmpty>::verify(bool fbe_verify_type) const noexcep
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -5091,12 +5091,12 @@ size_t FieldModel<::test::StructEmpty>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -5116,7 +5116,7 @@ void FieldModel<::test::StructEmpty>::get(::test::StructEmpty& fbe_value) const 
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -5137,9 +5137,9 @@ size_t FieldModel<::test::StructEmpty>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -5171,7 +5171,7 @@ bool StructEmptyModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -5205,7 +5205,7 @@ size_t StructEmptyModel::deserialize(::test::StructEmpty& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;

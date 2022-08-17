@@ -1,0 +1,21 @@
+package simple
+
+
+struct Scalar {
+    char? char_o;
+    wchar? wchar_o;
+    [key] char char_v;
+    string s;
+    string? so;
+    B* b;
+    B*[4] bpa;
+    B*[] bpv;
+    B*() bpl;
+    B*<int32> bpmap;
+    B*{int16} bphash;
+    B! bs;
+}
+
+struct B {
+
+}

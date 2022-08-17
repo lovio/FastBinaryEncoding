@@ -77,6 +77,62 @@ buffer_t buffer_t::base64decode(const std::string& str)
     return result;
 }
 
+std::string pmr_buffer_t::base64encode() const
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+
+    int val = 0;
+    int valb = -6;
+    for (auto c : _data)
+    {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0)
+        {
+            result.push_back(base64[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+
+    if (valb > -6)
+        result.push_back(base64[((val << 8) >> (valb + 8)) & 0x3F]);
+
+    while (result.size() % 4)
+        result.push_back('=');
+
+    return result;
+}
+
+buffer_t pmr_buffer_t::base64decode(const std::string& str)
+{
+    const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    buffer_t result;
+
+    std::vector<int> pattern(256, -1);
+    for (int i = 0; i < 64; ++i)
+        pattern[base64[i]] = i;
+
+    int val = 0;
+    int valb = -8;
+    for (auto c : str)
+    {
+        if (pattern[c] == -1)
+            break;
+
+        val = (val << 6) + pattern[c];
+        valb += 6;
+
+        if (valb >= 0)
+        {
+            result.push_back((uint8_t)((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+
+    return result;
+}
+
 uint64_t utc()
 {
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
@@ -361,8 +417,11 @@ size_t FBEBuffer::allocate(size_t size)
 
     _capacity = std::max(total, 2 * _capacity);
     uint8_t* data = (uint8_t*)std::malloc(_capacity);
-    std::memcpy(data, _data, _size);
-    std::free(_data);
+    if (_data != nullptr)
+    {
+        std::memcpy(data, _data, _size);
+        std::free(_data);
+    }
     _data = data;
     _size = total;
     return offset;

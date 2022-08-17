@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifdef isset
+#undef isset
+#endif
+
 #if defined(__clang__)
 #pragma clang system_header
 #elif defined(__GNUC__)
@@ -953,7 +957,7 @@ struct ChildNodeReader
             return false;
 
         // Deserialize the child object
-        return FBE::JSON::from_json(member->value.GetObj(), value);
+        return FBE::JSON::from_json(member->value.GetObject(), value);
     }
 };
 

@@ -99,20 +99,25 @@ Order::Order(int32_t arg_id, const std::string& arg_symbol, const ::protoex::Ord
     , sl(arg_sl)
 {}
 
-bool Order::operator==(const Order& other) const noexcept
+bool Order::operator==([[maybe_unused]] const Order& other) const noexcept
 {
     return (
         (id == other.id)
         );
 }
 
-bool Order::operator<(const Order& other) const noexcept
+bool Order::operator<([[maybe_unused]] const Order& other) const noexcept
 {
     if (id < other.id)
         return true;
     if (other.id < id)
         return false;
     return false;
+}
+
+std::string Order::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Order::swap(Order& other) noexcept
@@ -153,7 +158,7 @@ Balance::Balance(const ::proto::Balance& base, double arg_locked)
     , locked(arg_locked)
 {}
 
-bool Balance::operator==(const Balance& other) const noexcept
+bool Balance::operator==([[maybe_unused]] const Balance& other) const noexcept
 {
     return (
         ::proto::Balance::operator==(other)
@@ -161,13 +166,18 @@ bool Balance::operator==(const Balance& other) const noexcept
         );
 }
 
-bool Balance::operator<(const Balance& other) const noexcept
+bool Balance::operator<([[maybe_unused]] const Balance& other) const noexcept
 {
     if (::proto::Balance::operator<(other))
         return true;
     if (other.::proto::Balance::operator<(*this))
         return false;
     return false;
+}
+
+std::string Balance::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Balance::swap(Balance& other) noexcept
@@ -204,20 +214,25 @@ Account::Account(int32_t arg_id, const std::string& arg_name, const ::protoex::S
     , orders(arg_orders)
 {}
 
-bool Account::operator==(const Account& other) const noexcept
+bool Account::operator==([[maybe_unused]] const Account& other) const noexcept
 {
     return (
         (id == other.id)
         );
 }
 
-bool Account::operator<(const Account& other) const noexcept
+bool Account::operator<([[maybe_unused]] const Account& other) const noexcept
 {
     if (id < other.id)
         return true;
     if (other.id < id)
         return false;
     return false;
+}
+
+std::string Account::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void Account::swap(Account& other) noexcept
@@ -261,16 +276,21 @@ OrderMessage::OrderMessage(const ::protoex::Order& arg_body)
     : body(arg_body)
 {}
 
-bool OrderMessage::operator==(const OrderMessage& other) const noexcept
+bool OrderMessage::operator==([[maybe_unused]] const OrderMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool OrderMessage::operator<(const OrderMessage& other) const noexcept
+bool OrderMessage::operator<([[maybe_unused]] const OrderMessage& other) const noexcept
 {
     return false;
+}
+
+std::string OrderMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void OrderMessage::swap(OrderMessage& other) noexcept
@@ -295,16 +315,21 @@ BalanceMessage::BalanceMessage(const ::protoex::Balance& arg_body)
     : body(arg_body)
 {}
 
-bool BalanceMessage::operator==(const BalanceMessage& other) const noexcept
+bool BalanceMessage::operator==([[maybe_unused]] const BalanceMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool BalanceMessage::operator<(const BalanceMessage& other) const noexcept
+bool BalanceMessage::operator<([[maybe_unused]] const BalanceMessage& other) const noexcept
 {
     return false;
+}
+
+std::string BalanceMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void BalanceMessage::swap(BalanceMessage& other) noexcept
@@ -329,16 +354,21 @@ AccountMessage::AccountMessage(const ::protoex::Account& arg_body)
     : body(arg_body)
 {}
 
-bool AccountMessage::operator==(const AccountMessage& other) const noexcept
+bool AccountMessage::operator==([[maybe_unused]] const AccountMessage& other) const noexcept
 {
     return (
         true
         );
 }
 
-bool AccountMessage::operator<(const AccountMessage& other) const noexcept
+bool AccountMessage::operator<([[maybe_unused]] const AccountMessage& other) const noexcept
 {
     return false;
+}
+
+std::string AccountMessage::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
 }
 
 void AccountMessage::swap(AccountMessage& other) noexcept

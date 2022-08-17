@@ -40,7 +40,7 @@ size_t FieldModel<::protoex::Order>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -67,15 +67,15 @@ bool FieldModel<::protoex::Order>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -145,12 +145,12 @@ size_t FieldModel<::protoex::Order>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -170,7 +170,7 @@ void FieldModel<::protoex::Order>::get(::protoex::Order& fbe_value) const noexce
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -240,9 +240,9 @@ size_t FieldModel<::protoex::Order>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -282,7 +282,7 @@ bool OrderModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -316,7 +316,7 @@ size_t OrderModel::deserialize(::protoex::Order& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -346,7 +346,7 @@ size_t FieldModel<::protoex::Balance>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -367,15 +367,15 @@ bool FieldModel<::protoex::Balance>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -409,12 +409,12 @@ size_t FieldModel<::protoex::Balance>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -434,7 +434,7 @@ void FieldModel<::protoex::Balance>::get(::protoex::Balance& fbe_value) const no
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -466,9 +466,9 @@ size_t FieldModel<::protoex::Balance>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -502,7 +502,7 @@ bool BalanceModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -536,7 +536,7 @@ size_t BalanceModel::deserialize(::protoex::Balance& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -574,7 +574,7 @@ size_t FieldModel<::protoex::Account>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -599,15 +599,15 @@ bool FieldModel<::protoex::Account>::verify(bool fbe_verify_type) const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -665,12 +665,12 @@ size_t FieldModel<::protoex::Account>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -690,7 +690,7 @@ void FieldModel<::protoex::Account>::get(::protoex::Account& fbe_value) const no
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -748,9 +748,9 @@ size_t FieldModel<::protoex::Account>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -788,7 +788,7 @@ bool AccountModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -822,7 +822,7 @@ size_t AccountModel::deserialize(::protoex::Account& value) const noexcept
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -850,7 +850,7 @@ size_t FieldModel<::protoex::OrderMessage>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -870,15 +870,15 @@ bool FieldModel<::protoex::OrderMessage>::verify(bool fbe_verify_type) const noe
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -906,12 +906,12 @@ size_t FieldModel<::protoex::OrderMessage>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -931,7 +931,7 @@ void FieldModel<::protoex::OrderMessage>::get(::protoex::OrderMessage& fbe_value
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -959,9 +959,9 @@ size_t FieldModel<::protoex::OrderMessage>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -994,7 +994,7 @@ bool OrderMessageModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -1028,7 +1028,7 @@ size_t OrderMessageModel::deserialize(::protoex::OrderMessage& value) const noex
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -1056,7 +1056,7 @@ size_t FieldModel<::protoex::BalanceMessage>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -1076,15 +1076,15 @@ bool FieldModel<::protoex::BalanceMessage>::verify(bool fbe_verify_type) const n
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -1112,12 +1112,12 @@ size_t FieldModel<::protoex::BalanceMessage>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -1137,7 +1137,7 @@ void FieldModel<::protoex::BalanceMessage>::get(::protoex::BalanceMessage& fbe_v
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -1165,9 +1165,9 @@ size_t FieldModel<::protoex::BalanceMessage>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -1200,7 +1200,7 @@ bool BalanceMessageModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -1234,7 +1234,7 @@ size_t BalanceMessageModel::deserialize(::protoex::BalanceMessage& value) const 
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
@@ -1262,7 +1262,7 @@ size_t FieldModel<::protoex::AccountMessage>::fbe_extra() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4) > _buffer.size()))
         return 0;
 
@@ -1282,15 +1282,15 @@ bool FieldModel<::protoex::AccountMessage>::verify(bool fbe_verify_type) const n
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return false;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     if (fbe_struct_size < (4 + 4))
         return false;
 
-    uint32_t fbe_struct_type = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4));
+    uint32_t fbe_struct_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4);
     if (fbe_verify_type && (fbe_struct_type != fbe_type()))
         return false;
 
@@ -1318,12 +1318,12 @@ size_t FieldModel<::protoex::AccountMessage>::get_begin() const noexcept
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
 
-    uint32_t fbe_struct_offset = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset()));
+    uint32_t fbe_struct_offset = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset());
     assert(((fbe_struct_offset > 0) && ((_buffer.offset() + fbe_struct_offset + 4 + 4) <= _buffer.size())) && "Model is broken!");
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + 4 + 4) > _buffer.size()))
         return 0;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset);
     assert((fbe_struct_size >= (4 + 4)) && "Model is broken!");
     if (fbe_struct_size < (4 + 4))
         return 0;
@@ -1343,7 +1343,7 @@ void FieldModel<::protoex::AccountMessage>::get(::protoex::AccountMessage& fbe_v
     if (fbe_begin == 0)
         return;
 
-    uint32_t fbe_struct_size = *((const uint32_t*)(_buffer.data() + _buffer.offset()));
+    uint32_t fbe_struct_size = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset());
     get_fields(fbe_value, fbe_struct_size);
     get_end(fbe_begin);
 }
@@ -1371,9 +1371,9 @@ size_t FieldModel<::protoex::AccountMessage>::set_begin()
     if ((fbe_struct_offset == 0) || ((_buffer.offset() + fbe_struct_offset + fbe_struct_size) > _buffer.size()))
         return 0;
 
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_offset())) = fbe_struct_offset;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset)) = fbe_struct_size;
-    *((uint32_t*)(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4)) = (uint32_t)fbe_type();
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_offset(), fbe_struct_offset);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset, fbe_struct_size);
+    unaligned_store<uint32_t>(_buffer.data() + _buffer.offset() + fbe_struct_offset + 4, (uint32_t)fbe_type());
 
     _buffer.shift(fbe_struct_offset);
     return fbe_struct_offset;
@@ -1406,7 +1406,7 @@ bool AccountMessageModel::verify()
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return false;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     if (fbe_full_size < model.fbe_size())
         return false;
 
@@ -1440,7 +1440,7 @@ size_t AccountMessageModel::deserialize(::protoex::AccountMessage& value) const 
     if ((this->buffer().offset() + model.fbe_offset() - 4) > this->buffer().size())
         return 0;
 
-    uint32_t fbe_full_size = *((const uint32_t*)(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4));
+    uint32_t fbe_full_size = unaligned_load<uint32_t>(this->buffer().data() + this->buffer().offset() + model.fbe_offset() - 4);
     assert((fbe_full_size >= model.fbe_size()) && "Model is broken!");
     if (fbe_full_size < model.fbe_size())
         return 0;
