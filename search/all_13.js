@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['type_118',['type',['../struct_f_b_e_1_1_struct_field.html#adb054f46c131e8390e7df67ab6c083e4',1,'FBE::StructField::type()'],['../struct_f_b_e_1_1_struct_type.html#afb4c247371025bedd3e7a3f6710084de',1,'FBE::StructType::type()']]]
+  ['type_126',['type',['../struct_f_b_e_1_1_variant_value.html#a35fc559ebe3958d4ada661455f338294',1,'FBE::VariantValue::type()'],['../struct_f_b_e_1_1_struct_field.html#adb054f46c131e8390e7df67ab6c083e4',1,'FBE::StructField::type()'],['../struct_f_b_e_1_1_struct_type.html#afb4c247371025bedd3e7a3f6710084de',1,'FBE::StructType::type()']]]
 ];

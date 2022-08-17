@@ -4,8 +4,8 @@ var indexSectionsWithContent =
   1: "aefgipsv",
   2: "f",
   3: "fgv",
-  4: "aefgijlmpsvwy",
-  5: "_abcdefghiklmnorstv"
+  4: "aefgijlmopsvwy",
+  5: "_abcdefghiklmnoprstv"
 };
 
 var indexSectionNames =
