@@ -73,6 +73,7 @@ private:
     void GenerateWarningsFooter();
     void GenerateFooter();
     void GenerateImports();
+    void GenerateImportsSource();
     void GenerateImports(const std::string& source);
     void GenerateImports(const std::shared_ptr<Package>& p);
     void GenerateImportsModels(const std::shared_ptr<Package>& p, bool final, bool ptr);
@@ -198,6 +199,7 @@ private:
     void GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructLoggingStream(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
+    void GenerateStructFormatter(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructHash(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateStructJson(const std::shared_ptr<Package>& p, const std::shared_ptr<StructType>& s);
     void GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v);
