@@ -2321,18 +2321,18 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
 void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel<" + variant_name + ">";
 
     // Generate variant field model begin
     WriteLine();
+    WriteLineIndent("template <>");
     WriteLineIndent("class " + class_name);
     WriteLineIndent("{");
     WriteLineIndent("public:");
     Indent(1);
 
     // Generate variant field model constructor
-    WriteLineIndent(class_name + "(FBEBuffer& buffer, size_t offset) noexcept;");
-    WriteLineIndent("~" + class_name + "() = default;");
+    WriteLineIndent("FieldModel(FBEBuffer& buffer, size_t offset) noexcept;");
 
     // Generate variant field model FBE methods
     WriteLine();
@@ -2385,11 +2385,11 @@ void GeneratorCpp::GenerateVariantFieldModel_Header(const std::shared_ptr<Packag
 void GeneratorCpp::GenerateVariantFieldModel_Source(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     std::string variant_name = "::" + *p->name + "::" + *v->name;
-    std::string class_name = "FieldModel_" + *p->name + "_" + *v->name;
+    std::string class_name = "FieldModel<" + variant_name + ">";
 
     // Generate variant field model begin
     WriteLine();
-    WriteLineIndent(class_name + "::" + class_name + "(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
+    WriteLineIndent(class_name + "::FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)");
     WriteLineIndent("{}");
     WriteLine();
 
@@ -2785,17 +2785,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Header(const std::shared_ptr<Pack
     {
         for (const auto& field : s->body->fields)
         {
-            auto field_model_type_name = ConvertPtrFieldModelType(p, field);
-            if (!CppCommon::StringUtils::Contains(field_model_type_name, "<") && !IsCurrentPackageType(*field->type) && !IsContainerType(*field) && !field->optional) {
-                WriteLineIndent("#ifndef " + field_model_type_name);
-                Indent(1);
-                auto model_name = "::" + *field->type;
-                CppCommon::StringUtils::ReplaceAll(model_name, ".", "::");
-                WriteLineIndent("using " + field_model_type_name + " = FieldModel<" + model_name + ">;");
-                Indent(-1);
-                WriteLineIndent("#endif");
-            }
-            WriteLineIndent(field_model_type_name + " " + *field->name + ";");
+            WriteLineIndent(ConvertPtrFieldModelType(p, field) + " " + *field->name + ";");
         }
     }
 
@@ -3671,37 +3661,39 @@ std::string GeneratorCpp::ConvertPtrTypeNameAsArgument(const std::string& packag
     return ConvertPtrTypeName(package, field, true);
 }
 
+// Generates fieldmodel for data members in a struct field.
+// only used for ptr-based FBE
 std::string GeneratorCpp::ConvertPtrFieldModelType(const std::shared_ptr<Package>& p, const std::shared_ptr<StructField>& field) {
     std::string field_model_type;
-    if ((IsStructType(p, *field->type) || IsVariantType(p, *field->type) || ImportPtr()) && !IsKnownType(*field->type)) {
-        // for imported-package, rename . to _
+    if (IsStructType(p, *field->type) || (ImportPtr() && !IsCurrentPackageType(*field->type))) {
         std::string model_name = std::string("FieldModel") + (field->ptr ? "Ptr" : "") + "_" +  (IsCurrentPackageType(*field->type) ? (*p->name + "_") : "") + *field->type;
         CppCommon::StringUtils::ReplaceAll(model_name, ".", "_");
-        if (IsContainerType(*field) || field->optional) {
+        if (IsContainerType(*field)) {
             field_model_type = "FieldModel";
             if (field->array) {
                 field_model_type += "CustomArray<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ", " + std::to_string(field->N) + ">";
-            }
-            else if (field->vector || field->list || field->set)
+            } else if (field->vector || field->list || field->set) {
                 field_model_type += "CustomVector<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
-            else if (field->map || field->hash){
+            } else if (field->map || field->hash) {
                 // TODO: specification是可以指定为key的，但是因为StructField的ptr指针对value，所以我们暂且不支持对key支持pointer
-                std::string kType = "FieldModel";
-                if (IsKnownType(*field->key)) {
-                    kType += "<" + ConvertPtrTypeName(*p->name, *field->key) + ">";
+                std::string kType;
+                // 1. struct type
+                // 2. import-ptr struct type
+                if (IsStructType(p, *field->key) || (!IsCurrentPackageType(*field->key) && ImportPtr())) {
+                    kType = std::string("FieldModel") + "_" + (IsCurrentPackageType(*field->type) ? (*p->name + "_") : "") + *field->type;
+                    CppCommon::StringUtils::ReplaceAll(kType, ".", "_");
+
                 } else {
-                    kType +=  "_" + *p->name + "_" + *field->type;
+                    kType = std::string("FieldModel<") + ConvertPtrTypeName(*p->name, *field->key) + ">";
                 }
                 auto kStruct = ConvertPtrTypeName(*p->name, *field->key);
                 auto vStruct = ConvertPtrTypeName(*p->name, *field->type);
                 field_model_type += "CustomMap<" + kType + ", " + model_name + ", " + kStruct  + ", " + vStruct + ">";
             }
-            else if (field->optional) {
-                field_model_type += "StructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
-            }
-        } else {
-            field_model_type += model_name;
-        }
+        } else if (field->optional) {
+            field_model_type = "FieldModelStructOptional<" + model_name + ", " + ConvertPtrTypeName(*p->name, *field->type) + ">";
+        } else
+            field_model_type = model_name;
     } else if (field->array)
         field_model_type = "FieldModelArray<" + ConvertPtrTypeName(*p->name, *field->type, field->optional, field->ptr, false) + ", " + std::to_string(field->N) + ">";
     else if (field->vector || field->list || field->set)

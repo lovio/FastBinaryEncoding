@@ -95,7 +95,7 @@ void Simple::swap(Simple& other) noexcept
     swap(sm, other.sm);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Simple& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& value)
 {
     stream << "Simple(";
     stream << "info="; stream << "\"" << value.info << "\"";

@@ -2980,7 +2980,9 @@ public:
     void get_end(size_t fbe_begin) const noexcept;
 
     // Get the optional value
-    void get(std::optional<T>& opt, const std::optional<T>& defaults = std::nullopt) const noexcept;
+    void get(std::optional<T>& opt, const std::optional<T>& defaults) const noexcept;
+    // Get the optional value
+    void get(std::optional<T>& opt) const noexcept;
 
     // Set the optional value (begin phase)
     size_t set_begin(bool has_value);
@@ -3087,7 +3089,21 @@ inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt, const std::
 
     T temp = T();
     value.get(temp);
-    opt.emplace(temp);
+    opt.emplace(std::move(temp));
+
+    get_end(fbe_begin);
+}
+
+template <typename T>
+inline void FieldModel<std::optional<T>>::get(std::optional<T>& opt) const noexcept
+{
+    size_t fbe_begin = get_begin();
+    if (fbe_begin == 0)
+        return;
+
+    T temp = T();
+    value.get(temp);
+    opt.emplace(std::move(temp));
 
     get_end(fbe_begin);
 }
@@ -3549,7 +3565,7 @@ inline void FieldModelVector<T>::get(std::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3568,7 +3584,7 @@ inline void FieldModelVector<T>::get(std::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3587,7 +3603,7 @@ inline void FieldModelVector<T>::get(std::set<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace(value);
+        values.emplace(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3608,7 +3624,7 @@ inline void FieldModelVector<T>::get(std::pmr::vector<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3627,7 +3643,7 @@ inline void FieldModelVector<T>::get(std::pmr::list<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace_back(value);
+        values.emplace_back(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3646,7 +3662,7 @@ inline void FieldModelVector<T>::get(std::pmr::set<T>& values) const noexcept
     {
         T value = T();
         fbe_model.get(value);
-        values.emplace(value);
+        values.emplace(std::move(value));
         fbe_model.fbe_shift(fbe_model.fbe_size());
     }
 }
@@ -3949,7 +3965,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::map<TKey, TValue>& values) con
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3971,7 +3987,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::unordered_map<TKey, TValue>& v
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -3993,7 +4009,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::pmr::map<TKey, TValue>& values
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -4015,7 +4031,7 @@ inline void FieldModelMap<TKey, TValue>::get(std::pmr::unordered_map<TKey, TValu
         TValue value;
         fbe_model.first.get(key);
         fbe_model.second.get(value);
-        values.emplace(key, value);
+        values.emplace(std::move(key), std::move(value));
         fbe_model.first.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
         fbe_model.second.fbe_shift(fbe_model.first.fbe_size() + fbe_model.second.fbe_size());
     }
@@ -8117,7 +8133,7 @@ void GeneratorCpp::GenerateEnum(const std::shared_ptr<Package>& p, const std::sh
 
     // Generate enum output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value);");
 
     // Generate enum logging stream operator declaration
     WriteLine();
@@ -8130,7 +8146,7 @@ void GeneratorCpp::GenerateEnumOutputStream(const std::shared_ptr<EnumType>& e)
 {
     // Generate enum output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *e->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *e->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8304,7 +8320,7 @@ void GeneratorCpp::GenerateFlags(const std::shared_ptr<Package>& p, const std::s
 
     // Generate flags output stream operator declaration
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value);");
 
     // Generate flags logging stream operator declaration
     WriteLine();
@@ -8317,7 +8333,7 @@ void GeneratorCpp::GenerateFlagsOutputStream(const std::shared_ptr<FlagsType>& f
 {
     // Generate flags output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, " + *f->name + " value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] " + *f->name + " value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8477,13 +8493,13 @@ void GeneratorCpp::GenerateVariantAlias(const std::shared_ptr<Package>& p, const
     }
     code += ">;";
     WriteLineIndent(code);
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value);");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value);");
 }
 
 void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p, const std::shared_ptr<VariantType>& v)
 {
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *v->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *v->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -8634,7 +8650,7 @@ void GeneratorCpp::GenerateStruct_Header(const std::shared_ptr<Package>& p, cons
 
     // Generate struct output stream operator
     WriteLine();
-    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value);");
+    WriteLineIndent("friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value);");
 
     // Generate struct output stream operator
     if (Logging())
@@ -8846,7 +8862,7 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
 
     // Generate struct swap method
     WriteLine();
-    WriteLineIndent("void " + *s->name + "::swap(" + *s->name + "& other) noexcept");
+    WriteLineIndent("void " + *s->name + "::swap([[maybe_unused]] " + *s->name + "& other) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("using std::swap;");
@@ -8863,7 +8879,7 @@ void GeneratorCpp::GenerateStructOutputStream(const std::shared_ptr<Package>& p,
 {
     // Generate struct output stream operator begin
     WriteLine();
-    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, const " + *s->name + "& value)");
+    WriteLineIndent("std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const " + *s->name + "& value)");
     WriteLineIndent("{");
     Indent(1);
 
@@ -9349,10 +9365,7 @@ void GeneratorCpp::GenerateStructFieldModel_Header(const std::shared_ptr<Package
     {
         for (const auto& field : s->body->fields)
         {
-            if (IsVariantType(p, *field->type)) {
-                WriteLineIndent("FieldModel_" + *p->name + "_" + *field->type + " " + *field->name + ";");
-            }
-            else if (field->array)
+            if (field->array)
                 WriteLineIndent("FieldModelArray<" + ConvertTypeName(*p->name, *field->type, field->optional) + ", " + std::to_string(field->N) + "> " + *field->name + ";");
             else if (field->vector || field->list || field->set)
                 WriteLineIndent("FieldModelVector<" + ConvertTypeName(*p->name, *field->type, field->optional) + "> " + *field->name + ";");
@@ -9484,7 +9497,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model verify_fields() method
-    WriteLineIndent("bool " + model_name + "::verify_fields(size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("bool " + model_name + "::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -9582,7 +9595,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model get_fields() method
-    WriteLineIndent("void " + model_name + "::get_fields(" + struct_name + "& fbe_value, size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("void " + model_name + "::get_fields([[maybe_unused]] " + struct_name + "& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -9679,7 +9692,7 @@ void GeneratorCpp::GenerateStructFieldModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct field model set_fields() method
-    WriteLineIndent("void " + model_name + "::set_fields(const " + struct_name + "& fbe_value) noexcept");
+    WriteLineIndent("void " + model_name + "::set_fields([[maybe_unused]] const " + struct_name + "& fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))

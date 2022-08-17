@@ -7,12 +7,13 @@
 
 namespace variants_ptr {
 
-std::ostream& operator<<(std::ostream& stream, const Expr& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Expr& value)
 {
     std::visit(
         overloaded
         {
             [&stream](bool v) { stream << v; }
+            , [&stream](const std::string& v) { stream << v; }
             , [&stream](int32_t v) { stream << v; }
             , [&stream](auto&) { stream << "unknown type"; },
         },
@@ -20,13 +21,13 @@ std::ostream& operator<<(std::ostream& stream, const Expr& value)
     return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const V& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const V& value)
 {
     std::visit(
         overloaded
         {
-            [&stream](const std::string& v) { stream << v; }
-            , [&stream](int32_t v) { stream << v; }
+            [&stream](int32_t v) { stream << v; }
+            , [&stream](const std::string& v) { stream << v; }
             , [&stream](double v) { stream << v; }
             , [&stream](const ::variants_ptr::Simple& v) { stream << v; }
             , [&stream](const ::variants_ptr::Expr& v) { stream << v; }
@@ -84,7 +85,7 @@ void Simple::swap(Simple& other) noexcept
     swap(name, other.name);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Simple& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& value)
 {
     stream << "Simple(";
     stream << "name="; stream << "\"" << value.name << "\"";
@@ -94,15 +95,39 @@ std::ostream& operator<<(std::ostream& stream, const Simple& value)
 
 Value::Value()
     : v()
+    , vo()
+    , vo2()
 {}
 
-Value::Value(::variants_ptr::V&& arg_v)
+Value::Value(::variants_ptr::V&& arg_v, std::optional<::variants_ptr::V> arg_vo, std::optional<::variants_ptr::V> arg_vo2)
     : v(std::move(arg_v))
-{}
+    , vo()
+    , vo2()
+{
+    if (arg_vo.has_value()) {
+        vo.emplace(std::move(arg_vo.value()));
+        arg_vo.reset();
+    }
+    if (arg_vo2.has_value()) {
+        vo2.emplace(std::move(arg_vo2.value()));
+        arg_vo2.reset();
+    }
+}
 
 Value::Value(Value&& other) noexcept
     : v(std::move(other.v))
-{}
+    , vo()
+    , vo2()
+{
+    if (other.vo.has_value()) {
+        vo.emplace(std::move(other.vo.value()));
+        other.vo.reset();
+    }
+    if (other.vo2.has_value()) {
+        vo2.emplace(std::move(other.vo2.value()));
+        other.vo2.reset();
+    }
+}
 
 Value::~Value()
 {
@@ -125,6 +150,14 @@ Value& Value::operator=(Value&& other) noexcept
     if (this != &other)
     {
         v = std::move(other.v);
+        if (other.vo.has_value()) {
+            vo.emplace(std::move(other.vo.value()));
+            other.vo.reset();
+        }
+        if (other.vo2.has_value()) {
+            vo2.emplace(std::move(other.vo2.value()));
+            other.vo2.reset();
+        }
     }
     return *this;
 }
@@ -138,12 +171,16 @@ void Value::swap(Value& other) noexcept
 {
     using std::swap;
     swap(v, other.v);
+    swap(vo, other.vo);
+    swap(vo2, other.vo2);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Value& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Value& value)
 {
     stream << "Value(";
     stream << "v="; stream << value.v;
+    stream << ",vo="; if (value.vo) stream << *value.vo; else stream << "null";
+    stream << ",vo2="; if (value.vo2) stream << *value.vo2; else stream << "null";
     stream << ")";
     return stream;
 }
@@ -201,7 +238,7 @@ void ValueContainer::swap(ValueContainer& other) noexcept
     swap(vm, other.vm);
 }
 
-std::ostream& operator<<(std::ostream& stream, const ValueContainer& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const ValueContainer& value)
 {
     stream << "ValueContainer(";
     {

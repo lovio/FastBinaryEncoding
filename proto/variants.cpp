@@ -14,6 +14,7 @@ std::ostream& operator<<(std::ostream& stream, const Expr& value)
         {
             [&stream](bool v) { stream << v; }
             , [&stream](int32_t v) { stream << v; }
+            , [&stream](const std::string& v) { stream << v; }
             , [&stream](auto&) { stream << "unknown type"; },
         },
         value);

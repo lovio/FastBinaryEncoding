@@ -79,7 +79,7 @@ struct Extra
     bool operator>(const Extra& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Extra& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Extra& value);
 
@@ -133,7 +133,7 @@ struct Simple
     bool operator>(const Simple& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Simple& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Simple& value);
 

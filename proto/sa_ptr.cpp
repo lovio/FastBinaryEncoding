@@ -7,14 +7,14 @@
 
 namespace sa {
 
-std::ostream& operator<<(std::ostream& stream, Sex value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] Sex value)
 {
     if (value == Sex::male) return stream << "male";
     if (value == Sex::female) return stream << "female";
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, MyFLags value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] MyFLags value)
 {
     if (value == MyFLags::flag0) return stream << "flag0";
     if (value == MyFLags::flag1) return stream << "flag1";
@@ -85,7 +85,7 @@ void Extra::swap(Extra& other) noexcept
     swap(flag, other.flag);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Extra& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Extra& value)
 {
     stream << "Extra(";
     stream << "name="; stream << "\"" << value.name << "\"";
@@ -159,7 +159,7 @@ void Simple::swap(Simple& other) noexcept
     swap(sex, other.sex);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Simple& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& value)
 {
     stream << "Simple(";
     stream << "name="; stream << "\"" << value.name << "\"";
@@ -282,7 +282,7 @@ void Complex::swap(Complex& other) noexcept
     swap(nums, other.nums);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Complex& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Complex& value)
 {
     stream << "Complex(";
     stream << "name="; stream << "\"" << value.name << "\"";

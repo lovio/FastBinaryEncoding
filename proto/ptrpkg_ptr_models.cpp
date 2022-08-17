@@ -141,15 +141,13 @@ void FieldModelPtr_ptrpkg_Line::set(const ::ptrpkg::Line* fbe_value) noexcept
 }
 
 FieldModel_ptrpkg_Line::FieldModel_ptrpkg_Line(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
-    , v(buffer, 4 + 4)
-    , value(buffer, v.fbe_offset() + v.fbe_size())
+    , value(buffer, 4 + 4)
     , value_ptr(buffer, value.fbe_offset() + value.fbe_size())
 {}
 
 size_t FieldModel_ptrpkg_Line::fbe_body() const noexcept
 {
     size_t fbe_result = 4 + 4
-        + v.fbe_size()
         + value.fbe_size()
         + value_ptr.fbe_size()
         ;
@@ -168,7 +166,6 @@ size_t FieldModel_ptrpkg_Line::fbe_extra() const noexcept
     _buffer.shift(fbe_struct_offset);
 
     size_t fbe_result = fbe_body()
-        + v.fbe_extra()
         + value.fbe_extra()
         + value_ptr.fbe_extra()
         ;
@@ -204,12 +201,6 @@ bool FieldModel_ptrpkg_Line::verify(bool fbe_verify_type) const noexcept
 bool FieldModel_ptrpkg_Line::verify_fields(size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
-
-    if ((fbe_current_size + v.fbe_size()) > fbe_struct_size)
-        return true;
-    if (!v.verify())
-        return false;
-    fbe_current_size += v.fbe_size();
 
     if ((fbe_current_size + value.fbe_size()) > fbe_struct_size)
         return true;
@@ -266,14 +257,6 @@ void FieldModel_ptrpkg_Line::get_fields(::FBE::Base& base_fbe_value, size_t fbe_
     ::ptrpkg::Line& fbe_value = static_cast<::ptrpkg::Line&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
 
-    if ((fbe_current_size + v.fbe_size()) <= fbe_struct_size)
-        {
-            v.get(fbe_value.v);
-        }
-    else
-        fbe_value.v = ::variants_ptr::V();
-    fbe_current_size += v.fbe_size();
-
     if ((fbe_current_size + value.fbe_size()) <= fbe_struct_size)
         {
             value.get(fbe_value.value);
@@ -329,7 +312,6 @@ void FieldModel_ptrpkg_Line::set(const ::FBE::Base& fbe_value) noexcept
 void FieldModel_ptrpkg_Line::set_fields(const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::ptrpkg::Line& fbe_value = static_cast<const ::ptrpkg::Line&>(base_fbe_value);
-    v.set(fbe_value.v);
     value.set(fbe_value.value);
     value_ptr.set(fbe_value.value_ptr);
 }

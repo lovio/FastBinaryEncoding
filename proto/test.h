@@ -192,7 +192,7 @@ struct StructSimple
     bool operator>(const StructSimple& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructSimple& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructSimple& value);
 
@@ -309,7 +309,7 @@ struct StructOptional : public ::test::StructSimple
     bool operator>(const StructOptional& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructOptional& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructOptional& value);
 
@@ -372,7 +372,7 @@ struct StructNested : public ::test::StructOptional
     bool operator>(const StructNested& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructNested& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructNested& value);
 
@@ -426,7 +426,7 @@ struct StructBytes
     bool operator>(const StructBytes& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructBytes& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructBytes& value);
 
@@ -486,7 +486,7 @@ struct StructArray
     bool operator>(const StructArray& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructArray& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructArray& value);
 
@@ -546,7 +546,7 @@ struct StructVector
     bool operator>(const StructVector& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructVector& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructVector& value);
 
@@ -606,7 +606,7 @@ struct StructList
     bool operator>(const StructList& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructList& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructList& value);
 
@@ -660,7 +660,7 @@ struct StructSet
     bool operator>(const StructSet& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructSet& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructSet& value);
 
@@ -720,7 +720,7 @@ struct StructMap
     bool operator>(const StructMap& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructMap& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructMap& value);
 
@@ -780,7 +780,7 @@ struct StructHash
     bool operator>(const StructHash& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructHash& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructHash& value);
 
@@ -832,7 +832,7 @@ struct StructHashEx
     bool operator>(const StructHashEx& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructHashEx& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructHashEx& value);
 
@@ -880,7 +880,7 @@ struct StructEmpty
     bool operator>(const StructEmpty& other) const noexcept { return !operator<=(other); }
     bool operator>=(const StructEmpty& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const StructEmpty& value);
 

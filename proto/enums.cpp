@@ -278,6 +278,11 @@ bool Enums::operator<([[maybe_unused]] const Enums& other) const noexcept
     return false;
 }
 
+std::string Enums::string() const
+{
+    std::stringstream ss; ss << *this; return ss.str();
+}
+
 void Enums::swap(Enums& other) noexcept
 {
     using std::swap;

@@ -37,7 +37,7 @@ enum class Sex
     female,
 };
 
-std::ostream& operator<<(std::ostream& stream, Sex value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] Sex value);
 
 #if defined(LOGGING_PROTOCOL)
 CppLogging::Record& operator<<(CppLogging::Record& record, Sex value);
@@ -50,7 +50,7 @@ enum class MyFLags
     flag2 = (int32_t)0x02ll,
 };
 
-std::ostream& operator<<(std::ostream& stream, MyFLags value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] MyFLags value);
 
 #if defined(LOGGING_PROTOCOL)
 CppLogging::Record& operator<<(CppLogging::Record& record, MyFLags value);

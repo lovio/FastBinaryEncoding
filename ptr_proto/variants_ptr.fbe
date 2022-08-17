@@ -6,13 +6,14 @@ struct Simple {
 
 variant Expr {
   bool;
+  string;
   int32;
 }
 
 // container type not supported yet
 variant V {
-  string;
   int32;
+  string;
   double;
   Simple;
   Simple*;
@@ -29,6 +30,8 @@ variant V {
 
 struct Value {
   V v;
+  V? vo;
+  V? vo2;
 }
 
 struct ValueContainer {

@@ -100,7 +100,7 @@ struct Order
     bool operator>(const Order& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Order& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Order& value);
 
@@ -153,7 +153,7 @@ struct Balance
     bool operator>(const Balance& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Balance& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Balance& value);
 
@@ -210,7 +210,7 @@ struct Account
     bool operator>(const Account& other) const noexcept { return !operator<=(other); }
     bool operator>=(const Account& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Account& value);
 
@@ -262,7 +262,7 @@ struct OrderMessage
     bool operator>(const OrderMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const OrderMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const OrderMessage& value);
 
@@ -313,7 +313,7 @@ struct BalanceMessage
     bool operator>(const BalanceMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const BalanceMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const BalanceMessage& value);
 
@@ -364,7 +364,7 @@ struct AccountMessage
     bool operator>(const AccountMessage& other) const noexcept { return !operator<=(other); }
     bool operator>=(const AccountMessage& other) const noexcept { return !operator<(other); }
 
-    std::string string() const { std::stringstream ss; ss << *this; return ss.str(); }
+    std::string string() const;
 
     friend std::ostream& operator<<(std::ostream& stream, const AccountMessage& value);
 

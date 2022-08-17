@@ -7,17 +7,17 @@
 
 namespace FBE {
 
-FieldModel_variants_Expr::FieldModel_variants_Expr(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModel<::variants::Expr>::FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
 {}
 
-size_t FieldModel_variants_Expr::fbe_body() const noexcept
+size_t FieldModel<::variants::Expr>::fbe_body() const noexcept
 {
     // variant type's fbe_size not included
     size_t fbe_result = 4;
     return fbe_result;
 }
 
-size_t FieldModel_variants_Expr::fbe_extra() const noexcept
+size_t FieldModel<::variants::Expr>::fbe_extra() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
@@ -35,7 +35,7 @@ size_t FieldModel_variants_Expr::fbe_extra() const noexcept
     return fbe_result;
 }
 
-bool FieldModel_variants_Expr::verify() const noexcept
+bool FieldModel<::variants::Expr>::verify() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
@@ -45,7 +45,7 @@ bool FieldModel_variants_Expr::verify() const noexcept
         return false;
 
     uint32_t fbe_variant_type = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    if (fbe_variant_type < 0 || fbe_variant_type >= 2)
+    if (fbe_variant_type < 0 || fbe_variant_type >= 3)
         return false;
 
     _buffer.shift(fbe_variant_offset);
@@ -62,13 +62,19 @@ bool FieldModel_variants_Expr::verify() const noexcept
                 return false;
             break;
         }
+        case 2: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
+            if (!fbe_model.verify())
+                return false;
+            break;
+        }
     }
 
     _buffer.unshift(fbe_variant_offset);
     return true;
 }
 
-void FieldModel_variants_Expr::get(::variants::Expr& fbe_value) const noexcept
+void FieldModel<::variants::Expr>::get(::variants::Expr& fbe_value) const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
@@ -78,7 +84,7 @@ void FieldModel_variants_Expr::get(::variants::Expr& fbe_value) const noexcept
     if ((fbe_variant_offset == 0) || ((_buffer.offset() + fbe_variant_offset + 4) > _buffer.size()))
         return;
     uint32_t vairant_type_index = unaligned_load<uint32_t>(_buffer.data() + _buffer.offset() + fbe_variant_offset);
-    assert(vairant_type_index >= 0 && vairant_type_index < 2 && "Model is broken!");
+    assert(vairant_type_index >= 0 && vairant_type_index < 3 && "Model is broken!");
 
     _buffer.shift(fbe_variant_offset);
 
@@ -97,12 +103,19 @@ void FieldModel_variants_Expr::get(::variants::Expr& fbe_value) const noexcept
             fbe_model.get(value);
             break;
         }
+        case 2: {
+            FieldModel<std::string> fbe_model(_buffer, 4);
+            fbe_value.emplace<std::string>();
+            auto& value = std::get<2>(fbe_value);
+            fbe_model.get(value);
+            break;
+        }
     }
 
     _buffer.unshift(fbe_variant_offset);
 }
 
-size_t FieldModel_variants_Expr::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
+size_t FieldModel<::variants::Expr>::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
@@ -121,13 +134,13 @@ size_t FieldModel_variants_Expr::set_begin(size_t variant_type_fbe_size, size_t 
     return fbe_variant_offset;
 }
 
-void FieldModel_variants_Expr::set_end(size_t fbe_begin)
+void FieldModel<::variants::Expr>::set_end(size_t fbe_begin)
 {
     _buffer.unshift(fbe_begin);
 }
 
 // Set the variant value
-void FieldModel_variants_Expr::set(const ::variants::Expr& fbe_value) noexcept
+void FieldModel<::variants::Expr>::set(const ::variants::Expr& fbe_value) noexcept
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
@@ -152,23 +165,31 @@ void FieldModel_variants_Expr::set(const ::variants::Expr& fbe_value) noexcept
                 fbe_model.set(v);
                 set_end(fbe_begin);
             }
+            , [this, fbe_variant_index = fbe_value.index()](const std::string& v) {
+                FieldModel<std::string> fbe_model(_buffer, 4);
+                size_t fbe_begin = set_begin(fbe_model.fbe_size(), fbe_variant_index);
+                if (fbe_begin == 0)
+                    return;
+                fbe_model.set(v);
+                set_end(fbe_begin);
+            }
         },
         fbe_value
     );
 }
 
 
-FieldModel_variants_V::FieldModel_variants_V(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
+FieldModel<::variants::V>::FieldModel(FBEBuffer& buffer, size_t offset) noexcept : _buffer(buffer), _offset(offset)
 {}
 
-size_t FieldModel_variants_V::fbe_body() const noexcept
+size_t FieldModel<::variants::V>::fbe_body() const noexcept
 {
     // variant type's fbe_size not included
     size_t fbe_result = 4;
     return fbe_result;
 }
 
-size_t FieldModel_variants_V::fbe_extra() const noexcept
+size_t FieldModel<::variants::V>::fbe_extra() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return 0;
@@ -186,7 +207,7 @@ size_t FieldModel_variants_V::fbe_extra() const noexcept
     return fbe_result;
 }
 
-bool FieldModel_variants_V::verify() const noexcept
+bool FieldModel<::variants::V>::verify() const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return true;
@@ -279,7 +300,7 @@ bool FieldModel_variants_V::verify() const noexcept
     return true;
 }
 
-void FieldModel_variants_V::get(::variants::V& fbe_value) const noexcept
+void FieldModel<::variants::V>::get(::variants::V& fbe_value) const noexcept
 {
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
         return;
@@ -383,7 +404,7 @@ void FieldModel_variants_V::get(::variants::V& fbe_value) const noexcept
     _buffer.unshift(fbe_variant_offset);
 }
 
-size_t FieldModel_variants_V::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
+size_t FieldModel<::variants::V>::set_begin(size_t variant_type_fbe_size, size_t variant_type_index)
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())
@@ -402,13 +423,13 @@ size_t FieldModel_variants_V::set_begin(size_t variant_type_fbe_size, size_t var
     return fbe_variant_offset;
 }
 
-void FieldModel_variants_V::set_end(size_t fbe_begin)
+void FieldModel<::variants::V>::set_end(size_t fbe_begin)
 {
     _buffer.unshift(fbe_begin);
 }
 
 // Set the variant value
-void FieldModel_variants_V::set(const ::variants::V& fbe_value) noexcept
+void FieldModel<::variants::V>::set(const ::variants::V& fbe_value) noexcept
 {
     assert(((_buffer.offset() + fbe_offset() + fbe_size()) <= _buffer.size()) && "Model is broken!");
     if ((_buffer.offset() + fbe_offset() + fbe_size()) > _buffer.size())

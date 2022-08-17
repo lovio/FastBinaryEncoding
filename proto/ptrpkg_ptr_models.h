@@ -130,17 +130,7 @@ private:
     size_t _offset;
 
 public:
-    #ifndef FieldModel_variants_ptr_V
-        using FieldModel_variants_ptr_V = FieldModel<::variants_ptr::V>;
-    #endif
-    FieldModel_variants_ptr_V v;
-    #ifndef FieldModel_variants_ptr_Value
-        using FieldModel_variants_ptr_Value = FieldModel<::variants_ptr::Value>;
-    #endif
     FieldModel_variants_ptr_Value value;
-    #ifndef FieldModelPtr_variants_ptr_Value
-        using FieldModelPtr_variants_ptr_Value = FieldModel<::variants_ptr::Value>;
-    #endif
     FieldModelPtr_variants_ptr_Value value_ptr;
 };
 
