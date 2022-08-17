@@ -210,6 +210,10 @@ void GeneratorCpp::GenerateImports()
 #include <utility>
 #include <variant>
 
+#if defined(FMT_VERSION)
+#include <fmt/core.h> 
+#endif
+
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
 #include <uuid/uuid.h>
@@ -382,7 +386,7 @@ inline void unaligned_store(void *ptr, T v) { memcpy(ptr, &v, sizeof(T)); }
     code = std::regex_replace(code, std::regex("\n"), EndLine());
 
     Write(code);
-};
+}
 
 void GeneratorCpp::GenerateImportHelper_Header()
 {
@@ -8184,7 +8188,7 @@ void GeneratorCpp::GenerateEnum(const std::shared_ptr<Package>& p, const std::sh
     // Generate enum formatter declaration
     WriteLine();
     WriteLineIndent("#if defined(FMT_VERSION)");
-    WriteLineIndent("} template <> struct fmt::formatter<" + *p->name + "::" + *e->name + "> : ostream_formatter {}; namespace " + *p->name + " {");
+    WriteLineIndent("} template <> struct fmt::formatter<" + *p->name + "::" + *e->name + "> : formatter<string_view> {}; namespace " + *p->name + " {");
     WriteLineIndent("#endif");
 
     // Generate enum logging stream operator declaration
@@ -8377,7 +8381,7 @@ void GeneratorCpp::GenerateFlags(const std::shared_ptr<Package>& p, const std::s
     // Generate flags formatter declaration
     WriteLine();
     WriteLineIndent("#if defined(FMT_VERSION)");
-    WriteLineIndent("} template <> struct fmt::formatter<" + *p->name + "::" + *f->name + "> : ostream_formatter {}; namespace " + *p->name + " {");
+    WriteLineIndent("} template <> struct fmt::formatter<" + *p->name + "::" + *f->name + "> : formatter<string_view> {}; namespace " + *p->name + " {");
     WriteLineIndent("#endif");
 
     // Generate flags logging stream operator declaration
@@ -9228,7 +9232,7 @@ void GeneratorCpp::GenerateStructFormatter(const std::shared_ptr<Package>& p, co
     // Generate struct formatter
     WriteLine();
     WriteLineIndent("#if defined(FMT_VERSION)");
-    WriteLineIndent("template <> struct fmt::formatter<" + *p->name + "::" + *s->name + "> : ostream_formatter {};");
+    WriteLineIndent("template <> struct fmt::formatter<" + *p->name + "::" + *s->name + "> : formatter<string_view> {};");
     WriteLineIndent("#endif");
 }
 

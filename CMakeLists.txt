@@ -6,6 +6,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Project name
 project(FastBinaryEncoding)
 
+## set to c++20
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
