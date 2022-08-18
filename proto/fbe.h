@@ -45,6 +45,10 @@
 #include <utility>
 #include <variant>
 
+#if defined(FMT_VERSION)
+#include <fmt/core.h> 
+#endif
+
 #if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
 #include <time.h>
 #include <uuid/uuid.h>
