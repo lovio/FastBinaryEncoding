@@ -9,14 +9,14 @@
 
 namespace proto {
 
-std::ostream& operator<<(std::ostream& stream, OrderSide value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] OrderSide value)
 {
     if (value == OrderSide::buy) return stream << "buy";
     if (value == OrderSide::sell) return stream << "sell";
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, OrderType value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] OrderType value)
 {
     if (value == OrderType::market) return stream << "market";
     if (value == OrderType::limit) return stream << "limit";
@@ -24,7 +24,7 @@ std::ostream& operator<<(std::ostream& stream, OrderType value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, State value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] State value)
 {
     bool first = true;
     if ((value & State::unknown) && ((value & State::unknown) == State::unknown))
@@ -104,7 +104,7 @@ std::string Order::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Order::swap(Order& other) noexcept
+void Order::swap([[maybe_unused]] Order& other) noexcept
 {
     using std::swap;
     swap(id, other.id);
@@ -115,7 +115,7 @@ void Order::swap(Order& other) noexcept
     swap(volume, other.volume);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Order& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Order& value)
 {
     stream << "Order(";
     stream << "id="; stream << value.id;
@@ -159,14 +159,14 @@ std::string Balance::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Balance::swap(Balance& other) noexcept
+void Balance::swap([[maybe_unused]] Balance& other) noexcept
 {
     using std::swap;
     swap(currency, other.currency);
     swap(amount, other.amount);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Balance& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Balance& value)
 {
     stream << "Balance(";
     stream << "currency="; stream << "\"" << value.currency << "\"";
@@ -214,7 +214,7 @@ std::string Account::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Account::swap(Account& other) noexcept
+void Account::swap([[maybe_unused]] Account& other) noexcept
 {
     using std::swap;
     swap(id, other.id);
@@ -225,7 +225,7 @@ void Account::swap(Account& other) noexcept
     swap(orders, other.orders);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Account& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Account& value)
 {
     stream << "Account(";
     stream << "id="; stream << value.id;
@@ -272,13 +272,13 @@ std::string OrderMessage::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void OrderMessage::swap(OrderMessage& other) noexcept
+void OrderMessage::swap([[maybe_unused]] OrderMessage& other) noexcept
 {
     using std::swap;
     swap(body, other.body);
 }
 
-std::ostream& operator<<(std::ostream& stream, const OrderMessage& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const OrderMessage& value)
 {
     stream << "OrderMessage(";
     stream << "body="; stream << value.body;
@@ -311,13 +311,13 @@ std::string BalanceMessage::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void BalanceMessage::swap(BalanceMessage& other) noexcept
+void BalanceMessage::swap([[maybe_unused]] BalanceMessage& other) noexcept
 {
     using std::swap;
     swap(body, other.body);
 }
 
-std::ostream& operator<<(std::ostream& stream, const BalanceMessage& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const BalanceMessage& value)
 {
     stream << "BalanceMessage(";
     stream << "body="; stream << value.body;
@@ -350,13 +350,13 @@ std::string AccountMessage::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void AccountMessage::swap(AccountMessage& other) noexcept
+void AccountMessage::swap([[maybe_unused]] AccountMessage& other) noexcept
 {
     using std::swap;
     swap(body, other.body);
 }
 
-std::ostream& operator<<(std::ostream& stream, const AccountMessage& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const AccountMessage& value)
 {
     stream << "AccountMessage(";
     stream << "body="; stream << value.body;

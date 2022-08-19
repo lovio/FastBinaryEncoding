@@ -44,10 +44,10 @@ enum class EnumSimple
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumSimple value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumSimple value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::EnumSimple> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::EnumSimple> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -64,10 +64,10 @@ enum class EnumTyped : uint8_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumTyped value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumTyped value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::EnumTyped> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::EnumTyped> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -78,10 +78,10 @@ enum class EnumEmpty
 {
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumEmpty value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumEmpty value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::EnumEmpty> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::EnumEmpty> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -100,10 +100,10 @@ enum class FlagsSimple
 
 FBE_ENUM_FLAGS(FlagsSimple)
 
-std::ostream& operator<<(std::ostream& stream, FlagsSimple value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsSimple value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::FlagsSimple> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::FlagsSimple> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -126,10 +126,10 @@ enum class FlagsTyped : uint64_t
 
 FBE_ENUM_FLAGS(FlagsTyped)
 
-std::ostream& operator<<(std::ostream& stream, FlagsTyped value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsTyped value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::FlagsTyped> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::FlagsTyped> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -142,10 +142,10 @@ enum class FlagsEmpty
 
 FBE_ENUM_FLAGS(FlagsEmpty)
 
-std::ostream& operator<<(std::ostream& stream, FlagsEmpty value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsEmpty value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<test::FlagsEmpty> : ostream_formatter {}; namespace test {
+} template <> struct fmt::formatter<test::FlagsEmpty> : formatter<string_view> {}; namespace test {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -220,7 +220,7 @@ struct StructSimple
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructSimple& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructSimple& value);
 
     void swap(StructSimple& other) noexcept;
     friend void swap(StructSimple& value1, StructSimple& value2) noexcept { value1.swap(value2); }
@@ -229,7 +229,7 @@ struct StructSimple
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructSimple> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructSimple> : formatter<string_view> {};
 #endif
 
 template<>
@@ -337,7 +337,7 @@ struct StructOptional : public ::test::StructSimple
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructOptional& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructOptional& value);
 
     void swap(StructOptional& other) noexcept;
     friend void swap(StructOptional& value1, StructOptional& value2) noexcept { value1.swap(value2); }
@@ -346,7 +346,7 @@ struct StructOptional : public ::test::StructSimple
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructOptional> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructOptional> : formatter<string_view> {};
 #endif
 
 template<>
@@ -400,7 +400,7 @@ struct StructNested : public ::test::StructOptional
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructNested& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructNested& value);
 
     void swap(StructNested& other) noexcept;
     friend void swap(StructNested& value1, StructNested& value2) noexcept { value1.swap(value2); }
@@ -409,7 +409,7 @@ struct StructNested : public ::test::StructOptional
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructNested> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructNested> : formatter<string_view> {};
 #endif
 
 template<>
@@ -454,7 +454,7 @@ struct StructBytes
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructBytes& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructBytes& value);
 
     void swap(StructBytes& other) noexcept;
     friend void swap(StructBytes& value1, StructBytes& value2) noexcept { value1.swap(value2); }
@@ -463,7 +463,7 @@ struct StructBytes
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructBytes> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructBytes> : formatter<string_view> {};
 #endif
 
 template<>
@@ -514,7 +514,7 @@ struct StructArray
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructArray& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructArray& value);
 
     void swap(StructArray& other) noexcept;
     friend void swap(StructArray& value1, StructArray& value2) noexcept { value1.swap(value2); }
@@ -523,7 +523,7 @@ struct StructArray
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructArray> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructArray> : formatter<string_view> {};
 #endif
 
 template<>
@@ -574,7 +574,7 @@ struct StructVector
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructVector& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructVector& value);
 
     void swap(StructVector& other) noexcept;
     friend void swap(StructVector& value1, StructVector& value2) noexcept { value1.swap(value2); }
@@ -583,7 +583,7 @@ struct StructVector
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructVector> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructVector> : formatter<string_view> {};
 #endif
 
 template<>
@@ -634,7 +634,7 @@ struct StructList
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructList& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructList& value);
 
     void swap(StructList& other) noexcept;
     friend void swap(StructList& value1, StructList& value2) noexcept { value1.swap(value2); }
@@ -643,7 +643,7 @@ struct StructList
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructList> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructList> : formatter<string_view> {};
 #endif
 
 template<>
@@ -688,7 +688,7 @@ struct StructSet
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructSet& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructSet& value);
 
     void swap(StructSet& other) noexcept;
     friend void swap(StructSet& value1, StructSet& value2) noexcept { value1.swap(value2); }
@@ -697,7 +697,7 @@ struct StructSet
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructSet> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructSet> : formatter<string_view> {};
 #endif
 
 template<>
@@ -748,7 +748,7 @@ struct StructMap
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructMap& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructMap& value);
 
     void swap(StructMap& other) noexcept;
     friend void swap(StructMap& value1, StructMap& value2) noexcept { value1.swap(value2); }
@@ -757,7 +757,7 @@ struct StructMap
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructMap> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructMap> : formatter<string_view> {};
 #endif
 
 template<>
@@ -808,7 +808,7 @@ struct StructHash
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructHash& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructHash& value);
 
     void swap(StructHash& other) noexcept;
     friend void swap(StructHash& value1, StructHash& value2) noexcept { value1.swap(value2); }
@@ -817,7 +817,7 @@ struct StructHash
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructHash> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructHash> : formatter<string_view> {};
 #endif
 
 template<>
@@ -860,7 +860,7 @@ struct StructHashEx
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructHashEx& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructHashEx& value);
 
     void swap(StructHashEx& other) noexcept;
     friend void swap(StructHashEx& value1, StructHashEx& value2) noexcept { value1.swap(value2); }
@@ -869,7 +869,7 @@ struct StructHashEx
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructHashEx> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructHashEx> : formatter<string_view> {};
 #endif
 
 template<>
@@ -908,7 +908,7 @@ struct StructEmpty
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const StructEmpty& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructEmpty& value);
 
     void swap(StructEmpty& other) noexcept;
     friend void swap(StructEmpty& value1, StructEmpty& value2) noexcept { value1.swap(value2); }
@@ -917,7 +917,7 @@ struct StructEmpty
 } // namespace test
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<test::StructEmpty> : ostream_formatter {};
+template <> struct fmt::formatter<test::StructEmpty> : formatter<string_view> {};
 #endif
 
 template<>

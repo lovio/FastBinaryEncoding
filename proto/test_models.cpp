@@ -196,7 +196,7 @@ bool FieldModel<::test::StructSimple>::verify(bool fbe_verify_type) const noexce
     return fbe_result;
 }
 
-bool FieldModel<::test::StructSimple>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructSimple>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -508,7 +508,7 @@ void FieldModel<::test::StructSimple>::get(::test::StructSimple& fbe_value) cons
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructSimple>::get_fields(::test::StructSimple& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructSimple>::get_fields([[maybe_unused]] ::test::StructSimple& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -818,7 +818,7 @@ void FieldModel<::test::StructSimple>::set(const ::test::StructSimple& fbe_value
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructSimple>::set_fields(const ::test::StructSimple& fbe_value) noexcept
+void FieldModel<::test::StructSimple>::set_fields([[maybe_unused]] const ::test::StructSimple& fbe_value) noexcept
 {
     id.set(fbe_value.id);
     f1.set(fbe_value.f1);
@@ -1172,7 +1172,7 @@ bool FieldModel<::test::StructOptional>::verify(bool fbe_verify_type) const noex
     return fbe_result;
 }
 
-bool FieldModel<::test::StructOptional>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructOptional>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1616,7 +1616,7 @@ void FieldModel<::test::StructOptional>::get(::test::StructOptional& fbe_value) 
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructOptional>::get_fields(::test::StructOptional& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructOptional>::get_fields([[maybe_unused]] ::test::StructOptional& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2056,7 +2056,7 @@ void FieldModel<::test::StructOptional>::set(const ::test::StructOptional& fbe_v
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructOptional>::set_fields(const ::test::StructOptional& fbe_value) noexcept
+void FieldModel<::test::StructOptional>::set_fields([[maybe_unused]] const ::test::StructOptional& fbe_value) noexcept
 {
     parent.set_fields(fbe_value);
     f100.set(fbe_value.f100);
@@ -2270,7 +2270,7 @@ bool FieldModel<::test::StructNested>::verify(bool fbe_verify_type) const noexce
     return fbe_result;
 }
 
-bool FieldModel<::test::StructNested>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructNested>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2390,7 +2390,7 @@ void FieldModel<::test::StructNested>::get(::test::StructNested& fbe_value) cons
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructNested>::get_fields(::test::StructNested& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructNested>::get_fields([[maybe_unused]] ::test::StructNested& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2506,7 +2506,7 @@ void FieldModel<::test::StructNested>::set(const ::test::StructNested& fbe_value
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructNested>::set_fields(const ::test::StructNested& fbe_value) noexcept
+void FieldModel<::test::StructNested>::set_fields([[maybe_unused]] const ::test::StructNested& fbe_value) noexcept
 {
     parent.set_fields(fbe_value);
     f1000.set(fbe_value.f1000);
@@ -2636,7 +2636,7 @@ bool FieldModel<::test::StructBytes>::verify(bool fbe_verify_type) const noexcep
     return fbe_result;
 }
 
-bool FieldModel<::test::StructBytes>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructBytes>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2696,7 +2696,7 @@ void FieldModel<::test::StructBytes>::get(::test::StructBytes& fbe_value) const 
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructBytes>::get_fields(::test::StructBytes& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructBytes>::get_fields([[maybe_unused]] ::test::StructBytes& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2754,7 +2754,7 @@ void FieldModel<::test::StructBytes>::set(const ::test::StructBytes& fbe_value) 
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructBytes>::set_fields(const ::test::StructBytes& fbe_value) noexcept
+void FieldModel<::test::StructBytes>::set_fields([[maybe_unused]] const ::test::StructBytes& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -2895,7 +2895,7 @@ bool FieldModel<::test::StructArray>::verify(bool fbe_verify_type) const noexcep
     return fbe_result;
 }
 
-bool FieldModel<::test::StructArray>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructArray>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -2997,7 +2997,7 @@ void FieldModel<::test::StructArray>::get(::test::StructArray& fbe_value) const 
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructArray>::get_fields(::test::StructArray& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructArray>::get_fields([[maybe_unused]] ::test::StructArray& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3087,7 +3087,7 @@ void FieldModel<::test::StructArray>::set(const ::test::StructArray& fbe_value) 
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructArray>::set_fields(const ::test::StructArray& fbe_value) noexcept
+void FieldModel<::test::StructArray>::set_fields([[maybe_unused]] const ::test::StructArray& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -3235,7 +3235,7 @@ bool FieldModel<::test::StructVector>::verify(bool fbe_verify_type) const noexce
     return fbe_result;
 }
 
-bool FieldModel<::test::StructVector>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructVector>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3337,7 +3337,7 @@ void FieldModel<::test::StructVector>::get(::test::StructVector& fbe_value) cons
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructVector>::get_fields(::test::StructVector& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructVector>::get_fields([[maybe_unused]] ::test::StructVector& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3437,7 +3437,7 @@ void FieldModel<::test::StructVector>::set(const ::test::StructVector& fbe_value
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructVector>::set_fields(const ::test::StructVector& fbe_value) noexcept
+void FieldModel<::test::StructVector>::set_fields([[maybe_unused]] const ::test::StructVector& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -3585,7 +3585,7 @@ bool FieldModel<::test::StructList>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::test::StructList>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructList>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3687,7 +3687,7 @@ void FieldModel<::test::StructList>::get(::test::StructList& fbe_value) const no
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructList>::get_fields(::test::StructList& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructList>::get_fields([[maybe_unused]] ::test::StructList& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3787,7 +3787,7 @@ void FieldModel<::test::StructList>::set(const ::test::StructList& fbe_value) no
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructList>::set_fields(const ::test::StructList& fbe_value) noexcept
+void FieldModel<::test::StructList>::set_fields([[maybe_unused]] const ::test::StructList& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -3917,7 +3917,7 @@ bool FieldModel<::test::StructSet>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::test::StructSet>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructSet>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -3983,7 +3983,7 @@ void FieldModel<::test::StructSet>::get(::test::StructSet& fbe_value) const noex
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructSet>::get_fields(::test::StructSet& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructSet>::get_fields([[maybe_unused]] ::test::StructSet& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4047,7 +4047,7 @@ void FieldModel<::test::StructSet>::set(const ::test::StructSet& fbe_value) noex
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructSet>::set_fields(const ::test::StructSet& fbe_value) noexcept
+void FieldModel<::test::StructSet>::set_fields([[maybe_unused]] const ::test::StructSet& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -4189,7 +4189,7 @@ bool FieldModel<::test::StructMap>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::test::StructMap>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructMap>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4291,7 +4291,7 @@ void FieldModel<::test::StructMap>::get(::test::StructMap& fbe_value) const noex
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructMap>::get_fields(::test::StructMap& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructMap>::get_fields([[maybe_unused]] ::test::StructMap& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4391,7 +4391,7 @@ void FieldModel<::test::StructMap>::set(const ::test::StructMap& fbe_value) noex
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructMap>::set_fields(const ::test::StructMap& fbe_value) noexcept
+void FieldModel<::test::StructMap>::set_fields([[maybe_unused]] const ::test::StructMap& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -4539,7 +4539,7 @@ bool FieldModel<::test::StructHash>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::test::StructHash>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructHash>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4641,7 +4641,7 @@ void FieldModel<::test::StructHash>::get(::test::StructHash& fbe_value) const no
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructHash>::get_fields(::test::StructHash& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructHash>::get_fields([[maybe_unused]] ::test::StructHash& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4741,7 +4741,7 @@ void FieldModel<::test::StructHash>::set(const ::test::StructHash& fbe_value) no
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructHash>::set_fields(const ::test::StructHash& fbe_value) noexcept
+void FieldModel<::test::StructHash>::set_fields([[maybe_unused]] const ::test::StructHash& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -4865,7 +4865,7 @@ bool FieldModel<::test::StructHashEx>::verify(bool fbe_verify_type) const noexce
     return fbe_result;
 }
 
-bool FieldModel<::test::StructHashEx>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructHashEx>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4919,7 +4919,7 @@ void FieldModel<::test::StructHashEx>::get(::test::StructHashEx& fbe_value) cons
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructHashEx>::get_fields(::test::StructHashEx& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructHashEx>::get_fields([[maybe_unused]] ::test::StructHashEx& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -4971,7 +4971,7 @@ void FieldModel<::test::StructHashEx>::set(const ::test::StructHashEx& fbe_value
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructHashEx>::set_fields(const ::test::StructHashEx& fbe_value) noexcept
+void FieldModel<::test::StructHashEx>::set_fields([[maybe_unused]] const ::test::StructHashEx& fbe_value) noexcept
 {
     f1.set(fbe_value.f1);
     f2.set(fbe_value.f2);
@@ -5081,7 +5081,7 @@ bool FieldModel<::test::StructEmpty>::verify(bool fbe_verify_type) const noexcep
     return fbe_result;
 }
 
-bool FieldModel<::test::StructEmpty>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::test::StructEmpty>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     return true;
 }
@@ -5121,7 +5121,7 @@ void FieldModel<::test::StructEmpty>::get(::test::StructEmpty& fbe_value) const 
     get_end(fbe_begin);
 }
 
-void FieldModel<::test::StructEmpty>::get_fields(::test::StructEmpty& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::test::StructEmpty>::get_fields([[maybe_unused]] ::test::StructEmpty& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
 }
 
@@ -5160,7 +5160,7 @@ void FieldModel<::test::StructEmpty>::set(const ::test::StructEmpty& fbe_value) 
     set_end(fbe_begin);
 }
 
-void FieldModel<::test::StructEmpty>::set_fields(const ::test::StructEmpty& fbe_value) noexcept
+void FieldModel<::test::StructEmpty>::set_fields([[maybe_unused]] const ::test::StructEmpty& fbe_value) noexcept
 {
 }
 

@@ -41,10 +41,10 @@ enum class EnumByte : uint8_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumByte value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumByte value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumByte> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumByte> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -61,10 +61,10 @@ enum class EnumChar : uint8_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumChar value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumChar value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumChar> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumChar> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -81,10 +81,10 @@ enum class EnumWChar : uint32_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumWChar value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumWChar value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumWChar> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumWChar> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -101,10 +101,10 @@ enum class EnumInt8 : int8_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumInt8 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt8 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumInt8> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumInt8> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -121,10 +121,10 @@ enum class EnumUInt8 : uint8_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt8 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt8 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumUInt8> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumUInt8> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -141,10 +141,10 @@ enum class EnumInt16 : int16_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumInt16 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt16 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumInt16> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumInt16> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -161,10 +161,10 @@ enum class EnumUInt16 : uint16_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt16 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt16 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumUInt16> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumUInt16> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -181,10 +181,10 @@ enum class EnumInt32 : int32_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumInt32 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt32 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumInt32> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumInt32> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -201,10 +201,10 @@ enum class EnumUInt32 : uint32_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt32 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt32 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumUInt32> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumUInt32> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -221,10 +221,10 @@ enum class EnumInt64 : int64_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumInt64 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt64 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumInt64> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumInt64> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -241,10 +241,10 @@ enum class EnumUInt64 : uint64_t
     ENUM_VALUE_5 = ENUM_VALUE_3,
 };
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt64 value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt64 value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<enums::EnumUInt64> : ostream_formatter {}; namespace enums {
+} template <> struct fmt::formatter<enums::EnumUInt64> : formatter<string_view> {}; namespace enums {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -340,7 +340,7 @@ struct Enums
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const Enums& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Enums& value);
 
     void swap(Enums& other) noexcept;
     friend void swap(Enums& value1, Enums& value2) noexcept { value1.swap(value2); }
@@ -349,7 +349,7 @@ struct Enums
 } // namespace enums
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<enums::Enums> : ostream_formatter {};
+template <> struct fmt::formatter<enums::Enums> : formatter<string_view> {};
 #endif
 
 template<>

@@ -85,7 +85,7 @@ bool FieldModel<::protoex::Order>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::protoex::Order>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::Order>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -175,7 +175,7 @@ void FieldModel<::protoex::Order>::get(::protoex::Order& fbe_value) const noexce
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Order>::get_fields(::protoex::Order& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::Order>::get_fields([[maybe_unused]] ::protoex::Order& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -263,7 +263,7 @@ void FieldModel<::protoex::Order>::set(const ::protoex::Order& fbe_value) noexce
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Order>::set_fields(const ::protoex::Order& fbe_value) noexcept
+void FieldModel<::protoex::Order>::set_fields([[maybe_unused]] const ::protoex::Order& fbe_value) noexcept
 {
     id.set(fbe_value.id);
     symbol.set(fbe_value.symbol);
@@ -385,7 +385,7 @@ bool FieldModel<::protoex::Balance>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::protoex::Balance>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::Balance>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -439,7 +439,7 @@ void FieldModel<::protoex::Balance>::get(::protoex::Balance& fbe_value) const no
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Balance>::get_fields(::protoex::Balance& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::Balance>::get_fields([[maybe_unused]] ::protoex::Balance& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -489,7 +489,7 @@ void FieldModel<::protoex::Balance>::set(const ::protoex::Balance& fbe_value) no
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Balance>::set_fields(const ::protoex::Balance& fbe_value) noexcept
+void FieldModel<::protoex::Balance>::set_fields([[maybe_unused]] const ::protoex::Balance& fbe_value) noexcept
 {
     parent.set_fields(fbe_value);
     locked.set(fbe_value.locked);
@@ -617,7 +617,7 @@ bool FieldModel<::protoex::Account>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::protoex::Account>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::Account>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -695,7 +695,7 @@ void FieldModel<::protoex::Account>::get(::protoex::Account& fbe_value) const no
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Account>::get_fields(::protoex::Account& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::Account>::get_fields([[maybe_unused]] ::protoex::Account& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -771,7 +771,7 @@ void FieldModel<::protoex::Account>::set(const ::protoex::Account& fbe_value) no
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::Account>::set_fields(const ::protoex::Account& fbe_value) noexcept
+void FieldModel<::protoex::Account>::set_fields([[maybe_unused]] const ::protoex::Account& fbe_value) noexcept
 {
     id.set(fbe_value.id);
     name.set(fbe_value.name);
@@ -888,7 +888,7 @@ bool FieldModel<::protoex::OrderMessage>::verify(bool fbe_verify_type) const noe
     return fbe_result;
 }
 
-bool FieldModel<::protoex::OrderMessage>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::OrderMessage>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -936,7 +936,7 @@ void FieldModel<::protoex::OrderMessage>::get(::protoex::OrderMessage& fbe_value
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::OrderMessage>::get_fields(::protoex::OrderMessage& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::OrderMessage>::get_fields([[maybe_unused]] ::protoex::OrderMessage& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -982,7 +982,7 @@ void FieldModel<::protoex::OrderMessage>::set(const ::protoex::OrderMessage& fbe
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::OrderMessage>::set_fields(const ::protoex::OrderMessage& fbe_value) noexcept
+void FieldModel<::protoex::OrderMessage>::set_fields([[maybe_unused]] const ::protoex::OrderMessage& fbe_value) noexcept
 {
     body.set(fbe_value.body);
 }
@@ -1094,7 +1094,7 @@ bool FieldModel<::protoex::BalanceMessage>::verify(bool fbe_verify_type) const n
     return fbe_result;
 }
 
-bool FieldModel<::protoex::BalanceMessage>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::BalanceMessage>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1142,7 +1142,7 @@ void FieldModel<::protoex::BalanceMessage>::get(::protoex::BalanceMessage& fbe_v
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::BalanceMessage>::get_fields(::protoex::BalanceMessage& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::BalanceMessage>::get_fields([[maybe_unused]] ::protoex::BalanceMessage& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1188,7 +1188,7 @@ void FieldModel<::protoex::BalanceMessage>::set(const ::protoex::BalanceMessage&
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::BalanceMessage>::set_fields(const ::protoex::BalanceMessage& fbe_value) noexcept
+void FieldModel<::protoex::BalanceMessage>::set_fields([[maybe_unused]] const ::protoex::BalanceMessage& fbe_value) noexcept
 {
     body.set(fbe_value.body);
 }
@@ -1300,7 +1300,7 @@ bool FieldModel<::protoex::AccountMessage>::verify(bool fbe_verify_type) const n
     return fbe_result;
 }
 
-bool FieldModel<::protoex::AccountMessage>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::protoex::AccountMessage>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1348,7 +1348,7 @@ void FieldModel<::protoex::AccountMessage>::get(::protoex::AccountMessage& fbe_v
     get_end(fbe_begin);
 }
 
-void FieldModel<::protoex::AccountMessage>::get_fields(::protoex::AccountMessage& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::protoex::AccountMessage>::get_fields([[maybe_unused]] ::protoex::AccountMessage& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1394,7 +1394,7 @@ void FieldModel<::protoex::AccountMessage>::set(const ::protoex::AccountMessage&
     set_end(fbe_begin);
 }
 
-void FieldModel<::protoex::AccountMessage>::set_fields(const ::protoex::AccountMessage& fbe_value) noexcept
+void FieldModel<::protoex::AccountMessage>::set_fields([[maybe_unused]] const ::protoex::AccountMessage& fbe_value) noexcept
 {
     body.set(fbe_value.body);
 }
