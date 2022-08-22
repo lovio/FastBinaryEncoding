@@ -28,7 +28,7 @@ Line::Line(::variants::V&& arg_v, std::vector<::variants::V> arg_vv, std::unorde
     }
 }
 
-Line::Line(Line&& other) noexcept
+Line::Line([[maybe_unused]] Line&& other) noexcept
     : v(std::move(other.v))
     , vv(std::move(other.vv))
     , vm(std::move(other.vm))
@@ -124,7 +124,7 @@ Line2::Line2(std::unordered_map<::enums::EnumInt8, ::variants::V> arg_vm)
     : vm(std::move(arg_vm))
 {}
 
-Line2::Line2(Line2&& other) noexcept
+Line2::Line2([[maybe_unused]] Line2&& other) noexcept
     : vm(std::move(other.vm))
 {}
 
@@ -191,7 +191,7 @@ Line3::Line3(::variants::Value&& arg_value)
     : value(std::move(arg_value))
 {}
 
-Line3::Line3(Line3&& other) noexcept
+Line3::Line3([[maybe_unused]] Line3&& other) noexcept
     : value(std::move(other.value))
 {}
 

@@ -34,7 +34,7 @@ Simple::Simple(const std::string& arg_info, std::unique_ptr<::simple::Simple> ar
         spm.emplace(it.first, it.second.release());
 }
 
-Simple::Simple(Simple&& other) noexcept
+Simple::Simple([[maybe_unused]] Simple&& other) noexcept
     : info(std::move(other.info))
     , simple(std::exchange(other.simple, nullptr))
     , depth(std::exchange(other.depth, (int32_t)0ll))

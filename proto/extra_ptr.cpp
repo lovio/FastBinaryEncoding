@@ -28,7 +28,7 @@ Info::Info(const std::string& arg_info, std::unique_ptr<::extra::Extra> arg_extr
         extras1.emplace_back(it.release());
 }
 
-Info::Info(Info&& other) noexcept
+Info::Info([[maybe_unused]] Info&& other) noexcept
     : info(std::move(other.info))
     , extra(std::exchange(other.extra, nullptr))
     , extras(std::move(other.extras))
@@ -140,7 +140,7 @@ Extra::Extra(int64_t arg_num, const std::string& arg_data, std::unique_ptr<::ext
         infopl.emplace_back(it.release());
 }
 
-Extra::Extra(Extra&& other) noexcept
+Extra::Extra([[maybe_unused]] Extra&& other) noexcept
     : num(std::exchange(other.num, (int64_t)0ll))
     , data(std::move(other.data))
     , info(std::exchange(other.info, nullptr))

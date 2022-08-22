@@ -38,7 +38,7 @@ Extra::Extra(const std::string& arg_name, const std::string& arg_detail, ::sa::S
     , flag(std::move(arg_flag))
 {}
 
-Extra::Extra(Extra&& other) noexcept
+Extra::Extra([[maybe_unused]] Extra&& other) noexcept
     : name(std::move(other.name))
     , detail(std::move(other.detail))
     , sex(std::move(other.sex))
@@ -112,7 +112,7 @@ Simple::Simple(const std::string& arg_name, int32_t arg_depth, std::array<::sa::
     , sex(std::move(arg_sex))
 {}
 
-Simple::Simple(Simple&& other) noexcept
+Simple::Simple([[maybe_unused]] Simple&& other) noexcept
     : name(std::move(other.name))
     , depth(std::exchange(other.depth, (int32_t)0ll))
     , sa(std::move(other.sa))
@@ -210,7 +210,7 @@ Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, 
     }
 }
 
-Complex::Complex(Complex&& other) noexcept
+Complex::Complex([[maybe_unused]] Complex&& other) noexcept
     : name(std::move(other.name))
     , sex()
     , flag()

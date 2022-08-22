@@ -23,7 +23,7 @@ Info::Info(const std::string& arg_info, ::osa::Sex&& arg_sex, ::osa::MyFLags&& a
     , extra(std::move(arg_extra))
 {}
 
-Info::Info(Info&& other) noexcept
+Info::Info([[maybe_unused]] Info&& other) noexcept
     : info(std::move(other.info))
     , sex(std::move(other.sex))
     , flag(std::move(other.flag))
@@ -93,7 +93,7 @@ Detail::Detail(std::vector<::osa::Extra> arg_extrav, std::map<int32_t, ::osa::Ex
     , extram(std::move(arg_extram))
 {}
 
-Detail::Detail(Detail&& other) noexcept
+Detail::Detail([[maybe_unused]] Detail&& other) noexcept
     : extrav(std::move(other.extrav))
     , extram(std::move(other.extram))
 {}

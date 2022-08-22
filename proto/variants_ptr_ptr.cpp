@@ -47,7 +47,7 @@ Simple::Simple(const std::string& arg_name)
     : name(arg_name)
 {}
 
-Simple::Simple(Simple&& other) noexcept
+Simple::Simple([[maybe_unused]] Simple&& other) noexcept
     : name(std::move(other.name))
 {}
 
@@ -116,7 +116,7 @@ Value::Value(::variants_ptr::V&& arg_v, std::optional<::variants_ptr::V> arg_vo,
     }
 }
 
-Value::Value(Value&& other) noexcept
+Value::Value([[maybe_unused]] Value&& other) noexcept
     : v(std::move(other.v))
     , vo()
     , vo2()
@@ -197,7 +197,7 @@ ValueContainer::ValueContainer(std::vector<::variants_ptr::V> arg_vv, std::unord
     , vm(std::move(arg_vm))
 {}
 
-ValueContainer::ValueContainer(ValueContainer&& other) noexcept
+ValueContainer::ValueContainer([[maybe_unused]] ValueContainer&& other) noexcept
     : vv(std::move(other.vv))
     , vm(std::move(other.vm))
 {}

@@ -19,7 +19,7 @@ Line::Line(::variants_ptr::Value&& arg_value, std::unique_ptr<::variants_ptr::Va
     , value_ptr(arg_value_ptr.release())
 {}
 
-Line::Line(Line&& other) noexcept
+Line::Line([[maybe_unused]] Line&& other) noexcept
     : value(std::move(other.value))
     , value_ptr(std::exchange(other.value_ptr, nullptr))
 {}

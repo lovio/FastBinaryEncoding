@@ -206,7 +206,7 @@ bool FieldModel_template_variant_Line::verify(bool fbe_verify_type) const noexce
     return fbe_result;
 }
 
-bool FieldModel_template_variant_Line::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_template_variant_Line::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -272,7 +272,7 @@ void FieldModel_template_variant_Line::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_template_variant_Line::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_template_variant_Line::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::template_variant::Line& fbe_value = static_cast<::template_variant::Line&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -594,7 +594,7 @@ bool FieldModel_template_variant_Line2::verify(bool fbe_verify_type) const noexc
     return fbe_result;
 }
 
-bool FieldModel_template_variant_Line2::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_template_variant_Line2::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -642,7 +642,7 @@ void FieldModel_template_variant_Line2::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_template_variant_Line2::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_template_variant_Line2::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::template_variant::Line2& fbe_value = static_cast<::template_variant::Line2&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -937,7 +937,7 @@ bool FieldModel_template_variant_Line3::verify(bool fbe_verify_type) const noexc
     return fbe_result;
 }
 
-bool FieldModel_template_variant_Line3::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_template_variant_Line3::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -985,7 +985,7 @@ void FieldModel_template_variant_Line3::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_template_variant_Line3::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_template_variant_Line3::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::template_variant::Line3& fbe_value = static_cast<::template_variant::Line3&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
