@@ -2091,7 +2091,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
     collection_of_optional_fields.clear();
 
     WriteLine();
-    WriteLineIndent(*s->name + "::" + *s->name + "(" + *s->name + "&& other) noexcept");
+    WriteLineIndent(*s->name + "::" + *s->name + "([[maybe_unused]] " + *s->name + "&& other) noexcept");
     Indent(1);
     // generate the base move
     first = true;
@@ -2910,7 +2910,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLine();
 
     // Generate struct field model verify_fields() method
-    WriteLineIndent("bool " + class_name + "::verify_fields(size_t fbe_struct_size) const noexcept");
+    WriteLineIndent("bool " + class_name + "::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
@@ -3008,7 +3008,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLine();
 
     // Generate struct field model get_fields() method
-    WriteLineIndent("void " + class_name + "::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept");
+    WriteLineIndent("void " + class_name + "::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
