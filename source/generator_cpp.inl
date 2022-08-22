@@ -3123,7 +3123,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLineIndent("void " + class_name + "::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
-    WriteLineIndent("const " + struct_name + "& fbe_value = static_cast<const " + struct_name + "&>(base_fbe_value);");
+    WriteLineIndent("[[maybe_unused]] const " + struct_name + "& fbe_value = static_cast<const " + struct_name + "&>(base_fbe_value);");
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
     {
         if (s->base && !s->base->empty())

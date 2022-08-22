@@ -313,7 +313,7 @@ void FieldModel_ptrpkg_Line::set(const ::FBE::Base& fbe_value) noexcept
 
 void FieldModel_ptrpkg_Line::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::ptrpkg::Line& fbe_value = static_cast<const ::ptrpkg::Line&>(base_fbe_value);
+    [[maybe_unused]] const ::ptrpkg::Line& fbe_value = static_cast<const ::ptrpkg::Line&>(base_fbe_value);
     value.set(fbe_value.value);
     value_ptr.set(fbe_value.value_ptr);
 }

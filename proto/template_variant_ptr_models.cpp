@@ -347,7 +347,7 @@ void FieldModel_template_variant_Line::set(const ::FBE::Base& fbe_value) noexcep
 
 void FieldModel_template_variant_Line::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::template_variant::Line& fbe_value = static_cast<const ::template_variant::Line&>(base_fbe_value);
+    [[maybe_unused]] const ::template_variant::Line& fbe_value = static_cast<const ::template_variant::Line&>(base_fbe_value);
     v.set(fbe_value.v);
     vv.set(fbe_value.vv);
     vm.set(fbe_value.vm);
@@ -693,7 +693,7 @@ void FieldModel_template_variant_Line2::set(const ::FBE::Base& fbe_value) noexce
 
 void FieldModel_template_variant_Line2::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::template_variant::Line2& fbe_value = static_cast<const ::template_variant::Line2&>(base_fbe_value);
+    [[maybe_unused]] const ::template_variant::Line2& fbe_value = static_cast<const ::template_variant::Line2&>(base_fbe_value);
     vm.set(fbe_value.vm);
 }
 
@@ -1036,7 +1036,7 @@ void FieldModel_template_variant_Line3::set(const ::FBE::Base& fbe_value) noexce
 
 void FieldModel_template_variant_Line3::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::template_variant::Line3& fbe_value = static_cast<const ::template_variant::Line3&>(base_fbe_value);
+    [[maybe_unused]] const ::template_variant::Line3& fbe_value = static_cast<const ::template_variant::Line3&>(base_fbe_value);
     value.set(fbe_value.value);
 }
 

@@ -971,12 +971,12 @@ private:
 
 #if defined(FMT_VERSION)
 template <>
-struct fmt::formatter<FBE::decimal_t> : formatter<std::string_view>
+struct fmt::formatter<FBE::decimal_t> : formatter<fmt::string_view>
 {
     template <typename FormatContext>
     auto format(const FBE::decimal_t& value, FormatContext& ctx) const
     {
-        return formatter<string_view>::format((double)value, ctx);
+        return formatter<fmt::string_view>::format((double)value, ctx);
     }
 };
 #endif
@@ -1246,12 +1246,12 @@ private:
 
 #if defined(FMT_VERSION)
 template <>
-struct fmt::formatter<FBE::uuid_t> : formatter<std::string_view>
+struct fmt::formatter<FBE::uuid_t> : formatter<fmt::string_view>
 {
     template <typename FormatContext>
     auto format(const FBE::uuid_t& value, FormatContext& ctx) const
     {
-        return formatter<string_view>::format(value.string(), ctx);
+        return formatter<fmt::string_view>::format(value.string(), ctx);
     }
 };
 #endif
