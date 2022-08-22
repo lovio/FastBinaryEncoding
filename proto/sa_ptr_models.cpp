@@ -345,7 +345,7 @@ void FieldModel_sa_Extra::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Extra::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Extra::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::sa::Extra& fbe_value = static_cast<const ::sa::Extra&>(base_fbe_value);
     name.set(fbe_value.name);
@@ -741,7 +741,7 @@ void FieldModel_sa_Simple::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Simple::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Simple::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::sa::Simple& fbe_value = static_cast<const ::sa::Simple&>(base_fbe_value);
     name.set(fbe_value.name);
@@ -1155,7 +1155,7 @@ void FieldModel_sa_Complex::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Complex::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Complex::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::sa::Complex& fbe_value = static_cast<const ::sa::Complex&>(base_fbe_value);
     name.set(fbe_value.name);

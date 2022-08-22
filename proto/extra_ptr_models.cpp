@@ -345,7 +345,7 @@ void FieldModel_extra_Info::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_extra_Info::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_extra_Info::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::extra::Info& fbe_value = static_cast<const ::extra::Info&>(base_fbe_value);
     info.set(fbe_value.info);
@@ -827,7 +827,7 @@ void FieldModel_extra_Extra::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_extra_Extra::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_extra_Extra::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::extra::Extra& fbe_value = static_cast<const ::extra::Extra&>(base_fbe_value);
     num.set(fbe_value.num);

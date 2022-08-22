@@ -345,7 +345,7 @@ void FieldModel_pkg_Info::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_pkg_Info::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_pkg_Info::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::pkg::Info& fbe_value = static_cast<const ::pkg::Info&>(base_fbe_value);
     info.set(fbe_value.info);
@@ -708,7 +708,7 @@ void FieldModel_pkg_Detail::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_pkg_Detail::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_pkg_Detail::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
     const ::pkg::Detail& fbe_value = static_cast<const ::pkg::Detail&>(base_fbe_value);
     extrav.set(fbe_value.extrav);

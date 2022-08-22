@@ -73,7 +73,7 @@ std::string Info::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Info::swap(Info& other) noexcept
+void Info::swap([[maybe_unused]] Info& other) noexcept
 {
     using std::swap;
     swap(info, other.info);
@@ -196,7 +196,7 @@ std::string Extra::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Extra::swap(Extra& other) noexcept
+void Extra::swap([[maybe_unused]] Extra& other) noexcept
 {
     using std::swap;
     swap(num, other.num);

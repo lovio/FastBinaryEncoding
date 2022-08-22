@@ -56,7 +56,7 @@ std::string Line::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Line::swap(Line& other) noexcept
+void Line::swap([[maybe_unused]] Line& other) noexcept
 {
     using std::swap;
     swap(value, other.value);

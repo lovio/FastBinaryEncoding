@@ -85,7 +85,7 @@ std::string Simple::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Simple::swap(Simple& other) noexcept
+void Simple::swap([[maybe_unused]] Simple& other) noexcept
 {
     using std::swap;
     swap(info, other.info);
