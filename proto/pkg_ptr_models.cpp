@@ -206,7 +206,7 @@ bool FieldModel_pkg_Info::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_pkg_Info::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_pkg_Info::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -272,7 +272,7 @@ void FieldModel_pkg_Info::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_pkg_Info::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_pkg_Info::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::pkg::Info& fbe_value = static_cast<::pkg::Info&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -345,9 +345,9 @@ void FieldModel_pkg_Info::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_pkg_Info::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_pkg_Info::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::pkg::Info& fbe_value = static_cast<const ::pkg::Info&>(base_fbe_value);
+    [[maybe_unused]] const ::pkg::Info& fbe_value = static_cast<const ::pkg::Info&>(base_fbe_value);
     info.set(fbe_value.info);
     sex.set(fbe_value.sex);
     flag.set(fbe_value.flag);
@@ -597,7 +597,7 @@ bool FieldModel_pkg_Detail::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_pkg_Detail::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_pkg_Detail::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -651,7 +651,7 @@ void FieldModel_pkg_Detail::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_pkg_Detail::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_pkg_Detail::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::pkg::Detail& fbe_value = static_cast<::pkg::Detail&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -708,9 +708,9 @@ void FieldModel_pkg_Detail::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_pkg_Detail::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_pkg_Detail::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::pkg::Detail& fbe_value = static_cast<const ::pkg::Detail&>(base_fbe_value);
+    [[maybe_unused]] const ::pkg::Detail& fbe_value = static_cast<const ::pkg::Detail&>(base_fbe_value);
     extrav.set(fbe_value.extrav);
     extram.set(fbe_value.extram);
 }

@@ -28,7 +28,7 @@ Line::Line(::variants::V&& arg_v, std::vector<::variants::V> arg_vv, std::unorde
     }
 }
 
-Line::Line(Line&& other) noexcept
+Line::Line([[maybe_unused]] Line&& other) noexcept
     : v(std::move(other.v))
     , vv(std::move(other.vv))
     , vm(std::move(other.vm))
@@ -76,7 +76,7 @@ std::string Line::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Line::swap(Line& other) noexcept
+void Line::swap([[maybe_unused]] Line& other) noexcept
 {
     using std::swap;
     swap(v, other.v);
@@ -124,7 +124,7 @@ Line2::Line2(std::unordered_map<::enums::EnumInt8, ::variants::V> arg_vm)
     : vm(std::move(arg_vm))
 {}
 
-Line2::Line2(Line2&& other) noexcept
+Line2::Line2([[maybe_unused]] Line2&& other) noexcept
     : vm(std::move(other.vm))
 {}
 
@@ -158,7 +158,7 @@ std::string Line2::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Line2::swap(Line2& other) noexcept
+void Line2::swap([[maybe_unused]] Line2& other) noexcept
 {
     using std::swap;
     swap(vm, other.vm);
@@ -191,7 +191,7 @@ Line3::Line3(::variants::Value&& arg_value)
     : value(std::move(arg_value))
 {}
 
-Line3::Line3(Line3&& other) noexcept
+Line3::Line3([[maybe_unused]] Line3&& other) noexcept
     : value(std::move(other.value))
 {}
 
@@ -225,7 +225,7 @@ std::string Line3::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Line3::swap(Line3& other) noexcept
+void Line3::swap([[maybe_unused]] Line3& other) noexcept
 {
     using std::swap;
     swap(value, other.value);

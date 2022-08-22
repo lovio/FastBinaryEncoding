@@ -215,7 +215,7 @@ bool FieldModel_simple_Simple::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_simple_Simple::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_simple_Simple::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -299,7 +299,7 @@ void FieldModel_simple_Simple::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_simple_Simple::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_simple_Simple::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::simple::Simple& fbe_value = static_cast<::simple::Simple&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -396,9 +396,9 @@ void FieldModel_simple_Simple::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_simple_Simple::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_simple_Simple::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::simple::Simple& fbe_value = static_cast<const ::simple::Simple&>(base_fbe_value);
+    [[maybe_unused]] const ::simple::Simple& fbe_value = static_cast<const ::simple::Simple&>(base_fbe_value);
     info.set(fbe_value.info);
     simple.set(fbe_value.simple);
     depth.set(fbe_value.depth);

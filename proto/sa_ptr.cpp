@@ -38,7 +38,7 @@ Extra::Extra(const std::string& arg_name, const std::string& arg_detail, ::sa::S
     , flag(std::move(arg_flag))
 {}
 
-Extra::Extra(Extra&& other) noexcept
+Extra::Extra([[maybe_unused]] Extra&& other) noexcept
     : name(std::move(other.name))
     , detail(std::move(other.detail))
     , sex(std::move(other.sex))
@@ -78,7 +78,7 @@ std::string Extra::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Extra::swap(Extra& other) noexcept
+void Extra::swap([[maybe_unused]] Extra& other) noexcept
 {
     using std::swap;
     swap(name, other.name);
@@ -112,7 +112,7 @@ Simple::Simple(const std::string& arg_name, int32_t arg_depth, std::array<::sa::
     , sex(std::move(arg_sex))
 {}
 
-Simple::Simple(Simple&& other) noexcept
+Simple::Simple([[maybe_unused]] Simple&& other) noexcept
     : name(std::move(other.name))
     , depth(std::exchange(other.depth, (int32_t)0ll))
     , sa(std::move(other.sa))
@@ -152,7 +152,7 @@ std::string Simple::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Simple::swap(Simple& other) noexcept
+void Simple::swap([[maybe_unused]] Simple& other) noexcept
 {
     using std::swap;
     swap(name, other.name);
@@ -210,7 +210,7 @@ Complex::Complex(const std::string& arg_name, std::optional<::sa::Sex> arg_sex, 
     }
 }
 
-Complex::Complex(Complex&& other) noexcept
+Complex::Complex([[maybe_unused]] Complex&& other) noexcept
     : name(std::move(other.name))
     , sex()
     , flag()
@@ -274,7 +274,7 @@ std::string Complex::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Complex::swap(Complex& other) noexcept
+void Complex::swap([[maybe_unused]] Complex& other) noexcept
 {
     using std::swap;
     swap(name, other.name);

@@ -206,7 +206,7 @@ bool FieldModel_extra_Info::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_extra_Info::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_extra_Info::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -272,7 +272,7 @@ void FieldModel_extra_Info::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_extra_Info::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_extra_Info::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::extra::Info& fbe_value = static_cast<::extra::Info&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -345,9 +345,9 @@ void FieldModel_extra_Info::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_extra_Info::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_extra_Info::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::extra::Info& fbe_value = static_cast<const ::extra::Info&>(base_fbe_value);
+    [[maybe_unused]] const ::extra::Info& fbe_value = static_cast<const ::extra::Info&>(base_fbe_value);
     info.set(fbe_value.info);
     extra.set(fbe_value.extra);
     extras.set(fbe_value.extras);
@@ -618,7 +618,7 @@ bool FieldModel_extra_Extra::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_extra_Extra::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_extra_Extra::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -714,7 +714,7 @@ void FieldModel_extra_Extra::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_extra_Extra::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_extra_Extra::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::extra::Extra& fbe_value = static_cast<::extra::Extra&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -827,9 +827,9 @@ void FieldModel_extra_Extra::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_extra_Extra::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_extra_Extra::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::extra::Extra& fbe_value = static_cast<const ::extra::Extra&>(base_fbe_value);
+    [[maybe_unused]] const ::extra::Extra& fbe_value = static_cast<const ::extra::Extra&>(base_fbe_value);
     num.set(fbe_value.num);
     data.set(fbe_value.data);
     info.set(fbe_value.info);

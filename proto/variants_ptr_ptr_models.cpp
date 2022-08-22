@@ -772,7 +772,7 @@ bool FieldModel_variants_ptr_Simple::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_variants_ptr_Simple::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_variants_ptr_Simple::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -820,7 +820,7 @@ void FieldModel_variants_ptr_Simple::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_Simple::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_variants_ptr_Simple::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::variants_ptr::Simple& fbe_value = static_cast<::variants_ptr::Simple&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -869,9 +869,9 @@ void FieldModel_variants_ptr_Simple::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_Simple::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_variants_ptr_Simple::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::variants_ptr::Simple& fbe_value = static_cast<const ::variants_ptr::Simple&>(base_fbe_value);
+    [[maybe_unused]] const ::variants_ptr::Simple& fbe_value = static_cast<const ::variants_ptr::Simple&>(base_fbe_value);
     name.set(fbe_value.name);
 }
 
@@ -1121,7 +1121,7 @@ bool FieldModel_variants_ptr_Value::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_variants_ptr_Value::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_variants_ptr_Value::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1181,7 +1181,7 @@ void FieldModel_variants_ptr_Value::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_Value::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_variants_ptr_Value::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::variants_ptr::Value& fbe_value = static_cast<::variants_ptr::Value&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -1246,9 +1246,9 @@ void FieldModel_variants_ptr_Value::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_Value::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_variants_ptr_Value::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::variants_ptr::Value& fbe_value = static_cast<const ::variants_ptr::Value&>(base_fbe_value);
+    [[maybe_unused]] const ::variants_ptr::Value& fbe_value = static_cast<const ::variants_ptr::Value&>(base_fbe_value);
     v.set(fbe_value.v);
     vo.set(fbe_value.vo);
     vo2.set(fbe_value.vo2);
@@ -1497,7 +1497,7 @@ bool FieldModel_variants_ptr_ValueContainer::verify(bool fbe_verify_type) const 
     return fbe_result;
 }
 
-bool FieldModel_variants_ptr_ValueContainer::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_variants_ptr_ValueContainer::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1551,7 +1551,7 @@ void FieldModel_variants_ptr_ValueContainer::get(::FBE::Base& fbe_value) noexcep
     get_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_ValueContainer::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_variants_ptr_ValueContainer::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::variants_ptr::ValueContainer& fbe_value = static_cast<::variants_ptr::ValueContainer&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -1608,9 +1608,9 @@ void FieldModel_variants_ptr_ValueContainer::set(const ::FBE::Base& fbe_value) n
     set_end(fbe_begin);
 }
 
-void FieldModel_variants_ptr_ValueContainer::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_variants_ptr_ValueContainer::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::variants_ptr::ValueContainer& fbe_value = static_cast<const ::variants_ptr::ValueContainer&>(base_fbe_value);
+    [[maybe_unused]] const ::variants_ptr::ValueContainer& fbe_value = static_cast<const ::variants_ptr::ValueContainer&>(base_fbe_value);
     vv.set(fbe_value.vv);
     vm.set(fbe_value.vm);
 }

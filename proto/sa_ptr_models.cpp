@@ -206,7 +206,7 @@ bool FieldModel_sa_Extra::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_sa_Extra::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_sa_Extra::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -272,7 +272,7 @@ void FieldModel_sa_Extra::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_sa_Extra::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_sa_Extra::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::sa::Extra& fbe_value = static_cast<::sa::Extra&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -345,9 +345,9 @@ void FieldModel_sa_Extra::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Extra::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Extra::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::sa::Extra& fbe_value = static_cast<const ::sa::Extra&>(base_fbe_value);
+    [[maybe_unused]] const ::sa::Extra& fbe_value = static_cast<const ::sa::Extra&>(base_fbe_value);
     name.set(fbe_value.name);
     detail.set(fbe_value.detail);
     sex.set(fbe_value.sex);
@@ -603,7 +603,7 @@ bool FieldModel_sa_Simple::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_sa_Simple::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_sa_Simple::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -669,7 +669,7 @@ void FieldModel_sa_Simple::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_sa_Simple::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_sa_Simple::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::sa::Simple& fbe_value = static_cast<::sa::Simple&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -741,9 +741,9 @@ void FieldModel_sa_Simple::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Simple::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Simple::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::sa::Simple& fbe_value = static_cast<const ::sa::Simple&>(base_fbe_value);
+    [[maybe_unused]] const ::sa::Simple& fbe_value = static_cast<const ::sa::Simple&>(base_fbe_value);
     name.set(fbe_value.name);
     depth.set(fbe_value.depth);
     sa.set(fbe_value.sa);
@@ -1002,7 +1002,7 @@ bool FieldModel_sa_Complex::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_sa_Complex::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_sa_Complex::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1074,7 +1074,7 @@ void FieldModel_sa_Complex::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_sa_Complex::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_sa_Complex::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::sa::Complex& fbe_value = static_cast<::sa::Complex&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -1155,9 +1155,9 @@ void FieldModel_sa_Complex::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_sa_Complex::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_sa_Complex::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::sa::Complex& fbe_value = static_cast<const ::sa::Complex&>(base_fbe_value);
+    [[maybe_unused]] const ::sa::Complex& fbe_value = static_cast<const ::sa::Complex&>(base_fbe_value);
     name.set(fbe_value.name);
     sex.set(fbe_value.sex);
     flag.set(fbe_value.flag);

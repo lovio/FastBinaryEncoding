@@ -200,7 +200,7 @@ bool FieldModel_ptrpkg_Line::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel_ptrpkg_Line::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel_ptrpkg_Line::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -254,7 +254,7 @@ void FieldModel_ptrpkg_Line::get(::FBE::Base& fbe_value) noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel_ptrpkg_Line::get_fields(::FBE::Base& base_fbe_value, size_t fbe_struct_size) noexcept
+void FieldModel_ptrpkg_Line::get_fields([[maybe_unused]] ::FBE::Base& base_fbe_value, [[maybe_unused]] size_t fbe_struct_size) noexcept
 {
     ::ptrpkg::Line& fbe_value = static_cast<::ptrpkg::Line&>(base_fbe_value);
     size_t fbe_current_size = 4 + 4;
@@ -311,9 +311,9 @@ void FieldModel_ptrpkg_Line::set(const ::FBE::Base& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel_ptrpkg_Line::set_fields(const ::FBE::Base& base_fbe_value) noexcept
+void FieldModel_ptrpkg_Line::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept
 {
-    const ::ptrpkg::Line& fbe_value = static_cast<const ::ptrpkg::Line&>(base_fbe_value);
+    [[maybe_unused]] const ::ptrpkg::Line& fbe_value = static_cast<const ::ptrpkg::Line&>(base_fbe_value);
     value.set(fbe_value.value);
     value_ptr.set(fbe_value.value_ptr);
 }
