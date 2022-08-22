@@ -2305,7 +2305,7 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
 
     // Generate struct swap method
     WriteLine();
-    WriteLineIndent("void " + *s->name + "::swap(" + *s->name + "& other) noexcept");
+    WriteLineIndent("void " + *s->name + "::swap([[maybe_unused]] " + *s->name + "& other) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("using std::swap;");
@@ -3120,7 +3120,7 @@ void GeneratorCpp::GeneratePtrStructFieldModel_Source(const std::shared_ptr<Pack
     WriteLine();
 
     // Generate struct field model set_fields() method
-    WriteLineIndent("void " + class_name + "::set_fields(const ::FBE::Base& base_fbe_value) noexcept");
+    WriteLineIndent("void " + class_name + "::set_fields([[maybe_unused]] const ::FBE::Base& base_fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
     WriteLineIndent("const " + struct_name + "& fbe_value = static_cast<const " + struct_name + "&>(base_fbe_value);");

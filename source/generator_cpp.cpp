@@ -10173,7 +10173,7 @@ void GeneratorCpp::GenerateStructFinalModel_Source(const std::shared_ptr<Package
     WriteLine();
 
     // Generate struct final model set_fields() method
-    WriteLineIndent("size_t " + model_name + "::set_fields(const " + struct_name + "& fbe_value) noexcept");
+    WriteLineIndent("size_t " + model_name + "::set_fields([[maybe_unused]] const " + struct_name + "& fbe_value) noexcept");
     WriteLineIndent("{");
     Indent(1);
     if ((s->base && !s->base->empty()) || (s->body && !s->body->fields.empty()))
