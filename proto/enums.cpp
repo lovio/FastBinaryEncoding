@@ -9,7 +9,7 @@
 
 namespace enums {
 
-std::ostream& operator<<(std::ostream& stream, EnumByte value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumByte value)
 {
     if (value == EnumByte::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumByte::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& stream, EnumByte value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumChar value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumChar value)
 {
     if (value == EnumChar::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumChar::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& stream, EnumChar value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumWChar value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumWChar value)
 {
     if (value == EnumWChar::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumWChar::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& stream, EnumWChar value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumInt8 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt8 value)
 {
     if (value == EnumInt8::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumInt8::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& stream, EnumInt8 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt8 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt8 value)
 {
     if (value == EnumUInt8::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumUInt8::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -64,7 +64,7 @@ std::ostream& operator<<(std::ostream& stream, EnumUInt8 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumInt16 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt16 value)
 {
     if (value == EnumInt16::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumInt16::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -75,7 +75,7 @@ std::ostream& operator<<(std::ostream& stream, EnumInt16 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt16 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt16 value)
 {
     if (value == EnumUInt16::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumUInt16::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -86,7 +86,7 @@ std::ostream& operator<<(std::ostream& stream, EnumUInt16 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumInt32 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt32 value)
 {
     if (value == EnumInt32::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumInt32::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -97,7 +97,7 @@ std::ostream& operator<<(std::ostream& stream, EnumInt32 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt32 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt32 value)
 {
     if (value == EnumUInt32::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumUInt32::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -108,7 +108,7 @@ std::ostream& operator<<(std::ostream& stream, EnumUInt32 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumInt64 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumInt64 value)
 {
     if (value == EnumInt64::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumInt64::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -119,7 +119,7 @@ std::ostream& operator<<(std::ostream& stream, EnumInt64 value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumUInt64 value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumUInt64 value)
 {
     if (value == EnumUInt64::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumUInt64::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -285,7 +285,7 @@ std::string Enums::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void Enums::swap(Enums& other) noexcept
+void Enums::swap([[maybe_unused]] Enums& other) noexcept
 {
     using std::swap;
     swap(byte0, other.byte0);
@@ -356,7 +356,7 @@ void Enums::swap(Enums& other) noexcept
     swap(uint64b5, other.uint64b5);
 }
 
-std::ostream& operator<<(std::ostream& stream, const Enums& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Enums& value)
 {
     stream << "Enums(";
     stream << "byte0="; stream << value.byte0;

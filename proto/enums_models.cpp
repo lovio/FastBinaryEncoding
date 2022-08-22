@@ -259,7 +259,7 @@ bool FieldModel<::enums::Enums>::verify(bool fbe_verify_type) const noexcept
     return fbe_result;
 }
 
-bool FieldModel<::enums::Enums>::verify_fields(size_t fbe_struct_size) const noexcept
+bool FieldModel<::enums::Enums>::verify_fields([[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -697,7 +697,7 @@ void FieldModel<::enums::Enums>::get(::enums::Enums& fbe_value) const noexcept
     get_end(fbe_begin);
 }
 
-void FieldModel<::enums::Enums>::get_fields(::enums::Enums& fbe_value, size_t fbe_struct_size) const noexcept
+void FieldModel<::enums::Enums>::get_fields([[maybe_unused]] ::enums::Enums& fbe_value, [[maybe_unused]] size_t fbe_struct_size) const noexcept
 {
     size_t fbe_current_size = 4 + 4;
 
@@ -1133,7 +1133,7 @@ void FieldModel<::enums::Enums>::set(const ::enums::Enums& fbe_value) noexcept
     set_end(fbe_begin);
 }
 
-void FieldModel<::enums::Enums>::set_fields(const ::enums::Enums& fbe_value) noexcept
+void FieldModel<::enums::Enums>::set_fields([[maybe_unused]] const ::enums::Enums& fbe_value) noexcept
 {
     byte0.set(fbe_value.byte0);
     byte1.set(fbe_value.byte1);

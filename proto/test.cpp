@@ -9,7 +9,7 @@
 
 namespace test {
 
-std::ostream& operator<<(std::ostream& stream, EnumSimple value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumSimple value)
 {
     if (value == EnumSimple::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumSimple::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& stream, EnumSimple value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumTyped value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumTyped value)
 {
     if (value == EnumTyped::ENUM_VALUE_0) return stream << "ENUM_VALUE_0";
     if (value == EnumTyped::ENUM_VALUE_1) return stream << "ENUM_VALUE_1";
@@ -31,12 +31,12 @@ std::ostream& operator<<(std::ostream& stream, EnumTyped value)
     return stream << "<unknown>";
 }
 
-std::ostream& operator<<(std::ostream& stream, EnumEmpty value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] EnumEmpty value)
 {
     return stream << "<empty>";
 }
 
-std::ostream& operator<<(std::ostream& stream, FlagsSimple value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsSimple value)
 {
     bool first = true;
     if ((value & FlagsSimple::FLAG_VALUE_0) && ((value & FlagsSimple::FLAG_VALUE_0) == FlagsSimple::FLAG_VALUE_0))
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& stream, FlagsSimple value)
     return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, FlagsTyped value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsTyped value)
 {
     bool first = true;
     if ((value & FlagsTyped::FLAG_VALUE_0) && ((value & FlagsTyped::FLAG_VALUE_0) == FlagsTyped::FLAG_VALUE_0))
@@ -128,7 +128,7 @@ std::ostream& operator<<(std::ostream& stream, FlagsTyped value)
     return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, FlagsEmpty value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] FlagsEmpty value)
 {
     return stream;
 }
@@ -250,7 +250,7 @@ std::string StructSimple::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructSimple::swap(StructSimple& other) noexcept
+void StructSimple::swap([[maybe_unused]] StructSimple& other) noexcept
 {
     using std::swap;
     swap(id, other.id);
@@ -300,7 +300,7 @@ void StructSimple::swap(StructSimple& other) noexcept
     swap(f44, other.f44);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructSimple& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructSimple& value)
 {
     stream << "StructSimple(";
     stream << "id="; stream << value.id;
@@ -514,7 +514,7 @@ std::string StructOptional::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructOptional::swap(StructOptional& other) noexcept
+void StructOptional::swap([[maybe_unused]] StructOptional& other) noexcept
 {
     using std::swap;
     ::test::StructSimple::swap(other);
@@ -586,7 +586,7 @@ void StructOptional::swap(StructOptional& other) noexcept
     swap(f165, other.f165);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructOptional& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructOptional& value)
 {
     stream << "StructOptional(";
     stream << (const ::test::StructSimple&)value;
@@ -714,7 +714,7 @@ std::string StructNested::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructNested::swap(StructNested& other) noexcept
+void StructNested::swap([[maybe_unused]] StructNested& other) noexcept
 {
     using std::swap;
     ::test::StructOptional::swap(other);
@@ -732,7 +732,7 @@ void StructNested::swap(StructNested& other) noexcept
     swap(f1011, other.f1011);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructNested& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructNested& value)
 {
     stream << "StructNested(";
     stream << (const ::test::StructOptional&)value;
@@ -781,7 +781,7 @@ std::string StructBytes::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructBytes::swap(StructBytes& other) noexcept
+void StructBytes::swap([[maybe_unused]] StructBytes& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -789,7 +789,7 @@ void StructBytes::swap(StructBytes& other) noexcept
     swap(f3, other.f3);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructBytes& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructBytes& value)
 {
     stream << "StructBytes(";
     stream << "f1="; stream << "bytes[" << value.f1.size() << "]";
@@ -842,7 +842,7 @@ std::string StructArray::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructArray::swap(StructArray& other) noexcept
+void StructArray::swap([[maybe_unused]] StructArray& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -857,7 +857,7 @@ void StructArray::swap(StructArray& other) noexcept
     swap(f10, other.f10);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructArray& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructArray& value)
 {
     stream << "StructArray(";
     {
@@ -1007,7 +1007,7 @@ std::string StructVector::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructVector::swap(StructVector& other) noexcept
+void StructVector::swap([[maybe_unused]] StructVector& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -1022,7 +1022,7 @@ void StructVector::swap(StructVector& other) noexcept
     swap(f10, other.f10);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructVector& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructVector& value)
 {
     stream << "StructVector(";
     {
@@ -1172,7 +1172,7 @@ std::string StructList::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructList::swap(StructList& other) noexcept
+void StructList::swap([[maybe_unused]] StructList& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -1187,7 +1187,7 @@ void StructList::swap(StructList& other) noexcept
     swap(f10, other.f10);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructList& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructList& value)
 {
     stream << "StructList(";
     {
@@ -1325,7 +1325,7 @@ std::string StructSet::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructSet::swap(StructSet& other) noexcept
+void StructSet::swap([[maybe_unused]] StructSet& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -1334,7 +1334,7 @@ void StructSet::swap(StructSet& other) noexcept
     swap(f4, other.f4);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructSet& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructSet& value)
 {
     stream << "StructSet(";
     {
@@ -1424,7 +1424,7 @@ std::string StructMap::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructMap::swap(StructMap& other) noexcept
+void StructMap::swap([[maybe_unused]] StructMap& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -1439,7 +1439,7 @@ void StructMap::swap(StructMap& other) noexcept
     swap(f10, other.f10);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructMap& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructMap& value)
 {
     stream << "StructMap(";
     {
@@ -1609,7 +1609,7 @@ std::string StructHash::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructHash::swap(StructHash& other) noexcept
+void StructHash::swap([[maybe_unused]] StructHash& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
@@ -1624,7 +1624,7 @@ void StructHash::swap(StructHash& other) noexcept
     swap(f10, other.f10);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructHash& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructHash& value)
 {
     stream << "StructHash(";
     {
@@ -1778,14 +1778,14 @@ std::string StructHashEx::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructHashEx::swap(StructHashEx& other) noexcept
+void StructHashEx::swap([[maybe_unused]] StructHashEx& other) noexcept
 {
     using std::swap;
     swap(f1, other.f1);
     swap(f2, other.f2);
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructHashEx& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructHashEx& value)
 {
     stream << "StructHashEx(";
     {
@@ -1836,12 +1836,12 @@ std::string StructEmpty::string() const
     std::stringstream ss; ss << *this; return ss.str();
 }
 
-void StructEmpty::swap(StructEmpty& other) noexcept
+void StructEmpty::swap([[maybe_unused]] StructEmpty& other) noexcept
 {
     using std::swap;
 }
 
-std::ostream& operator<<(std::ostream& stream, const StructEmpty& value)
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const StructEmpty& value)
 {
     stream << "StructEmpty(";
     stream << ")";

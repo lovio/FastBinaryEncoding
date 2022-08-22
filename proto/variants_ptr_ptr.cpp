@@ -11,31 +11,147 @@ namespace variants_ptr {
 
 std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Expr& value)
 {
-    std::visit(
-        overloaded
-        {
-            [&stream](bool v) { stream << v; }
-            , [&stream](const std::string& v) { stream << v; }
-            , [&stream](int32_t v) { stream << v; }
-            , [&stream](auto&) { stream << "unknown type"; },
-        },
-        value);
+    stream << "Expr(variant|";
+    [[maybe_unused]] bool first = true;
+    switch (value.index()) {
+        case 0:
+            stream<< "{bool}";
+            stream << std::get<0>(value);
+            break;
+        case 1:
+            stream<< "{string}";
+            stream << std::get<1>(value);
+            break;
+        case 2:
+            stream<< "{int32}";
+            stream << std::get<2>(value);
+            break;
+        default:
+            static_assert("unreachable branch");
+    }
+    stream << ")";
     return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const V& value)
 {
-    std::visit(
-        overloaded
-        {
-            [&stream](int32_t v) { stream << v; }
-            , [&stream](const std::string& v) { stream << v; }
-            , [&stream](double v) { stream << v; }
-            , [&stream](const ::variants_ptr::Simple& v) { stream << v; }
-            , [&stream](const ::variants_ptr::Expr& v) { stream << v; }
-            , [&stream](auto&) { stream << "unknown type"; },
-        },
-        value);
+    stream << "V(variant|";
+    [[maybe_unused]] bool first = true;
+    switch (value.index()) {
+        case 0:
+            stream<< "{int32}";
+            stream << std::get<0>(value);
+            break;
+        case 1:
+            stream<< "{string}";
+            stream << std::get<1>(value);
+            break;
+        case 2:
+            stream<< "{double}";
+            stream << std::get<2>(value);
+            break;
+        case 3:
+            stream<< "{Simple}";
+            stream << std::get<3>(value);
+            break;
+        case 4:
+            stream<< "{Simple*}";
+            stream << "ptr of other struct: " << (std::get<4>(value) == nullptr ? "nullptr" : "true");
+            if (std::get<4>(value) != nullptr)
+            {
+                stream << "->" << *std::get<4>(value);
+            }
+            break;
+        case 5:
+            stream << "{Simple}=[" << std::get<5>(value).size() << "][";
+            for (const auto& it : std::get<5>(value))
+            {
+                stream << std::string(first ? "" : ",") << it;
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 6:
+            stream << "{int32}=[" << std::get<6>(value).size() << "][";
+            for (const auto& it : std::get<6>(value))
+            {
+                stream << std::string(first ? "" : ",") << it;
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 7:
+            stream << "{int32->Simple}=[" << std::get<7>(value).size() << "][";
+            for (const auto& it : std::get<7>(value))
+            {
+                stream << std::string(first ? "" : ",") << it.first;
+                stream << "->";
+                stream << it.second;
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 8:
+            stream << "{bytes}=[" << std::get<8>(value).size() << "][";
+            for (const auto& it : std::get<8>(value))
+            {
+                stream << std::string(first ? "" : ",") << "bytes[" << it.size() << "]";
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 9:
+            stream << "{string}=[" << std::get<9>(value).size() << "][";
+            for (const auto& it : std::get<9>(value))
+            {
+                stream << std::string(first ? "" : ",") << "\"" << it << "\"";
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 10:
+            stream << "{int32->bytes}=[" << std::get<10>(value).size() << "][";
+            for (const auto& it : std::get<10>(value))
+            {
+                stream << std::string(first ? "" : ",") << it.first;
+                stream << "->";
+                stream << "bytes[" << it.second.size() << "]";
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 11:
+            stream << "{string->bytes}=[" << std::get<11>(value).size() << "][";
+            for (const auto& it : std::get<11>(value))
+            {
+                stream << std::string(first ? "" : ",") << "\"" << it.first << "\"";
+                stream << "->";
+                stream << "bytes[" << it.second.size() << "]";
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 12:
+            stream << "{Simple*}=[" << std::get<12>(value).size() << "][";
+            for (const auto& it : std::get<12>(value))
+            {
+                stream << std::string(first ? "" : ",") << "ptr of other struct: " << (it == nullptr ? "nullptr" : "true");
+                if (it != nullptr)
+                {
+                    stream << "->" << *it;
+                }
+                first = false;
+            }
+            stream << "]";
+            break;
+        case 13:
+            stream<< "{Expr}";
+            stream << std::get<13>(value);
+            break;
+        default:
+            static_assert("unreachable branch");
+    }
+    stream << ")";
     return stream;
 }
 

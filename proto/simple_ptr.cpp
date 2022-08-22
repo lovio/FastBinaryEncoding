@@ -101,14 +101,14 @@ std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& va
 {
     stream << "Simple(";
     stream << "info="; stream << "\"" << value.info << "\"";
-    stream << ",simple="; stream << " ptr of other struct" << (value.simple == nullptr ? "true" : "false");
+    stream << ",simple="; stream << "ptr of other struct: " << (value.simple == nullptr ? "nullptr" : "true");
     stream << ",depth="; stream << value.depth;
     {
         bool first = true;
         stream << ",spv=[" << value.spv.size() << "][";
         for (const auto& it : value.spv)
         {
-            stream << std::string(first ? "" : ",") << " ptr of other struct" << (it == nullptr ? "true" : "false");
+            stream << std::string(first ? "" : ",") << "ptr of other struct: " << (it == nullptr ? "nullptr" : "true");
             first = false;
         }
         stream << "]";
@@ -130,7 +130,7 @@ std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Simple& va
         {
             stream << std::string(first ? "" : ",") << it.first;
             stream << "->";
-            stream << " ptr of other struct" << (it.second == nullptr ? "true" : "false");
+            stream << "ptr of other struct: " << (it.second == nullptr ? "nullptr" : "true");
             first = false;
         }
         stream << "}>";

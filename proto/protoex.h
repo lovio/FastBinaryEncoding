@@ -41,10 +41,10 @@ enum class OrderSide : uint8_t
     tell,
 };
 
-std::ostream& operator<<(std::ostream& stream, OrderSide value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] OrderSide value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<protoex::OrderSide> : ostream_formatter {}; namespace protoex {
+} template <> struct fmt::formatter<protoex::OrderSide> : formatter<string_view> {}; namespace protoex {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -59,10 +59,10 @@ enum class OrderType : uint8_t
     stoplimit,
 };
 
-std::ostream& operator<<(std::ostream& stream, OrderType value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] OrderType value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<protoex::OrderType> : ostream_formatter {}; namespace protoex {
+} template <> struct fmt::formatter<protoex::OrderType> : formatter<string_view> {}; namespace protoex {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -84,10 +84,10 @@ enum class StateEx : uint8_t
 
 FBE_ENUM_FLAGS(StateEx)
 
-std::ostream& operator<<(std::ostream& stream, StateEx value);
+std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] StateEx value);
 
 #if defined(FMT_VERSION)
-} template <> struct fmt::formatter<protoex::StateEx> : ostream_formatter {}; namespace protoex {
+} template <> struct fmt::formatter<protoex::StateEx> : formatter<string_view> {}; namespace protoex {
 #endif
 
 #if defined(LOGGING_PROTOCOL)
@@ -125,7 +125,7 @@ struct Order
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const Order& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Order& value);
 
     void swap(Order& other) noexcept;
     friend void swap(Order& value1, Order& value2) noexcept { value1.swap(value2); }
@@ -134,7 +134,7 @@ struct Order
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::Order> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::Order> : formatter<string_view> {};
 #endif
 
 template<>
@@ -177,7 +177,7 @@ struct Balance : public ::proto::Balance
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const Balance& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Balance& value);
 
     void swap(Balance& other) noexcept;
     friend void swap(Balance& value1, Balance& value2) noexcept { value1.swap(value2); }
@@ -186,7 +186,7 @@ struct Balance : public ::proto::Balance
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::Balance> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::Balance> : formatter<string_view> {};
 #endif
 
 template<>
@@ -234,7 +234,7 @@ struct Account
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const Account& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Account& value);
 
     void swap(Account& other) noexcept;
     friend void swap(Account& value1, Account& value2) noexcept { value1.swap(value2); }
@@ -243,7 +243,7 @@ struct Account
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::Account> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::Account> : formatter<string_view> {};
 #endif
 
 template<>
@@ -286,7 +286,7 @@ struct OrderMessage
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const OrderMessage& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const OrderMessage& value);
 
     void swap(OrderMessage& other) noexcept;
     friend void swap(OrderMessage& value1, OrderMessage& value2) noexcept { value1.swap(value2); }
@@ -295,7 +295,7 @@ struct OrderMessage
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::OrderMessage> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::OrderMessage> : formatter<string_view> {};
 #endif
 
 template<>
@@ -337,7 +337,7 @@ struct BalanceMessage
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const BalanceMessage& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const BalanceMessage& value);
 
     void swap(BalanceMessage& other) noexcept;
     friend void swap(BalanceMessage& value1, BalanceMessage& value2) noexcept { value1.swap(value2); }
@@ -346,7 +346,7 @@ struct BalanceMessage
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::BalanceMessage> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::BalanceMessage> : formatter<string_view> {};
 #endif
 
 template<>
@@ -388,7 +388,7 @@ struct AccountMessage
 
     std::string string() const;
 
-    friend std::ostream& operator<<(std::ostream& stream, const AccountMessage& value);
+    friend std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const AccountMessage& value);
 
     void swap(AccountMessage& other) noexcept;
     friend void swap(AccountMessage& value1, AccountMessage& value2) noexcept { value1.swap(value2); }
@@ -397,7 +397,7 @@ struct AccountMessage
 } // namespace protoex
 
 #if defined(FMT_VERSION)
-template <> struct fmt::formatter<protoex::AccountMessage> : ostream_formatter {};
+template <> struct fmt::formatter<protoex::AccountMessage> : formatter<string_view> {};
 #endif
 
 template<>

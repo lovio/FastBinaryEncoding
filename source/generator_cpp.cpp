@@ -8565,27 +8565,69 @@ void GeneratorCpp::GenerateVariantOutputStream(const std::shared_ptr<Package>& p
     WriteLineIndent("{");
     Indent(1);
 
-    WriteLineIndent("std::visit(");
+    WriteLineIndent("stream << \"" + *v->name + "(variant|\";");
+    WriteLineIndent("[[maybe_unused]] bool first = true;");
+    WriteLineIndent("switch (value.index()) {");
     Indent(1);
-    WriteLineIndent("overloaded");
-    WriteLineIndent("{");
-    Indent(1);
-    bool first = true;
-    for (auto& value : v->body->values) {
-        if (IsContainerType(*value) || value->ptr)
-            // TODO: Generate container output stream
-            continue;
-        WriteIndent(first ? "" : ", ");
-        Write("[&stream](");
-        Write(ConvertVariantTypeNameAsArgument(*p->name, *value));
-        WriteLine(std::string(" v) { stream << ") + (value->ptr ? "*" : "") + "v; }");
-        first = false;
+    for (int i = 0; i < v->body->values.size(); i++) {
+        WriteLineIndent("case " + std::to_string(i) + ":");
+        Indent(1);
+        auto& value = v->body->values.at(i);
+        auto get_value = "std::get<" + std::to_string(i) + ">(value)";
+        auto fbe_value_type = *value->type + (value->ptr ? "*" : "");
+        if (value->vector || value->list) {
+            WriteLineIndent(std::string("stream << \"{") + fbe_value_type + "}=[\" << " + get_value + ".size()" + " << \"][\"" + ";");
+            WriteLineIndent("for (const auto& it : " + get_value + ")");
+            WriteLineIndent("{");
+            Indent(1);
+            WriteLineIndent(ConvertOutputStreamValue(*value->type, "it", value->ptr, false, true));
+            if (value->ptr) {
+                WriteLineIndent("if (it != nullptr)");
+                WriteLineIndent("{");
+                Indent(1);
+                WriteLineIndent("stream << \"->\" << *it;");
+                Indent(-1);
+                WriteLineIndent("}");
+            }
+            WriteLineIndent("first = false;");
+            Indent(-1);
+            WriteLineIndent("}");
+            WriteLineIndent("stream << \"]\";");
+        } else if (value->map ||value->hash) {
+            WriteLineIndent(std::string("stream << \"{") + *value->key + "->" + fbe_value_type + "}=[\" << " + get_value + ".size()" + " << \"][\"" + ";");
+            WriteLineIndent("for (const auto& it : " + get_value + ")");
+            WriteLineIndent("{");
+            Indent(1);
+            WriteLineIndent(ConvertOutputStreamValue(*value->key, "it.first", false, false, true));
+            WriteLineIndent("stream << \"->\";");
+            WriteLineIndent(ConvertOutputStreamValue(*value->type, "it.second", value->ptr, false, false));
+            WriteLineIndent("first = false;");
+            Indent(-1);
+            WriteLineIndent("}");
+            WriteLineIndent("stream << \"]\";");
+        } else {
+            WriteLineIndent("stream<< \"{" + fbe_value_type + "}\";");
+            WriteLineIndent(ConvertOutputStreamValue("", get_value, v->body->values.at(i)->ptr, false, false));
+            if (value->ptr) {
+                WriteLineIndent("if (" + get_value + " != nullptr)");
+                WriteLineIndent("{");
+                Indent(1);
+                WriteLineIndent("stream << \"->\" << *" + get_value + ";");
+                Indent(-1);
+                WriteLineIndent("}");
+            }
+        }
+        WriteLineIndent("break;");
+        Indent(-1);
     }
-    WriteLineIndent(std::string(first ? "" : ", ") + "[&stream](auto&) { stream << \"unknown type\"; },");
+    WriteLineIndent("default:");
+    Indent(1);
+    WriteLineIndent("static_assert(\"unreachable branch\");");
     Indent(-1);
-    WriteLineIndent("},");
-    WriteLineIndent("value);");
     Indent(-1);
+    WriteLineIndent("}");
+
+    WriteLineIndent("stream << \")\";");
     WriteLineIndent("return stream;");
     Indent(-1);
     WriteLineIndent("}");
@@ -11692,8 +11734,8 @@ std::string GeneratorCpp::ConvertOutputStreamType(const std::string& type, const
 {
     std::string wrapped_name = name;
     if (ptr) {
-      return "\" ptr of other struct\" << (" + name +
-             " == nullptr ? \"true\" : \"false\"" + ")";
+      return "\"ptr of other struct: \" << (" + name +
+             " == nullptr ? \"nullptr\" : \"true\"" + ")";
     }
     if (type == "bool")
         return "(" + std::string(optional ? "*" : "") + wrapped_name + " ? \"true\" : \"false\"" + ")";

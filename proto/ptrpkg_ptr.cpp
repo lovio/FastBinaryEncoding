@@ -67,7 +67,7 @@ std::ostream& operator<<(std::ostream& stream, [[maybe_unused]] const Line& valu
 {
     stream << "Line(";
     stream << "value="; stream << value.value;
-    stream << ",value_ptr="; stream << " ptr of other struct" << (value.value_ptr == nullptr ? "true" : "false");
+    stream << ",value_ptr="; stream << "ptr of other struct: " << (value.value_ptr == nullptr ? "nullptr" : "true");
     stream << ")";
     return stream;
 }
