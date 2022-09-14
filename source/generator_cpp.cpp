@@ -8831,7 +8831,9 @@ void GeneratorCpp::GenerateStruct_Source(const std::shared_ptr<Package>& p, cons
             {
                 WriteIndent();
                 Write(std::string(first ? ": " : ", ") + *field->name + "(");
-                if (*field->type == "string" || *field->type == "bytes" || IsContainerType(*field)) {
+                if (field->optional) {
+                    Write("std::nullopt");
+                } else if (*field->type == "string" || *field->type == "bytes" || IsContainerType(*field)) {
                     Write("alloc");
                 } else if (field->value || IsPrimitiveType(*field->type, field->optional)) {
                     Write(ConvertDefault(*p->name, *field));
