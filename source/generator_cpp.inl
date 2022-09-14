@@ -1971,7 +1971,9 @@ void GeneratorCpp::GeneratePtrStruct_Source(const std::shared_ptr<Package>& p, c
             {
                 WriteIndent();
                 Write(std::string(first ? ": " : ", ") + *field->name + "(");
-                if (!IsCurrentPackageType(*field->type)) {
+                if (field->optional) {
+                    Write("std::nullopt");
+                } else if (!IsCurrentPackageType(*field->type)) {
                     Write(std::string("assign_member<") + ConvertTypeName(*p->name, *field) + ">(alloc)");
                 } else if (field->ptr && !IsContainerType(*field)) {
                     Write("nullptr");
