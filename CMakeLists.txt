@@ -8,7 +8,9 @@ project(FastBinaryEncoding)
 
 ## set to c++20
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(COMMON_WARNING_FLAGS "${COMMON_WARNING_FLAGS} -Wcomment")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_WARNING_FLAGS} -frtti -fexceptions -fsized-deallocation")
+set(CMAKE_CXX_EXTENSIONS ON)
 
 # Doxygen
 find_package(Doxygen)
