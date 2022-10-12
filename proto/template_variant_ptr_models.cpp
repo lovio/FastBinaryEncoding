@@ -92,9 +92,11 @@ void FieldModelPtr_template_variant_Line::get(::template_variant::Line** fbe_val
 
     ptr = new FieldModel_template_variant_Line(_buffer, 0);
 
+    ::template_variant::Line* old = *fbe_value;
     ::template_variant::Line *tempModel = new ::template_variant::Line();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
@@ -489,9 +491,11 @@ void FieldModelPtr_template_variant_Line2::get(::template_variant::Line2** fbe_v
 
     ptr = new FieldModel_template_variant_Line2(_buffer, 0);
 
+    ::template_variant::Line2* old = *fbe_value;
     ::template_variant::Line2 *tempModel = new ::template_variant::Line2();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
@@ -832,9 +836,11 @@ void FieldModelPtr_template_variant_Line3::get(::template_variant::Line3** fbe_v
 
     ptr = new FieldModel_template_variant_Line3(_buffer, 0);
 
+    ::template_variant::Line3* old = *fbe_value;
     ::template_variant::Line3 *tempModel = new ::template_variant::Line3();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }

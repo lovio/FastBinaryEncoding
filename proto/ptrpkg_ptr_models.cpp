@@ -92,9 +92,11 @@ void FieldModelPtr_ptrpkg_Line::get(::ptrpkg::Line** fbe_value) noexcept
 
     ptr = new FieldModel_ptrpkg_Line(_buffer, 0);
 
+    ::ptrpkg::Line* old = *fbe_value;
     ::ptrpkg::Line *tempModel = new ::ptrpkg::Line();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }

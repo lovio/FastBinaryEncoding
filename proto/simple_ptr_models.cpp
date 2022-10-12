@@ -92,9 +92,11 @@ void FieldModelPtr_simple_Simple::get(::simple::Simple** fbe_value) noexcept
 
     ptr = new FieldModel_simple_Simple(_buffer, 0);
 
+    ::simple::Simple* old = *fbe_value;
     ::simple::Simple *tempModel = new ::simple::Simple();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }

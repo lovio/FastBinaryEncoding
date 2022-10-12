@@ -92,9 +92,11 @@ void FieldModelPtr_extra_Info::get(::extra::Info** fbe_value) noexcept
 
     ptr = new FieldModel_extra_Info(_buffer, 0);
 
+    ::extra::Info* old = *fbe_value;
     ::extra::Info *tempModel = new ::extra::Info();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
@@ -489,9 +491,11 @@ void FieldModelPtr_extra_Extra::get(::extra::Extra** fbe_value) noexcept
 
     ptr = new FieldModel_extra_Extra(_buffer, 0);
 
+    ::extra::Extra* old = *fbe_value;
     ::extra::Extra *tempModel = new ::extra::Extra();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }

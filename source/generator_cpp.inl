@@ -3280,9 +3280,11 @@ void GeneratorCpp::GenerateStructFieldPtrModel_Source(const std::shared_ptr<Pack
     WriteLine();
     WriteLineIndent("ptr = new FieldModel_" + *p->name + "_" + *s->name + "(_buffer, 0);");
     WriteLine();
+    WriteLineIndent(struct_name + "* old = *fbe_value;");
     WriteLineIndent(struct_name + " *tempModel = new " + struct_name + "();");
     WriteLineIndent("ptr->get(*tempModel);");
     WriteLineIndent("*fbe_value = tempModel;");
+    WriteLineIndent("if (old != nullptr) delete old;");
     WriteLine();
     WriteLineIndent("get_end(fbe_begin);");
     Indent(-1);

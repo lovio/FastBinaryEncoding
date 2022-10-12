@@ -1,0 +1,58 @@
+k-check=yes ./fbe-tests "Serialization (simple self-reference)"
+
+==1868901== Memcheck, a memory error detector
+==1868901== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==1868901== Using Valgrind-3.19.0 and LibVEX; rerun with -h for copyright info
+==1868901== Command: ./fbe-tests Serialization\ (simple\ self-reference)
+==1868901==
+^R
+--1868901-- WARNING: Serious error when reading debug info
+--1868901-- When reading debug info from /usr/lib64/libgcc_s-12-20220819.so.1:
+--1868901-- get_Form_contents: DW_FORM_GNU_strp_alt used, but no alternate .debug_str
+Filters: Serialization (simple self-reference)
+===============================================================================
+All tests passed (54 assertions in 1 test case)
+
+==1868901==
+==1868901== HEAP SUMMARY:
+==1868901==     in use at exit: 384 bytes in 2 blocks
+==1868901==   total heap usage: 4,060 allocs, 4,058 frees, 561,880 bytes allocated
+==1868901==
+==1868901== 192 bytes in 1 blocks are definitely lost in loss record 1 of 2
+==1868901==    at 0x4845FF5: operator new(unsigned long) (vg_replace_malloc.c:422)
+==1868901==    by 0x7777BA: FBE::FieldModelCustomVector<FBE::FieldModelPtr_simple_Simple, simple::Simple>::get(std::vector<simple::Simple*, std::allocator<simple::Simple*> >&) const (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x775AD0: FBE::FieldModel_simple_Simple::get_fields(FBE::Base&, unsigned long) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x77591D: FBE::FieldModel_simple_Simple::get(FBE::Base&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x7749CE: FBE::FieldModelPtr_simple_Simple::get(simple::Simple**) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x775A0E: FBE::FieldModel_simple_Simple::get_fields(FBE::Base&, unsigned long) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x77591D: FBE::FieldModel_simple_Simple::get(FBE::Base&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x7749CE: FBE::FieldModelPtr_simple_Simple::get(simple::Simple**) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x775A0E: FBE::FieldModel_simple_Simple::get_fields(FBE::Base&, unsigned long) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x77591D: FBE::FieldModel_simple_Simple::get(FBE::Base&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x7749CE: FBE::FieldModelPtr_simple_Simple::get(simple::Simple**) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x775A0E: FBE::FieldModel_simple_Simple::get_fields(FBE::Base&, unsigned long) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==
+==1868901== 192 bytes in 1 blocks are definitely lost in loss record 2 of 2
+==1868901==    at 0x4845FF5: operator new(unsigned long) (vg_replace_malloc.c:422)
+==1868901==    by 0x777A3E: FBE::FieldModelCustomMap<FBE::FieldModel<int>, FBE::FieldModelPtr_simple_Simple, int, simple::Simple>::get(std::map<int, simple::Simple*, std::less<int>, std::allocator<std::pair<int const, simple::Simple*> > >&) const (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x775B96: FBE::FieldModel_simple_Simple::get_fields(FBE::Base&, unsigned long) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x77591D: FBE::FieldModel_simple_Simple::get(FBE::Base&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x7763BF: FBE::simple::SimpleModel::deserialize(simple::Simple&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x6AB659: C_A_T_C_H_T_E_S_T_0() (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x420539: Catch::TestInvokerAsFunction::invoke() const (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x41F864: Catch::TestCase::invoke() const (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x41A5E8: Catch::RunContext::invokeActiveTestCase() (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x41A36C: Catch::RunContext::runCurrentTest(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x419031: Catch::RunContext::runTest(Catch::TestCase const&) (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==    by 0x41BCD1: Catch::(anonymous namespace)::TestGroup::execute() (in /home/liuqi/workspaces/FastBinaryEncoding/build.debug/fbe-tests)
+==1868901==
+==1868901== LEAK SUMMARY:
+==1868901==    definitely lost: 384 bytes in 2 blocks
+==1868901==    indirectly lost: 0 bytes in 0 blocks
+==1868901==      possibly lost: 0 bytes in 0 blocks
+==1868901==    still reachable: 0 bytes in 0 blocks
+==1868901==         suppressed: 0 bytes in 0 blocks
+==1868901==
+==1868901== For lists of detected and suppressed errors, rerun with: -s
+==1868901== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)
+

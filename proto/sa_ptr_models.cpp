@@ -92,9 +92,11 @@ void FieldModelPtr_sa_Extra::get(::sa::Extra** fbe_value) noexcept
 
     ptr = new FieldModel_sa_Extra(_buffer, 0);
 
+    ::sa::Extra* old = *fbe_value;
     ::sa::Extra *tempModel = new ::sa::Extra();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
@@ -489,9 +491,11 @@ void FieldModelPtr_sa_Simple::get(::sa::Simple** fbe_value) noexcept
 
     ptr = new FieldModel_sa_Simple(_buffer, 0);
 
+    ::sa::Simple* old = *fbe_value;
     ::sa::Simple *tempModel = new ::sa::Simple();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
@@ -885,9 +889,11 @@ void FieldModelPtr_sa_Complex::get(::sa::Complex** fbe_value) noexcept
 
     ptr = new FieldModel_sa_Complex(_buffer, 0);
 
+    ::sa::Complex* old = *fbe_value;
     ::sa::Complex *tempModel = new ::sa::Complex();
     ptr->get(*tempModel);
     *fbe_value = tempModel;
+    if (old != nullptr) delete old;
 
     get_end(fbe_begin);
 }
